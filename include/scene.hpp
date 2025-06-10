@@ -37,7 +37,7 @@ public:
     std::vector<std::string> getObjectNames() const;
     size_t getObjectCount() const;
     void deleteObject(const std::string& name);
-    void renameObject(const std::string& oldName, const std::string& newName);
+    std::string renameObject(const std::string& oldName, const std::string& newName);
     void clear();
 
     // Selection handling

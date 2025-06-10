@@ -91,15 +91,28 @@ void Scene::deleteObject(const std::string& name) {
     objects.erase(name);
 }
 
-void Scene::renameObject(const std::string& oldName, const std::string& newName) {
-    if (objects.count(newName) > 0) return; // Avoid name collision
+std::string Scene::renameObject(const std::string& oldName, const std::string& newName) {
     auto it = objects.find(oldName);
-    if (it != objects.end()) {
-        objects[newName] = std::move(it->second);
-        objects.erase(it);
+    if (it == objects.end()) {
+        return oldName;
     }
-    if (selectedObject->name == oldName)
-        selectedObject->name = newName;
+
+    std::string finalName = newName;
+    int suffix = 1;
+    while (objects.count(finalName) > 0 && finalName != oldName) {
+        finalName = newName + "_" + std::to_string(suffix++);
+    }
+
+    objects[finalName] = std::move(it->second);
+    objects.erase(it);
+
+    objects[finalName]->name = finalName;
+
+    if (selectedObject && selectedObject->name == oldName) {
+        selectedObject = objects[finalName].get();
+    }
+
+    return finalName;
 }
 
 void Scene::clear() {

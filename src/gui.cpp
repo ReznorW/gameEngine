@@ -124,12 +124,12 @@ void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& sha
             std::strncpy(nameBuffer, selected->name.c_str(), sizeof(nameBuffer));
             nameBuffer[sizeof(nameBuffer) - 1] = '\0'; // Ensure null-termination
 
-            if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
+            ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer));
+            if (ImGui::IsItemDeactivatedAfterEdit()) {
                 std::string newName(nameBuffer);
                 if (!newName.empty() && newName != selected->name) {
-                    // Update name in the scene safely
-                    scene.renameObject(selected->name, newName);
-                    selected->name = newName;
+                    std::string finalName = scene.renameObject(selected->name, newName);
+                    selected->name = finalName;
                 }
             }
 
