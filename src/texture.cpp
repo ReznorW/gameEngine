@@ -3,6 +3,7 @@
 #include <stb_image.h>
 #include <iostream>
 
+// === Constructor ===
 Texture::Texture(const std::string& path) {
     name = path.substr(path.find_last_of("/\\") + 1);
     stbi_set_flip_vertically_on_load(true);
@@ -32,11 +33,13 @@ Texture::Texture(const std::string& path) {
     stbi_image_free(data);
 }
 
+// === Deconstructor ===
 Texture::~Texture() {
     if (id)
         glDeleteTextures(1, &id);
 }
 
+// === Usage ===
 void Texture::bind(unsigned int slot) const {
     if (id == 0) {
         std::cerr << "Warning: Trying to bind texture with id=0\n";

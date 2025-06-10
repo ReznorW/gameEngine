@@ -1,10 +1,3 @@
-#include "input.hpp"
-#include "camera.hpp"
-#include "window.hpp"
-#include "scene.hpp"
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,7 +6,16 @@
 #include <iostream>
 #include <ostream>
 
-// Globals
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+#include "input.hpp"
+#include "camera.hpp"
+#include "window.hpp"
+#include "scene.hpp"
+
+// === Globals ===
 bool mouseLookActive = false;
 float lastX = 0.0f;
 float lastY = 0.0f;
@@ -25,28 +27,7 @@ float lookSpeed = 0.1f;
 bool Input::keys[512] = {false};
 bool Input::mouseButtons[5] = {false};
 
-// Apply mouse movement to rotation
-void Input::processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch) {
-    // Set yaw
-    camera.setYaw(camera.getYaw() + xoffset);
-
-    // Set pitch
-    if (constrainPitch) {
-        float pitch = camera.getPitch() + yoffset;
-        if (pitch > 89.0f) {
-            pitch = 89.0f;
-        }
-        if (pitch < -89.0f) {
-            pitch = -89.0f;
-        }
-        camera.setPitch(pitch);
-    }
-
-    // Update vectors
-    camera.updateCameraVectors();
-}
-
-// Keyboard handling
+// === Input processing ===
 void Input::processInput(Window& window, Camera& camera, Scene& scene, Shader& shader) {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -86,19 +67,27 @@ void Input::processInput(Window& window, Camera& camera, Scene& scene, Shader& s
     }
 }
 
-void Input::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
-    
-    if (key >= 0 && key < 512) {
-        keys[key] = (action == GLFW_PRESS || action == GLFW_REPEAT);
+void Input::processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch) {
+    // Set yaw
+    camera.setYaw(camera.getYaw() + xoffset);
+
+    // Set pitch
+    if (constrainPitch) {
+        float pitch = camera.getPitch() + yoffset;
+        if (pitch > 89.0f) {
+            pitch = 89.0f;
+        }
+        if (pitch < -89.0f) {
+            pitch = -89.0f;
+        }
+        camera.setPitch(pitch);
     }
+
+    // Update vectors
+    camera.updateCameraVectors();
 }
 
-void Input::char_callback(GLFWwindow* window, unsigned int c) {
-    ImGui_ImplGlfw_CharCallback(window, c);
-}
-
-// Handling right click to look around and hiding/locking cursor to center
+// === GLFW callbacks ===
 void Input::mouse_button_callback(GLFWwindow* glfwWindow, int button, int action, int mods) {
     ImGui_ImplGlfw_MouseButtonCallback(glfwWindow, button, action, mods);
 
@@ -179,7 +168,6 @@ void Input::mouse_button_callback(GLFWwindow* glfwWindow, int button, int action
     }
 }
 
-// Gets x and y offsets for look
 void Input::cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     ImGuiIO& io = ImGui::GetIO();
     io.MousePos = ImVec2((float)xpos, (float)ypos);
@@ -215,6 +203,19 @@ void Input::cursor_position_callback(GLFWwindow* window, double xpos, double ypo
     Input::processMouseMovement(camera, xoffset, yoffset);
 }
 
+void Input::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+    
+    if (key >= 0 && key < 512) {
+        keys[key] = (action == GLFW_PRESS || action == GLFW_REPEAT);
+    }
+}
+
+void Input::char_callback(GLFWwindow* window, unsigned int c) {
+    ImGui_ImplGlfw_CharCallback(window, c);
+}
+
+// === Raycasting utils ===
 glm::vec3 calculateRayFromMouse(double mouseX, double mouseY, int screenWidth, int screenHeight, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
     // Step 1: Convert mouse position to Normalized Device Coordinates (NDC)
     float x = (2.0f * mouseX) / screenWidth - 1.0f;
@@ -237,8 +238,7 @@ glm::vec3 calculateRayFromMouse(double mouseX, double mouseY, int screenWidth, i
     return rayDirection;
 }
 
-bool RayIntersectsOBB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, 
-                     const OBB& obb, float& t) {
+bool RayIntersectsOBB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const OBB& obb, float& t) {
     float tMin = -FLT_MAX;
     float tMax = FLT_MAX;
     glm::vec3 p = obb.center - rayOrigin;

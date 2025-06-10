@@ -1,34 +1,14 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "shader.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <string>
 
-// Load in shaders
-std::string loadShaderSource(const std::string& filepath) {
-    // Open the file at the given path
-    std::ifstream file(filepath);
-    
-    // Check if the file opened successfully
-    if (!file.is_open()) {
-        std::cerr << "Failed to open shader file: " << filepath << "\n";
-        return "";
-    }
+#include "shader.hpp"
 
-    // Create a string stream to store the file contents
-    std::stringstream buffer;
-
-    // Read the entire file into the buffer
-    buffer << file.rdbuf();
-
-    // Convert the buffer into a string and return it
-    return buffer.str();
-}
-
-// Constructor
+// === Constructor ===
 Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& name) 
         : name(name) {
     // Load in shaders from file path
@@ -61,17 +41,17 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, c
     glDeleteShader(fragment);
 }
 
-// Deconstructor
+// === Deconstructor ===
 Shader::~Shader() {
     glDeleteProgram(ID);
 }
 
-// Activates shader
+// === Usage ===
 void Shader::use() const {
     glUseProgram(ID);
 }
 
-// Getters
+// === Getters ===
 GLuint Shader::getID() const {
     return ID;
 }
@@ -80,28 +60,12 @@ std::string Shader::getName() const {
     return name;
 }
 
-// Compiler
-GLuint Shader::compile(GLenum type, const char* src) {
-    // Creates shader
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-
-    // Compiles shader
-    glCompileShader(shader);
-
-    // Check for compilation errors
-    int success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        char infoLog[512];
-        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "Shader Compile Error: " << infoLog << "\n";
-    }
-
-    // Return final shader
-    return shader;
+// === Setters ===
+void Shader::setName(std::string& newName) {
+    name = newName;
 }
 
+// === Uniform setters ===
 void Shader::setMat4(const std::string& name, const glm::mat4& mat) const {
     GLint location = glGetUniformLocation(ID, name.c_str());
     if (location == -1) {
@@ -139,6 +103,45 @@ void Shader::setInt(const std::string& name, int value) const {
     glUniform1i(location, value);
 }
 
-void Shader::setName(std::string& newName) {
-    name = newName;
+// === Internal compilation ===
+GLuint Shader::compile(GLenum type, const char* src) {
+    // Creates shader
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &src, nullptr);
+
+    // Compiles shader
+    glCompileShader(shader);
+
+    // Check for compilation errors
+    int success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        std::cerr << "Shader Compile Error: " << infoLog << "\n";
+    }
+
+    // Return final shader
+    return shader;
+}
+
+// === Loader ===
+std::string loadShaderSource(const std::string& filepath) {
+    // Open the file at the given path
+    std::ifstream file(filepath);
+    
+    // Check if the file opened successfully
+    if (!file.is_open()) {
+        std::cerr << "Failed to open shader file: " << filepath << "\n";
+        return "";
+    }
+
+    // Create a string stream to store the file contents
+    std::stringstream buffer;
+
+    // Read the entire file into the buffer
+    buffer << file.rdbuf();
+
+    // Convert the buffer into a string and return it
+    return buffer.str();
 }

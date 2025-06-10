@@ -1,8 +1,9 @@
 #include <glad/glad.h>
 #include <iostream>
+
 #include "window.hpp"
 
-// Constructor
+// === Constructor ===
 Window::Window(const std::string& title, bool fullscreen)
     : isFullscreen(fullscreen) {
     
@@ -59,12 +60,13 @@ Window::Window(const std::string& title, bool fullscreen)
     }
 }
 
-// Deconstructor
+// === Deconstructor ===
 Window::~Window() {
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
+// === Window control ===
 // Check if user closed window
 bool Window::shouldClose() const { 
     return glfwWindowShouldClose(window); 
@@ -80,7 +82,7 @@ void Window::swapBuffers() const{
     glfwSwapBuffers(window); 
 }
 
-// Getters
+// === Getters ===
 GLFWwindow* Window::getGLFWwindow() { 
     return window; 
 }

@@ -1,28 +1,90 @@
 #include <glad/glad.h>
-#include "mesh.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <vector>
 #include <glm/glm.hpp>
 #include <limits>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "mesh.hpp"
+
+// === Constructor ===
 Mesh::Mesh(const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
     setupMesh(vertices, indices);
     indexCount = indices.size();
     name = meshName;
 }
 
+// === Deconstructor ===
 Mesh::~Mesh() {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
 }
 
-// Loaders
+// === OBB handling ===
+void Mesh::calculateBounds(const std::vector<Vertex>& vertices) {
+    if (vertices.empty()) {
+        minBounds = maxBounds = glm::vec3(0.0f);
+        return;
+    }
 
+    // Initialize with first vertex
+    minBounds = maxBounds = vertices[0].position;
+        
+    // Find min/max across all vertices
+    for (const auto& vertex : vertices) {
+        minBounds = glm::min(minBounds, vertex.position);
+        maxBounds = glm::max(maxBounds, vertex.position);
+    }
+}
+
+// === Rendering ===
+void Mesh::draw() const {
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, (GLsizei)indexCount, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
+// === Internal setup ===
+void Mesh::setupMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+
+    // Vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+    // Element buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    // Position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+
+    // Color attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+
+    // Normal attribute
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+    // Texture attribute
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
+
+    glBindVertexArray(0);
+}
+
+// === Loaders
 Mesh* loadVertFile(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
@@ -95,60 +157,4 @@ unsigned int loadTexture(const std::string& path) {
     stbi_image_free(data);
 
     return textureID;
-}
-
-void Mesh::setupMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    // Vertex buffer
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-
-    // Element buffer
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
-    // Position attribute
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-
-    // Color attribute
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
-
-    // Normal attribute
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-
-    // Texture attribute
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
-
-    glBindVertexArray(0);
-}
-
-void Mesh::calculateBounds(const std::vector<Vertex>& vertices) {
-    if (vertices.empty()) {
-        minBounds = maxBounds = glm::vec3(0.0f);
-        return;
-    }
-
-    // Initialize with first vertex
-    minBounds = maxBounds = vertices[0].position;
-        
-    // Find min/max across all vertices
-    for (const auto& vertex : vertices) {
-        minBounds = glm::min(minBounds, vertex.position);
-        maxBounds = glm::max(maxBounds, vertex.position);
-    }
-}
-
-void Mesh::draw() const {
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, (GLsizei)indexCount, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
 }

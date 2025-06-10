@@ -1,7 +1,6 @@
 #include "camera.hpp"
 
 // === Getters ===
-
 glm::vec3 Camera::getPosition() const {return position;}
 glm::vec3 Camera::getFront() const {return front;}
 glm::vec3 Camera::getRight() const {return right;}
@@ -16,7 +15,6 @@ float Camera::getPitch() const {return pitch;}
 float Camera::getRoll() const {return roll;}
 
 // === Setters ===
-
 void Camera::setPosition(const glm::vec3& newPosition) {position = newPosition;}
 void Camera::setFront(const glm::vec3& newFront) {front = newFront;}
 void Camera::setRight(const glm::vec3& newRight) {right = newRight;}
@@ -30,30 +28,25 @@ void Camera::setYaw(const float& newYaw) {yaw = newYaw;}
 void Camera::setPitch(const float& newPitch) {pitch = newPitch;}
 void Camera::setRoll(const float& newRoll) {roll = newRoll;}
 
-// Helpers
-
-// Projection handling
+// === Projection handling ===
 glm::mat4 Camera::getViewMatrix() const {
     return glm::lookAt(position, position + front, up);
 }
+
 glm::mat4 Camera::getProjectionMatrix() const {
     return glm::perspective(glm::radians(fov), aspect, near, far);
 }
 
-// Camera controls
-
-// Move horizontally
+// === Camera controllers ===
 void Camera::move(const glm::vec3& direction, const float& speed) {
     position.x += direction.x * speed;
     position.z += direction.z * speed;
 }
 
-// Move vertically
 void Camera::moveVert(const glm::vec3& direction, const float& speed) {
     position += direction * speed;
 }
 
-// Look around
 void Camera::rotate(glm::vec3& rotation) {
     // Apply rotation
     yaw += rotation.y;
@@ -73,7 +66,6 @@ void Camera::rotate(glm::vec3& rotation) {
     up    = glm::normalize(glm::cross(right, front));
 }
 
-// Keep front, up, and right vectors up to date
 void Camera::updateCameraVectors() {
     glm::vec3 newFront;
     newFront.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

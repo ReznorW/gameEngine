@@ -1,14 +1,16 @@
 #pragma once
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+// Camera definition
 struct Camera {
+    // Camera state
     glm::vec3 position;
     glm::vec3 front;
     glm::vec3 right;
     glm::vec3 up;
     glm::vec3 worldUp;
-
     float fov;
     float aspect;
     float near;
@@ -45,12 +47,13 @@ struct Camera {
     void setPitch(const float& newPitch);
     void setRoll(const float& newRoll);
 
-    // Helpers
+    // Projection handling
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
+
+    // Camera controllers
     void move(const glm::vec3& direction, const float& speed);
     void moveVert(const glm::vec3& direction, const float& speed);
     void rotate(glm::vec3& rotation);
-    void processMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
     void updateCameraVectors();
 };

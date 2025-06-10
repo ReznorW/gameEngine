@@ -1,23 +1,19 @@
 #include <glad/glad.h>
-#include "object.hpp"
-#include "camera.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
-// Constructors
-OBB::OBB(const glm::vec3& min, const glm::vec3& max) :
-    center((min + max) * 0.5f),
-    extents(max - center),
-    axes(glm::mat3(1.0f)) {}
+#include "object.hpp"
+#include "camera.hpp"
 
-Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, Shader* shader)
-    : name(name), shader(shader) {
-    std::string modelPath = "assets/models/" + modelName + ".vert";
-    mesh = loadVertFile(modelPath);
-    std::string texturePath = "assets/textures/" + textureName + ".jpg";
-    texture = new Texture(texturePath);
-    Object::initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
-} 
+// ### Transform functions ###
+// === Update handling ===
+bool Transform::needsUpdate() const {
+    if (dirty) {
+        return true;
+    }
+    return false;
+}
 
+// === Get transformed model ===
 glm::mat4 Transform::getModelMatrix() const {
     glm::mat4 model = glm::mat4(1.0f);
 
@@ -30,13 +26,23 @@ glm::mat4 Transform::getModelMatrix() const {
     return model;
 }
 
-bool Transform::needsUpdate() const {
-    if (dirty) {
-        return true;
-    }
-    return false;
-}
+// ### OBB functions ###
+// === Constructor ===
+OBB::OBB(const glm::vec3& min, const glm::vec3& max) 
+    : center((min + max) * 0.5f), extents(max - center), axes(glm::mat3(1.0f)) {}
 
+// ### Object functions ###
+// === Constructor ===
+Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, Shader* shader)
+    : name(name), shader(shader) {
+    std::string modelPath = "assets/models/" + modelName + ".vert";
+    mesh = loadVertFile(modelPath);
+    std::string texturePath = "assets/textures/" + textureName + ".jpg";
+    texture = new Texture(texturePath);
+    Object::initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
+} 
+
+// === OBB handling ===
 void Object::initializeOBB(const glm::vec3& meshMin, const glm::vec3& meshMax) {
     obb = OBB(meshMin, meshMax);
 }
@@ -71,6 +77,7 @@ void Object::updateOBB() {
     obb.extents.z *= glm::length(glm::vec3(modelMatrix[2]));
 }
 
+// === Rendering ===
 void Object::draw(const Camera& camera) const {
     shader->use();
 

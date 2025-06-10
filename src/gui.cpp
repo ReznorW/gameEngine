@@ -1,9 +1,11 @@
-#include "gui.hpp"
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "gui.hpp"
+
+// === Initialization ===
 void Gui::init(Window& window) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -17,6 +19,14 @@ void Gui::init(Window& window) {
     ImGui::StyleColorsDark();
 }
 
+// === Shutdown ===
+void Gui::shutdown() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
+// === Frame lifecycle ===
 void Gui::beginFrame() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -28,12 +38,36 @@ void Gui::endFrame() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void Gui::shutdown() {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+// === Input syncing ===
+void Gui::syncMouseFromGLFW(GLFWwindow* window) {
+    ImGuiIO& io = ImGui::GetIO();
+    
+    // Get mouse position from GLFW
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    io.MousePos = ImVec2((float)mouseX, (float)mouseY);
+    
+    // Get mouse buttons from GLFW
+    io.MouseDown[0] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    io.MouseDown[1] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    io.MouseDown[2] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 }
 
+void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
+    ImGuiIO& io = ImGui::GetIO();
+    
+    // Synchronize modifier keys
+    io.KeyCtrl = (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) || 
+                 (glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS);
+    io.KeyShift = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) || 
+                  (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
+    io.KeyAlt = (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) || 
+                (glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS);
+    io.KeySuper = (glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS) || 
+                  (glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS);
+}
+
+// === Rendering ===
 void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& shader) {
     if (ImGui::BeginMainMenuBar()) {
 
@@ -209,32 +243,4 @@ void Gui::drawSidebar(Scene& scene) {
     }
 
     ImGui::End();
-}
-
-void Gui::syncMouseFromGLFW(GLFWwindow* window) {
-    ImGuiIO& io = ImGui::GetIO();
-    
-    // Get mouse position from GLFW
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
-    io.MousePos = ImVec2((float)mouseX, (float)mouseY);
-    
-    // Get mouse buttons from GLFW
-    io.MouseDown[0] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-    io.MouseDown[1] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-    io.MouseDown[2] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-}
-
-void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
-    ImGuiIO& io = ImGui::GetIO();
-    
-    // Synchronize modifier keys
-    io.KeyCtrl = (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) || 
-                 (glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS);
-    io.KeyShift = (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) || 
-                  (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS);
-    io.KeyAlt = (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) || 
-                (glfwGetKey(window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS);
-    io.KeySuper = (glfwGetKey(window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS) || 
-                  (glfwGetKey(window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS);
 }

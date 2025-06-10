@@ -6,12 +6,21 @@
 
 class Gui {
 public:
+    // Initialization
     static void init(Window& window);
+
+    // Shutdown
+    static void shutdown();
+
+    // Frame lifecycle
     static void beginFrame();
     static void endFrame();
-    static void shutdown();
-    void drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& shader);
-    void drawSidebar(Scene& scene);
+
+    // Input syncing
     void syncMouseFromGLFW(GLFWwindow* window);
     void syncKeyboardFromGLFW(GLFWwindow* window);
+
+    // Rendering
+    void drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& shader);
+    void drawSidebar(Scene& scene);
 };
