@@ -6,8 +6,8 @@
 
 class Gui {
 public:
-    // Initialization
-    static void init(Window& window);
+    // Constructor
+    Gui(Window& window);
 
     // Shutdown
     static void shutdown();

@@ -5,10 +5,7 @@
 #include "scene.hpp"
 
 // === Constructor ===
-Scene::Scene() {}
-
-// === Initialization ===
-void Scene::init() {
+Scene::Scene() {
     loadAllMeshes();
     loadAllShaders();
     loadAllTextures();

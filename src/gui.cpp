@@ -5,8 +5,8 @@
 
 #include "gui.hpp"
 
-// === Initialization ===
-void Gui::init(Window& window) {
+// === Constructor ===
+Gui::Gui(Window& window) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;

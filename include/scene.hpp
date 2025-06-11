@@ -16,9 +16,6 @@ public:
     // Constructor
     Scene();
 
-    // Initialization
-    void init();
-
     // Mesh access
     std::vector<Mesh*> getMeshes() const;
 

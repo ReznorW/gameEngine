@@ -1,5 +1,11 @@
 #include "camera.hpp"
 
+// === Constructor ===
+Camera::Camera(float aspect)
+    : position(glm::vec3(0.0f, 0.0f, 3.0f)), worldUp(glm::vec3(0.0f, 1.0f, 0.0f)), fov(45.0f), aspect(aspect), near(0.1f), far(100.0f), yaw(-90.0f), pitch(0.0f), roll(0.0f) {
+    updateCameraVectors();
+}
+
 // === Getters ===
 glm::vec3 Camera::getPosition() const {return position;}
 glm::vec3 Camera::getFront() const {return front;}

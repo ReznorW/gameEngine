@@ -19,6 +19,9 @@ struct Camera {
     float pitch;
     float roll;
 
+    // Constructor
+    Camera(float aspect);
+
     // Getters
     glm::vec3 getPosition() const;
     glm::vec3 getFront() const;

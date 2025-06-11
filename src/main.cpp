@@ -28,29 +28,16 @@ int main() {
     glfwSwapInterval(1); // VSync
 
     // === Camera setup ===
-    Camera camera {
-        glm::vec3(0.0f, 0.0f, 3.0f),  // position
-        glm::vec3(0.0f, 0.0f, -1.0f), // front
-        glm::vec3(1.0f, 0.0f, 0.0f),  // right
-        glm::vec3(0.0f, 1.0f, 0.0f),  // up
-        glm::vec3(0.0f, 1.0f, 0.0f),  // worldUp
-        45.0f,                        // FOV
-        static_cast<float>(window.getWidth()) / window.getHeight(), // aspect
-        0.1f, 100.0f,                // near, far
-        -90.0f, 0.0f, 0.0f           // yaw, pitch, roll
-    };
+    Camera camera(static_cast<float>(window.getWidth()) / window.getHeight());
     context.camera = &camera;
-    camera.updateCameraVectors();
 
     // === Gui setup ===
     std::cout << "===Setting up GUI===" << std::endl;
-    Gui gui;
-    gui.init(window);
+    Gui gui(window);
 
     // === Scene and objects ===
-    std::cout << "===Initialize scene===" << std::endl;
+    std::cout << "===Initializing scene===" << std::endl;
     Scene scene;
-    scene.init();
     context.scene = &scene;
     scene.addObject("cube", std::make_unique<Object>("cube", "cube", "default", "default"));
     scene.addObject("ground", std::make_unique<Object>("ground", "plane", "grass", "default"));
