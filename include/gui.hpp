@@ -23,4 +23,5 @@ public:
     // Rendering
     void drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& shader);
     void drawSidebar(Scene& scene);
+    void drawObjectProperties(Scene& scene, Object* selected);
 };
