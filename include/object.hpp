@@ -56,6 +56,7 @@ struct Object {
     // Constructors
     Object() = default;
     Object(const std::string& name, const std::string& modelName, const std::string& textureName, Shader* shader);
+    Object(const Object& other);
         
     // OBB handling
     void initializeOBB(const glm::vec3& meshMin, const glm::vec3& meshMax);

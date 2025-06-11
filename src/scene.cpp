@@ -91,6 +91,29 @@ void Scene::deleteObject(const std::string& name) {
     objects.erase(name);
 }
 
+std::string Scene::duplicateObject(const std::string& originalName) {
+    auto it = objects.find(originalName);
+    if (it == objects.end()) {
+        return "";
+    }
+
+    // Generate a unique name for the copy
+    std::string baseName = originalName;
+    std::string newName = baseName + "_copy";
+    int suffix = 1;
+    while (objects.count(newName) > 0) {
+        newName = baseName + "_copy" + std::to_string(suffix++);
+    }
+
+    // Deep copy the object
+    std::unique_ptr<Object> newObject = std::make_unique<Object>(*it->second);
+    newObject->name = newName;
+
+    // Insert into the scene
+    objects[newName] = std::move(newObject);
+    return newName;
+}
+
 std::string Scene::renameObject(const std::string& oldName, const std::string& newName) {
     auto it = objects.find(oldName);
     if (it == objects.end()) {
@@ -153,7 +176,6 @@ void Scene::loadAllMeshes() {
 
 void Scene::loadAllShaders() {
     const std::string shaderRoot = "assets/shaders";
-
     for (const auto& entry : std::filesystem::directory_iterator(shaderRoot)) {
         if (entry.is_directory()) {
             std::string name = entry.path().filename().string();

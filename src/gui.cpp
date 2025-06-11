@@ -106,6 +106,15 @@ void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& sha
             if (ImGui::MenuItem("Deselect All")) {
                 scene.clearSelection();
             }
+            if (ImGui::MenuItem("Duplicate Selection")) {
+                Object* selected = scene.getSelectedObject();
+                if (selected) {
+                    std::string newName = scene.duplicateObject(selected->name);
+                    if (!newName.empty()) {
+                        scene.selectObject(newName);
+                    }
+                }
+            }
             ImGui::EndMenu();
         }
 
