@@ -2,6 +2,11 @@
 #include <iostream>
 #include <chrono>
 #include <memory>
+
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+
 #include "window.hpp"
 #include "shader.hpp"
 #include "input.hpp"
@@ -10,15 +15,13 @@
 #include "object.hpp"
 #include "scene.hpp"
 #include "gui.hpp"
-#include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
 
 int main() {
     // === Context setup ===
     Context context;
 
     // === Window setup ===
+    std::cout << "===Setting up window===" << std::endl;
     Window window("Game Engine", true);
     context.window = &window;
     glEnable(GL_DEPTH_TEST);
@@ -43,10 +46,12 @@ int main() {
     camera.updateCameraVectors();
 
     // === Gui setup ===
+    std::cout << "===Setting up GUI===" << std::endl;
     Gui gui;
     gui.init(window);
 
     // === Scene and objects ===
+    std::cout << "===Initialize scene===" << std::endl;
     Scene scene;
     scene.init();
     context.scene = &scene;
@@ -59,6 +64,7 @@ int main() {
     }
 
     // === Input setup ===
+    std::cout << "===Setting up input===" << std::endl;
     glfwSetWindowUserPointer(window.getGLFWwindow(), &context);
     glfwSetMouseButtonCallback(window.getGLFWwindow(), Input::mouse_button_callback);
     glfwSetCursorPosCallback(window.getGLFWwindow(), Input::cursor_position_callback);
@@ -73,6 +79,7 @@ int main() {
     int frameCount = 0;
 
     // Main render loop
+    std::cout << "===Rendering===" << std::endl;
     while (!window.shouldClose()) {
         // === Poll for events ===
         window.pollEvents();

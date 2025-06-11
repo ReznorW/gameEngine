@@ -164,17 +164,20 @@ void Scene::draw(const Camera& camera) {
 
 // === Internal loaders ===
 void Scene::loadAllMeshes() {
+    std::cout << "===Loading in all meshes===" << std::endl;
     const std::string meshRoot = "assets/models";
     for (const auto& entry : std::filesystem::directory_iterator(meshRoot)) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().stem().string();
             const std::string meshPath = meshRoot + "/" + name + ".vert";
             meshes[name] = std::make_unique<Mesh>(*loadVertFile(meshPath));
+            std::cout << "    -" << name << " mesh loaded" << std::endl;
         }
     }
 }
 
 void Scene::loadAllShaders() {
+    std::cout << "===Loading in all shaders===" << std::endl;
     const std::string shaderRoot = "assets/shaders";
     for (const auto& entry : std::filesystem::directory_iterator(shaderRoot)) {
         if (entry.is_directory()) {
@@ -187,7 +190,7 @@ void Scene::loadAllShaders() {
                 try {
                     auto shader = std::make_unique<Shader>(vertPath, fragPath, name);
                     shaders[name] = std::move(shader);
-                    std::cout << "Loaded shader: " << name << std::endl;
+                    std::cout << "    -" << name << " shader loaded" << std::endl;
                 } catch (const std::exception& e) {
                     std::cerr << "Failed to load shader " << name << ": " << e.what() << std::endl;
                 }
@@ -199,11 +202,13 @@ void Scene::loadAllShaders() {
 }
 
 void Scene::loadAllTextures() {
+    std::cout << "===Loading in all textures===" << std::endl;
     std::filesystem::path path = "assets/textures";
     for (auto& entry : std::filesystem::directory_iterator(path)) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().stem().string();
             textures[name] = std::make_unique<Texture>(entry.path().string().c_str());
+            std::cout << "    -" << name << " texture loaded" << std::endl;
         }
     }
 }
