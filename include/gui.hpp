@@ -24,4 +24,6 @@ public:
     void drawMainMenu(Window& window, Scene& scene, Camera& camera);
     void drawSidebar(Scene& scene);
     void drawObjectProperties(Scene& scene, Object* selected);
+    void drawLoadScenePopup(Scene& scene);
+    void drawSaveScenePopup(Scene& scene);
 };

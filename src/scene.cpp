@@ -1,5 +1,6 @@
 #include <iostream>
 #include <ostream>
+#include <fstream>
 #include <filesystem>
 
 #include "scene.hpp"
@@ -12,6 +13,12 @@ Scene::Scene() {
 }
 
 // === Mesh access ===
+Mesh* Scene::getMesh(const std::string& name) const {
+    auto mesh = meshes.find(name);
+    if (mesh != meshes.end()) return mesh->second.get();
+    return nullptr;
+}
+
 std::vector<Mesh*> Scene::getMeshes() const {
     std::vector<Mesh*> result;
     for (const auto& [name, mesh] : meshes) {
@@ -49,6 +56,108 @@ std::vector<Texture*> Scene::getTextures() const {
         result.push_back(tex.get());
     }
     return result;
+}
+
+// === Scene handling ===
+bool Scene::loadScene(const std::string& scnName) {
+    clearSelection();
+    clear();
+
+    std::string fileName = "assets/scenes/" + scnName + ".scn";
+    std::ifstream file(fileName);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open scene file: " << scnName << std::endl;
+        return false;
+    }
+
+    std::string line;
+    std::string objName, meshName, textureName, shaderName;
+    glm::vec3 position(0), rotation(0), scale(1);
+    glm::vec2 textureScale(1);
+    bool inObjectBlock = false;
+
+    while (std::getline(file, line)) {
+        std::istringstream iss(line);
+        std::string token;
+        iss >> token;
+
+        if (token == "object") {
+            iss >> objName;
+            meshName = shaderName = textureName = "";
+            position = rotation = glm::vec3(0);
+            scale = glm::vec3(1);
+            textureScale = glm::vec2(1);
+            inObjectBlock = true;
+        } else if (token == "mesh") {
+            iss >> meshName;
+        } else if (token == "shader") {
+            iss >> shaderName;
+        } else if (token == "texture") {
+            iss >> textureName;
+        } else if (token == "texturescale") {
+            iss >> textureScale.x >> textureScale.y;
+        } else if (token == "position") {
+            iss >> position.x >> position.y >> position.z;
+        } else if (token == "rotation") {
+            iss >> rotation.x >> rotation.y >> rotation.z;
+        } else if (token == "scale") {
+            iss >> scale.x >> scale.y >> scale.z;
+        } else if (token == "endobject" && inObjectBlock) {
+            auto obj = std::make_unique<Object>(objName, meshName, textureName, shaderName);
+            obj->transform.position = position;
+            obj->transform.rotation = rotation;
+            obj->transform.scale = scale;
+            obj->textureScale = textureScale;
+
+            addObject(objName, std::move(obj));
+            inObjectBlock = false;
+        }
+    }
+
+    return true;
+}
+
+bool Scene::saveScene(const std::string& scnName) {
+    std::string fileName = "assets/scenes/" + scnName + ".scn";
+    std::ofstream file(fileName);
+    if (!file.is_open()) return false;
+
+    // Write objects
+    for (const auto& objPtr : objects) {
+        Object* obj = objPtr.second.get();
+        file << "object " << obj->name << "\n";
+        file << "mesh " << obj->mesh->getName() << "\n";
+        file << "shader " << obj->shader->getName() << "\n";
+        std::string textureName = obj->texture->getName();
+        size_t lastDot = textureName.find_last_of('.');
+        if (lastDot != std::string::npos) {
+            textureName = textureName.substr(0, lastDot);
+        }
+        file << "texture " << textureName << "\n";
+        file << "texturescale " << obj->textureScale.x << " " << obj->textureScale.y << "\n";
+        file << "position " << obj->transform.position.x << " " << obj->transform.position.y << " " << obj->transform.position.z << "\n";
+        file << "rotation " << obj->transform.rotation.x << " " << obj->transform.rotation.y << " " << obj->transform.rotation.z << "\n";
+        file << "scale " << obj->transform.scale.x << " " << obj->transform.scale.y << " " << obj->transform.scale.z << "\n";
+        file << "endobject\n\n";
+    }
+
+    file.close();
+    return true;
+}
+
+
+std::vector<std::string> Scene::getSceneNames() const {
+    std::vector<std::string> scenes;
+    for (const auto& entry : std::filesystem::directory_iterator("assets/scenes")) {
+        if (entry.is_regular_file() && entry.path().extension() == ".scn") {
+            scenes.push_back(entry.path().filename().stem().string());
+        }
+    }
+    return scenes;
+}
+
+void Scene::setName(const std::string& newName) {
+    name = newName;
 }
 
 // === Object handling ===
@@ -137,6 +246,7 @@ std::string Scene::renameObject(const std::string& oldName, const std::string& n
 
 void Scene::clear() {
     objects.clear();
+    setName("");
 }
 
 // === Selection handling ===

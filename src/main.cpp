@@ -39,13 +39,10 @@ int main() {
     std::cout << "===Initializing scene===" << std::endl;
     Scene scene;
     context.scene = &scene;
-    scene.addObject("cube", std::make_unique<Object>("cube", "cube", "default", "default"));
-    scene.addObject("ground", std::make_unique<Object>("ground", "plane", "grass", "default"));
 
-    if (Object* ground = scene.getObject("ground")) {
-        ground->transform.position.y = -2.0f;
-        ground->transform.scale = glm::vec3(100.0f);
-    }
+    std::cout << "===Loading scene===" << std::endl;
+    scene.loadScene("default");
+    context.scene = &scene;
 
     // === Input setup ===
     std::cout << "===Setting up input===" << std::endl;

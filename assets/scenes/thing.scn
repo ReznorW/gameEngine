@@ -1,0 +1,60 @@
+object circle
+mesh circle_8
+shader default
+texture wood
+texturescale 1 1
+position 0 -2.5 0
+rotation 90 0 0
+scale 21 21 1
+endobject
+
+object spike
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position 0 0 0
+rotation 0 0 0
+scale 1 5 1
+endobject
+
+object spike_copy
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position 10 0 0
+rotation 0 0 0
+scale 1 5 1
+endobject
+
+object spike_copy1
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position 0 0 10
+rotation 0 0 0
+scale 1 5 1
+endobject
+
+object spike_copy3
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position 0 0 -10
+rotation 0 0 0
+scale 1 5 1
+endobject
+
+object spike_copy2
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position -10 0 0
+rotation 0 0 0
+scale 1 5 1
+endobject
+

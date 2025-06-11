@@ -69,15 +69,20 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 
 // === Rendering ===
 void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera) {
-    if (ImGui::BeginMainMenuBar()) {
+    static bool openLoadScenePopup = false;
+    static bool openSaveScenePopup = false;
 
+    if (ImGui::BeginMainMenuBar()) {
         // File Menu
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("New Scene")) {
                 scene.clear();
             }
+            if (ImGui::MenuItem("Load Scene")) {
+                openLoadScenePopup = true; 
+            }
             if (ImGui::MenuItem("Save Scene")) {
-                // TODO: Implement scene saving
+                openSaveScenePopup = true;
             }
             if (ImGui::MenuItem("Exit")) {
                 glfwSetWindowShouldClose(window.getGLFWwindow(), true);
@@ -129,6 +134,53 @@ void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera) {
     if (Object* selected = scene.getSelectedObject()) {
         drawObjectProperties(scene, selected);
     }
+
+    if (openLoadScenePopup) {
+        ImGui::OpenPopup("Load Scene Popup");
+        openLoadScenePopup = false;
+    }
+    drawLoadScenePopup(scene);
+
+    if (openSaveScenePopup) {
+        ImGui::OpenPopup("Save Scene Popup");
+        openSaveScenePopup = false;
+    }
+    drawSaveScenePopup(scene);
+
+    // // Load scene popup
+    // if (ImGui::BeginPopupModal("Load Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    //     ImGui::Text("Select a scene to load:");
+
+    //     std::vector<std::string> scenes = scene.getSceneNames();
+    //     const std::string& currentScene = scenes[selectedSceneIndex];
+    //     if (ImGui::BeginCombo("##SceneCombo", currentScene.c_str())) {
+    //         size_t index = 0;
+    //         for (const std::string& sceneName : scenes) {
+    //             bool isSelected = (selectedSceneIndex == index);
+    //             if (ImGui::Selectable(sceneName.c_str(), isSelected)) {
+    //                 selectedSceneIndex = index;
+    //             }
+    //             if (isSelected) {
+    //                 ImGui::SetItemDefaultFocus();
+    //             }
+    //             ++index;
+    //         }
+    //         ImGui::EndCombo();
+    //     }
+
+    //     if (ImGui::Button("Load")) {
+    //         std::string name = scenes[selectedSceneIndex];
+    //         scene.clear();
+    //         scene.loadScene(name);
+    //         ImGui::CloseCurrentPopup();
+    //     }
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Cancel")) {
+    //         ImGui::CloseCurrentPopup();
+    //     }
+
+    //     ImGui::EndPopup();
+    // }
 }
 
 void Gui::drawSidebar(Scene& scene) {
@@ -256,3 +308,71 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
 
     ImGui::End();
 }
+
+void Gui::drawLoadScenePopup(Scene& scene) {
+    static size_t selectedSceneIndex = 0;
+    std::vector<std::string> scenes = scene.getSceneNames();
+
+    if (ImGui::BeginPopupModal("Load Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Select a scene to load:");
+
+        if (!scenes.empty()) {
+            if (selectedSceneIndex >= scenes.size()) {
+                selectedSceneIndex = 0;
+            }
+            
+            if (ImGui::BeginCombo("##SceneCombo", scenes[selectedSceneIndex].c_str())) {
+                for (size_t i = 0; i < scenes.size(); ++i) {
+                    bool isSelected = (selectedSceneIndex == i);
+                    if (ImGui::Selectable(scenes[i].c_str(), isSelected)) {
+                        selectedSceneIndex = i;
+                    }
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if (ImGui::Button("Load")) {
+                scene.clear();
+                scene.loadScene(scenes[selectedSceneIndex]);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+            }
+        } else {
+            ImGui::Text("No scenes available.");
+            if (ImGui::Button("Close")) {
+                ImGui::CloseCurrentPopup();
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+void Gui::drawSaveScenePopup(Scene& scene) {
+    static char saveFileName[128] = "";
+
+    if (ImGui::BeginPopupModal("Save Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::InputText("Filename", saveFileName, IM_ARRAYSIZE(saveFileName));
+
+        if (ImGui::Button("Save")) {
+            if (scene.saveScene(saveFileName)) {
+                ImGui::CloseCurrentPopup();
+            } else {
+                // Handle save error
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+

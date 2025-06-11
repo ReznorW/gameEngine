@@ -17,6 +17,7 @@ public:
     Scene();
 
     // Mesh access
+    Mesh* getMesh(const std::string& name) const;
     std::vector<Mesh*> getMeshes() const;
 
     // Shader access
@@ -26,6 +27,13 @@ public:
     // Texture access
     Texture* getTexture(const std::string& name);
     std::vector<Texture*> getTextures() const;
+
+    // Scene handling
+    bool loadScene(const std::string& name);
+    bool saveScene(const std::string& name);
+    std::vector<std::string> getSceneNames() const;
+    std::string getName() const {return name;}
+    void setName(const std::string& newName);
 
     // Object handling
     void addObject(const std::string& name, std::unique_ptr<Object> obj);
@@ -54,6 +62,8 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Object>> objects;
 
     Object* selectedObject = nullptr;
+
+    std::string name;
 
     // Internal loaders
     void loadAllMeshes();
