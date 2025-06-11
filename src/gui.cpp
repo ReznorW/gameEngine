@@ -146,41 +146,6 @@ void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera) {
         openSaveScenePopup = false;
     }
     drawSaveScenePopup(scene);
-
-    // // Load scene popup
-    // if (ImGui::BeginPopupModal("Load Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-    //     ImGui::Text("Select a scene to load:");
-
-    //     std::vector<std::string> scenes = scene.getSceneNames();
-    //     const std::string& currentScene = scenes[selectedSceneIndex];
-    //     if (ImGui::BeginCombo("##SceneCombo", currentScene.c_str())) {
-    //         size_t index = 0;
-    //         for (const std::string& sceneName : scenes) {
-    //             bool isSelected = (selectedSceneIndex == index);
-    //             if (ImGui::Selectable(sceneName.c_str(), isSelected)) {
-    //                 selectedSceneIndex = index;
-    //             }
-    //             if (isSelected) {
-    //                 ImGui::SetItemDefaultFocus();
-    //             }
-    //             ++index;
-    //         }
-    //         ImGui::EndCombo();
-    //     }
-
-    //     if (ImGui::Button("Load")) {
-    //         std::string name = scenes[selectedSceneIndex];
-    //         scene.clear();
-    //         scene.loadScene(name);
-    //         ImGui::CloseCurrentPopup();
-    //     }
-    //     ImGui::SameLine();
-    //     if (ImGui::Button("Cancel")) {
-    //         ImGui::CloseCurrentPopup();
-    //     }
-
-    //     ImGui::EndPopup();
-    // }
 }
 
 void Gui::drawSidebar(Scene& scene) {
