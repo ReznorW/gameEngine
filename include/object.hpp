@@ -55,7 +55,7 @@ struct Object {
 
     // Constructors
     Object() = default;
-    Object(const std::string& name, const std::string& modelName, const std::string& textureName, Shader* shader);
+    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName);
     Object(const Object& other);
         
     // OBB handling

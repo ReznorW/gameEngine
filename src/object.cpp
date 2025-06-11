@@ -33,12 +33,15 @@ OBB::OBB(const glm::vec3& min, const glm::vec3& max)
 
 // ### Object functions ###
 // === Constructor ===
-Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, Shader* shader)
-    : name(name), shader(shader) {
+Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName)
+    : name(name) {
     std::string modelPath = "assets/models/" + modelName + ".vert";
     mesh = loadVertFile(modelPath);
     std::string texturePath = "assets/textures/" + textureName + ".jpg";
     texture = new Texture(texturePath);
+    std::string vertPath = "assets/shaders/" + shaderName + "/vertex.glsl";
+    std::string fragPath = "assets/shaders/" + shaderName + "/fragment.glsl";
+    shader = new Shader(vertPath, fragPath, shaderName);
     Object::initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
 } 
 
@@ -90,7 +93,6 @@ void Object::draw(const Camera& camera) const {
     shader->setMat4("projection", camera.getProjectionMatrix());
 
     // Set lighting params
-    // shader->setVec3("lightPos", glm::vec3(0.0f, 5.0f, 0.0f));
     shader->setVec3("viewPos", camera.getPosition());
     shader->setVec3("lightDir", glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f))); // Sunlight from above
     shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f)); // White sunlight

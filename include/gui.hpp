@@ -21,7 +21,7 @@ public:
     void syncKeyboardFromGLFW(GLFWwindow* window);
 
     // Rendering
-    void drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& shader);
+    void drawMainMenu(Window& window, Scene& scene, Camera& camera);
     void drawSidebar(Scene& scene);
     void drawObjectProperties(Scene& scene, Object* selected);
 };

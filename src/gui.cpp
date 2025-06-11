@@ -68,7 +68,7 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 }
 
 // === Rendering ===
-void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& shader) {
+void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera) {
     if (ImGui::BeginMainMenuBar()) {
 
         // File Menu
@@ -89,7 +89,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera, Shader& sha
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", &shader));
+                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", "default"));
                 scene.selectObject(objName);
             }
             if (ImGui::MenuItem("Undo")) {

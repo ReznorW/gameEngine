@@ -14,7 +14,7 @@ public:
     static bool mouseButtons[5];
 
     // Input processing
-    static void processInput(Window& windowStruct, Camera& camera, Scene& scene, Shader& shader);
+    static void processInput(Window& windowStruct, Camera& camera, Scene& scene);
     static void processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch = true);
 
     // GLFW callbacks

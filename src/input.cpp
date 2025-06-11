@@ -28,7 +28,7 @@ bool Input::keys[512] = {false};
 bool Input::mouseButtons[5] = {false};
 
 // === Input processing ===
-void Input::processInput(Window& window, Camera& camera, Scene& scene, Shader& shader) {
+void Input::processInput(Window& window, Camera& camera, Scene& scene) {
     ImGuiIO& io = ImGui::GetIO();
 
     // Only process movement if ImGui doesn't want keyboard

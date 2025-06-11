@@ -27,9 +27,6 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glfwSwapInterval(1); // VSync
 
-    // === Shader setup ===
-    Shader shader("assets\\shaders\\default\\vertex.glsl", "assets\\shaders\\default\\fragment.glsl", "default");
-
     // === Camera setup ===
     Camera camera {
         glm::vec3(0.0f, 0.0f, 3.0f),  // position
@@ -55,8 +52,8 @@ int main() {
     Scene scene;
     scene.init();
     context.scene = &scene;
-    scene.addObject("cube", std::make_unique<Object>("cube", "cube", "default", &shader));
-    scene.addObject("ground", std::make_unique<Object>("ground", "plane", "grass", &shader));
+    scene.addObject("cube", std::make_unique<Object>("cube", "cube", "default", "default"));
+    scene.addObject("ground", std::make_unique<Object>("ground", "plane", "grass", "default"));
 
     if (Object* ground = scene.getObject("ground")) {
         ground->transform.position.y = -2.0f;
@@ -75,8 +72,6 @@ int main() {
     const double timestep = 1.0 / 60.0;
     double accumulator = 0.0;
     double currentTime = glfwGetTime();
-    double fpsTime = currentTime;
-    int frameCount = 0;
 
     // Main render loop
     std::cout << "===Rendering===" << std::endl;
@@ -89,14 +84,6 @@ int main() {
         currentTime = newTime;
         accumulator += frameTime;
 
-        // === FPS Counter ===
-        frameCount++;
-        if (newTime - fpsTime >= 1.0) {
-            std::cout << "FPS: " << frameCount << std::endl;
-            frameCount = 0;
-            fpsTime = newTime;
-        }
-
         // Synchronize mouse before ImGui frame
         gui.syncMouseFromGLFW(window.getGLFWwindow());
         gui.syncKeyboardFromGLFW(window.getGLFWwindow());
@@ -106,7 +93,7 @@ int main() {
 
         // === Process input ===
         while (accumulator >= timestep) {
-            Input::processInput(window, camera, scene, shader);
+            Input::processInput(window, camera, scene);
             accumulator -= timestep;
         }
 
@@ -130,7 +117,7 @@ int main() {
         scene.draw(camera);
 
         // === Draw GUI ===
-        gui.drawMainMenu(window, scene, camera, shader);
+        gui.drawMainMenu(window, scene, camera);
         gui.drawSidebar(scene);
 
         gui.endFrame();
