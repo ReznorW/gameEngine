@@ -6,6 +6,7 @@
 #include "window.hpp"
 #include "scene.hpp"
 #include "shader.hpp"
+#include "mode.hpp"
 
 class Input {
 public:
@@ -14,7 +15,8 @@ public:
     static bool mouseButtons[5];
 
     // Input processing
-    static void processInput(Window& windowStruct, Camera& camera, Scene& scene);
+    static void processEditorInput(Window& windowStruct, Camera& camera, Scene& scene);
+    static void processPlaytestInput(Window& windowStruct, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode);
     static void processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch = true);
 
     // GLFW callbacks
@@ -22,6 +24,9 @@ public:
     static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void char_callback(GLFWwindow* window, unsigned int c);
+
+    // Mode changing
+    static void modeChange(Mode newMode, GLFWwindow* window);
 };
 
 // Raycasting utils

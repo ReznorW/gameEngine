@@ -3,6 +3,7 @@
 #include "window.hpp"
 #include "camera.hpp"
 #include "scene.hpp"
+#include "mode.hpp"
 
 class Gui {
 public:
@@ -21,9 +22,10 @@ public:
     void syncKeyboardFromGLFW(GLFWwindow* window);
 
     // Rendering
-    void drawMainMenu(Window& window, Scene& scene, Camera& camera);
+    void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Mode& mode);
     void drawSidebar(Scene& scene);
     void drawObjectProperties(Scene& scene, Object* selected);
     void drawLoadScenePopup(Scene& scene);
     void drawSaveScenePopup(Scene& scene);
+    void drawPlaytestUI();
 };

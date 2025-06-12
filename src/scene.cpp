@@ -5,11 +5,43 @@
 
 #include "scene.hpp"
 
-// === Constructor ===
+// === Constructors ===
 Scene::Scene() {
     loadAllMeshes();
     loadAllShaders();
     loadAllTextures();
+}
+
+Scene::Scene(const Scene& other) {
+    for (const auto& [name, obj] : other.objects) {
+        // Clone the object
+        std::unique_ptr<Object> cloned = std::make_unique<Object>();
+
+        // Copy primitive data
+        cloned->transform = obj->transform;
+        cloned->name = obj->name;
+        cloned->textureScale = obj->textureScale;
+        cloned->obb = obj->obb;
+
+        // Share resources
+        cloned->mesh = obj->mesh;
+        cloned->shader = obj->shader;
+        cloned->texture = obj->texture;
+
+        // Insert into this scene
+        objects[name] = std::move(cloned);
+    }
+
+    // Copy selected object pointer if it's set
+    if (other.selectedObject) {
+        std::string selectedName = other.selectedObject->name;
+        if (objects.find(selectedName) != objects.end()) {
+            selectedObject = objects[selectedName].get();
+        }
+    }
+
+    // Copy scene name if applicable
+    name = other.name;
 }
 
 // === Mesh access ===

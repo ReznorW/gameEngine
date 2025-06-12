@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "gui.hpp"
+#include "mode.hpp"
 
 // === Constructor ===
 Gui::Gui(Window& window) {
@@ -68,7 +69,7 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 }
 
 // === Rendering ===
-void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera) {
+void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Mode& mode) {
     static bool openLoadScenePopup = false;
     static bool openSaveScenePopup = false;
 
@@ -118,6 +119,17 @@ void Gui::drawMainMenu(Window& window, Scene& scene, Camera& camera) {
                     if (!newName.empty()) {
                         scene.selectObject(newName);
                     }
+                }
+            }
+            ImGui::EndMenu();
+        }
+
+        // Run Menu
+        if (ImGui::BeginMenu("Run")) {
+            if (ImGui::MenuItem("Playtest")) {
+                if (mode == Mode::Editor) {
+                    mode = Mode::Playtest;
+                    playScene = std::make_unique<Scene>(scene);
                 }
             }
             ImGui::EndMenu();
@@ -339,5 +351,22 @@ void Gui::drawSaveScenePopup(Scene& scene) {
 
         ImGui::EndPopup();
     }
+}
+
+void Gui::drawPlaytestUI() {
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10, 10), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+
+    ImGui::Begin("PlaytestLabel", nullptr, flags);
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
+    ImGui::End();
 }
 

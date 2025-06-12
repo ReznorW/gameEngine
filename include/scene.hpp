@@ -13,8 +13,9 @@
 // Scene definition
 class Scene {
 public:
-    // Constructor
+    // Constructors
     Scene();
+    Scene(const Scene& other);
 
     // Mesh access
     Mesh* getMesh(const std::string& name) const;

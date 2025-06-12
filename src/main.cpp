@@ -15,6 +15,7 @@
 #include "object.hpp"
 #include "scene.hpp"
 #include "gui.hpp"
+#include "mode.hpp"
 
 int main() {
     // === Context setup ===
@@ -28,8 +29,9 @@ int main() {
     glfwSwapInterval(1); // VSync
 
     // === Camera setup ===
-    Camera camera(static_cast<float>(window.getWidth()) / window.getHeight());
-    context.camera = &camera;
+    Camera editorCamera(static_cast<float>(window.getWidth()) / window.getHeight());
+    Camera playCamera = editorCamera;
+    context.camera = &editorCamera;
 
     // === Gui setup ===
     std::cout << "===Setting up GUI===" << std::endl;
@@ -37,12 +39,17 @@ int main() {
 
     // === Scene and objects ===
     std::cout << "===Initializing scene===" << std::endl;
-    Scene scene;
-    context.scene = &scene;
+    Scene editorScene;
+    std::unique_ptr<Scene> playScene;
+    context.scene = &editorScene;
 
     std::cout << "===Loading scene===" << std::endl;
-    scene.loadScene("default");
-    context.scene = &scene;
+    editorScene.loadScene("default");
+
+    // === Initialize mode ===
+    Mode mode = Mode::Editor;
+    Mode prevMode = mode;
+    context.mode = &mode;
 
     // === Input setup ===
     std::cout << "===Setting up input===" << std::endl;
@@ -68,6 +75,12 @@ int main() {
         currentTime = newTime;
         accumulator += frameTime;
 
+        // === Mode transition handling ===
+        if (mode != prevMode) {
+            Input::modeChange(mode, window.getGLFWwindow());
+            prevMode = mode;
+        }
+
         // Synchronize mouse before ImGui frame
         gui.syncMouseFromGLFW(window.getGLFWwindow());
         gui.syncKeyboardFromGLFW(window.getGLFWwindow());
@@ -77,40 +90,63 @@ int main() {
 
         // === Process input ===
         while (accumulator >= timestep) {
-            Input::processInput(window, camera, scene);
+            if (mode == Mode::Editor) {
+                Input::processEditorInput(window, editorCamera, editorScene);
+            } else {
+                Input::processPlaytestInput(window, playCamera, playScene, mode);
+            }
             accumulator -= timestep;
         }
 
-        // === Render ===
+        // === Flush screen ===
         glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (Object* cube = scene.getObject("cube")) {
-            cube->transform.rotation.x = newTime * 15.0f;
-            cube->transform.rotation.y = newTime * 20.0f;
-            cube->transform.rotation.z = newTime * 5.0f;
-            cube->transform.markDirty();
-        }
-
-        for (auto& obj : scene.getObjects()) {
+        // === OBB updating ===
+        for (auto& obj : editorScene.getObjects()) {
             if (obj->transform.needsUpdate()) {
                 obj->updateOBB();
             }
         }
 
-        scene.draw(camera);
+        // === Editor mode ===
+        if (mode == Mode::Editor) {
+            context.camera = &editorCamera;
+            context.scene = &editorScene;
 
-        // === Draw GUI ===
-        gui.drawMainMenu(window, scene, camera);
-        gui.drawSidebar(scene);
+            editorScene.draw(editorCamera);
 
+            // === Draw editor GUI ===
+            gui.drawMainMenu(window, editorScene, playScene, editorCamera, mode);
+            gui.drawSidebar(editorScene);
+        }
+
+        // === Playtest mode ===
+        else if (mode == Mode::Playtest) {
+            context.camera = &playCamera;
+            context.scene = playScene.get();
+
+            playScene->draw(playCamera);
+
+            gui.drawPlaytestUI();
+
+            if (Object* cube = playScene->getObject("cube")) {
+                cube->transform.rotation.x = newTime * 15.0f;
+                cube->transform.rotation.y = newTime * 20.0f;
+                cube->transform.rotation.z = newTime * 5.0f;
+                cube->transform.markDirty();
+            }
+        }
+
+        // === GUI end ===
         gui.endFrame();
 
         // === Buffer Swap and Events ===
         window.swapBuffers();
 
         // === Update camera aspect ratio ===
-        camera.setAspectRatio(static_cast<float>(window.getWidth()) / window.getHeight());
+        editorCamera.setAspectRatio(static_cast<float>(window.getWidth()) / window.getHeight());
+        playCamera.setAspectRatio(static_cast<float>(window.getWidth()) / window.getHeight());
     }
 
     // === Cleanup ===

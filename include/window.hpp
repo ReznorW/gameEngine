@@ -5,6 +5,7 @@
 
 #include "scene.hpp"
 #include "camera.hpp"
+#include "mode.hpp"
 
 // Window definition
 class Window {
@@ -38,4 +39,5 @@ struct Context {
     Window* window;
     Camera* camera;
     Scene* scene;
+    Mode* mode;
 };

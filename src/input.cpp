@@ -14,6 +14,7 @@
 #include "camera.hpp"
 #include "window.hpp"
 #include "scene.hpp"
+#include "mode.hpp"
 
 // === Globals ===
 bool mouseLookActive = false;
@@ -28,7 +29,7 @@ bool Input::keys[512] = {false};
 bool Input::mouseButtons[5] = {false};
 
 // === Input processing ===
-void Input::processInput(Window& window, Camera& camera, Scene& scene) {
+void Input::processEditorInput(Window& window, Camera& camera, Scene& scene) {
     ImGuiIO& io = ImGui::GetIO();
 
     // Only process movement if ImGui doesn't want keyboard
@@ -43,6 +44,56 @@ void Input::processInput(Window& window, Camera& camera, Scene& scene) {
         // Movement using stored key states
         if (keys[GLFW_KEY_ESCAPE]) {
             scene.clearSelection();
+        }
+        if (keys[GLFW_KEY_W]) {
+            glm::vec3 forward = glm::normalize(glm::vec3(camera.getFront().x, 0.0f, camera.getFront().z));
+            camera.move(forward, currentSpeed);
+        }
+        if (keys[GLFW_KEY_S]) {
+            glm::vec3 backward = glm::normalize(glm::vec3(-camera.getFront().x, 0.0f, -camera.getFront().z));
+            camera.move(backward, currentSpeed);
+        }
+        if (keys[GLFW_KEY_A]) {
+            camera.move(-camera.getRight(), currentSpeed);
+        }
+        if (keys[GLFW_KEY_D]) {
+            camera.move(camera.getRight(), currentSpeed);
+        }
+        if (keys[GLFW_KEY_SPACE]) {
+            camera.moveVert(camera.getWorldUp(), currentSpeed);
+        }
+        if (keys[GLFW_KEY_LEFT_SHIFT]) {
+            camera.moveVert(-camera.getWorldUp(), currentSpeed);
+        }
+        if (keys[GLFW_KEY_F1]) {
+            if (camera.getFOV() < 135) {
+                camera.setFOV(camera.getFOV() + lookSpeed);
+            }
+        }
+        if (keys[GLFW_KEY_F2]) {
+            if (camera.getFOV() > 20) {
+                camera.setFOV(camera.getFOV() - lookSpeed);
+            }
+        }
+    }
+}
+
+void Input::processPlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode) {
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Only process movement if ImGui doesn't want keyboard
+    if (!io.WantCaptureKeyboard) {
+        float currentSpeed = movementSpeed;
+        
+        // Speed boost when holding Left Control
+        if (keys[GLFW_KEY_LEFT_CONTROL]) {
+            currentSpeed *= 2.0f;
+        }
+
+        // Movement using stored key states
+        if (keys[GLFW_KEY_ESCAPE]) {
+            mode = Mode::Editor;
+            playScene.reset();
         }
         if (keys[GLFW_KEY_W]) {
             glm::vec3 forward = glm::normalize(glm::vec3(camera.getFront().x, 0.0f, camera.getFront().z));
@@ -119,7 +170,30 @@ void Input::mouse_button_callback(GLFWwindow* glfwWindow, int button, int action
     Window& window = *context->window;
     Camera& camera = *context->camera;
     Scene& scene = *context->scene;
+    Mode& mode = *context->mode;
 
+    // Playtest inputs
+    if (mode == Mode::Playtest) {
+        if (!mouseLookActive) {
+            mouseLookActive = true;
+            glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+            // Get window size and center the mouse
+            int width, height;
+            glfwGetWindowSize(glfwWindow, &width, &height);
+            double centerX = width / 2.0;
+            double centerY = height / 2.0;
+            glfwSetCursorPos(glfwWindow, centerX, centerY);
+
+            lastX = static_cast<float>(centerX);
+            lastY = static_cast<float>(centerY);
+            firstMouse = true;
+        }
+
+        return; // Skip editor inputs
+    }
+
+    // Editor inputs
     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
         if (action == GLFW_PRESS) {
             mouseLookActive = true;
@@ -277,4 +351,25 @@ bool RayIntersectsOBB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const
     
     t = (tMin > 0) ? tMin : tMax;
     return t >= 0;
+}
+
+// === Mode changing ===
+void Input::modeChange(Mode newMode, GLFWwindow* window) {
+    if (newMode == Mode::Playtest) {
+        mouseLookActive = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        double centerX = width / 2.0;
+        double centerY = height / 2.0;
+        glfwSetCursorPos(window, centerX, centerY);
+
+        lastX = static_cast<float>(centerX);
+        lastY = static_cast<float>(centerY);
+        firstMouse = true;
+    } else if (newMode == Mode::Editor) {
+        mouseLookActive = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
 }
