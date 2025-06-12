@@ -265,7 +265,7 @@ void Scene::clearSelection() {
 // === Rendering ===
 void Scene::draw(const Camera& camera) {
     for (auto& obj : objects) {
-        obj.second->draw(camera);
+        obj.second->draw(camera, obj.second.get() == selectedObject);
     }
 }
 

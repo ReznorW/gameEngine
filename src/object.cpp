@@ -84,7 +84,7 @@ void Object::updateOBB() {
 }
 
 // === Rendering ===
-void Object::draw(const Camera& camera) const {
+void Object::draw(const Camera& camera, const bool selected) const {
     shader->use();
 
     // Set 3D model
@@ -99,6 +99,7 @@ void Object::draw(const Camera& camera) const {
     shader->setVec3("fogColor", glm::vec3(0.5f, 0.6f, 0.7f)); // Adjust to your desired fog color
     shader->setFloat("fogStart", 50.0f);  // Distance where fog starts
     shader->setFloat("fogEnd", 100.0f);   // Distance where fog fully saturates
+    shader->setBool("isSelected", selected);
 
     // Set texture
     if (texture) {

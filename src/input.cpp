@@ -64,6 +64,16 @@ void Input::processInput(Window& window, Camera& camera, Scene& scene) {
         if (keys[GLFW_KEY_LEFT_SHIFT]) {
             camera.moveVert(-camera.getWorldUp(), currentSpeed);
         }
+        if (keys[GLFW_KEY_F1]) {
+            if (camera.getFOV() < 135) {
+                camera.setFOV(camera.getFOV() + lookSpeed);
+            }
+        }
+        if (keys[GLFW_KEY_F2]) {
+            if (camera.getFOV() > 20) {
+                camera.setFOV(camera.getFOV() - lookSpeed);
+            }
+        }
     }
 }
 

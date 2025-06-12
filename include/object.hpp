@@ -63,5 +63,5 @@ struct Object {
     void updateOBB();
     
     // Rendering
-    void draw(const Camera& camera) const;
+    void draw(const Camera& camera, const bool selected) const;
 };
