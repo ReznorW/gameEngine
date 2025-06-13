@@ -1,20 +1,22 @@
-# Default scene
-object cube
-    mesh cube
-    shader default
-    texture default
-    texturescale 1 1
-    position 0 0 0
-    rotation 0 0 0
-    scale 1 1 1
+object ground
+mesh plane
+shader default
+texture grass
+texturescale 1 1
+position 0 -2 0
+rotation 0 0 0
+scale 100 100 100
+isPlayer 0
 endobject
 
-object ground
-    mesh plane
-    shader default
-    texture grass
-    texturescale 1 1
-    position 0 -2 0
-    rotation 0 0 0
-    scale 100 100 100
+object cube
+mesh cube
+shader default
+texture default
+texturescale 1 1
+position 0 0 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 1
 endobject
+

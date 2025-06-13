@@ -1,13 +1,3 @@
-object cube2
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 2 1
-position 6 2.8 0
-rotation 206.925 275.9 68.9751
-scale 2 1 1
-endobject
-
 object ground
 mesh plane
 shader default
@@ -16,5 +6,17 @@ texturescale 1 1
 position 0 -2 0
 rotation 0 0 0
 scale 100 100 100
+isPlayer 0
+endobject
+
+object cube2
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 2 1
+position 6 2.8 0
+rotation 206.925 275.9 68.9751
+scale 2 1 1
+isPlayer 0
 endobject
 

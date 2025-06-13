@@ -1,121 +1,12 @@
-object arm_copy
-mesh cube
-shader default
-texture wood
-texturescale 0.5 6
-position 2.3 -2 2.3
-rotation 0 -45 0
-scale 6 0.01 0.5
-endobject
-
-object arm
-mesh cube
-shader default
-texture wood
-texturescale 0.5 8
-position 0 -2 -4
-rotation 0 90 0
-scale 8 0.01 0.5
-endobject
-
-object circle
-mesh circle_32
-shader default
-texture wood
-texturescale 1 1
-position 0 -2.5 0
-rotation 90 0 0
-scale 21 21 1
-endobject
-
-object head
-mesh triangle
-shader default
-texture wood
-texturescale 1 1
-position 0 -2 -8.5
-rotation -90 0 0
-scale 1 1 1
-endobject
-
-object spike_copy6
+object spike_copy5
 mesh pyramid
 shader default
 texture cobblestone
 texturescale 1 1
-position -7.1 -2.25 7.1
+position 7.1 -2.25 -7.1
 rotation 0 45 0
 scale 1 0.5 1
-endobject
-
-object spike_copy2
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 1
-position -10 -2.25 0
-rotation 0 0 0
-scale 1 0.5 1
-endobject
-
-object spike_copy3
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 1
-position 0 -2.25 -10
-rotation 0 0 0
-scale 1 0.5 1
-endobject
-
-object spike_copy1
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 1
-position 0 -2.25 10
-rotation 0 0 0
-scale 1 0.5 1
-endobject
-
-object spike_copy7
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 1
-position -7.1 -2.25 -7.1
-rotation 0 45 0
-scale 1 0.5 1
-endobject
-
-object spike_copy4
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 1
-position 7.1 -2.25 7.1
-rotation 0 45 0
-scale 1 0.5 1
-endobject
-
-object spike
-mesh cube
-shader default
-texture cobblestone
-texturescale 1 1
-position 0 -2 0
-rotation 0 0 0
-scale 1 1 1
-endobject
-
-object head_copy
-mesh triangle
-shader default
-texture wood
-texturescale 1 1
-position 4.75 -2 4.75
-rotation -90 0 -135
-scale 1 1 1
+isPlayer 0
 endobject
 
 object spike_copy
@@ -126,15 +17,138 @@ texturescale 1 1
 position 10 -2.25 0
 rotation 0 0 0
 scale 1 0.5 1
+isPlayer 0
 endobject
 
-object spike_copy5
+object head_copy
+mesh triangle
+shader default
+texture wood
+texturescale 1 1
+position 4.75 -2 4.75
+rotation -90 0 -135
+scale 1 1 1
+isPlayer 0
+endobject
+
+object spike
+mesh cube
+shader default
+texture cobblestone
+texturescale 1 1
+position 0 -2 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 0
+endobject
+
+object spike_copy4
 mesh pyramid
 shader default
 texture cobblestone
 texturescale 1 1
-position 7.1 -2.25 -7.1
+position 7.1 -2.25 7.1
 rotation 0 45 0
 scale 1 0.5 1
+isPlayer 0
+endobject
+
+object spike_copy7
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 1
+position -7.1 -2.25 -7.1
+rotation 0 45 0
+scale 1 0.5 1
+isPlayer 0
+endobject
+
+object spike_copy1
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 1
+position 0 -2.25 10
+rotation 0 0 0
+scale 1 0.5 1
+isPlayer 0
+endobject
+
+object spike_copy3
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 1
+position 0 -2.25 -10
+rotation 0 0 0
+scale 1 0.5 1
+isPlayer 0
+endobject
+
+object spike_copy2
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 1
+position -10 -2.25 0
+rotation 0 0 0
+scale 1 0.5 1
+isPlayer 0
+endobject
+
+object spike_copy6
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 1
+position -7.1 -2.25 7.1
+rotation 0 45 0
+scale 1 0.5 1
+isPlayer 0
+endobject
+
+object head
+mesh triangle
+shader default
+texture wood
+texturescale 1 1
+position 0 -2 -8.5
+rotation -90 0 0
+scale 1 1 1
+isPlayer 0
+endobject
+
+object circle
+mesh circle_32
+shader default
+texture wood
+texturescale 1 1
+position 0 -2.5 0
+rotation 90 0 0
+scale 21 21 1
+isPlayer 0
+endobject
+
+object arm
+mesh cube
+shader default
+texture wood
+texturescale 0.5 8
+position 0 -2 -4
+rotation 0 90 0
+scale 8 0.01 0.5
+isPlayer 0
+endobject
+
+object arm_copy
+mesh cube
+shader default
+texture wood
+texturescale 0.5 6
+position 2.3 -2 2.3
+rotation 0 -45 0
+scale 6 0.01 0.5
+isPlayer 0
 endobject
 

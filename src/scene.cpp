@@ -22,6 +22,7 @@ Scene::Scene(const Scene& other) {
         cloned->name = obj->name;
         cloned->textureScale = obj->textureScale;
         cloned->obb = obj->obb;
+        cloned->isPlayer = obj->isPlayer;
 
         // Share resources
         cloned->mesh = obj->mesh;
@@ -40,7 +41,7 @@ Scene::Scene(const Scene& other) {
         }
     }
 
-    // Copy scene name if applicable
+    // Copy scene name
     name = other.name;
 }
 
@@ -106,6 +107,7 @@ bool Scene::loadScene(const std::string& scnName) {
     std::string objName, meshName, textureName, shaderName;
     glm::vec3 position(0), rotation(0), scale(1);
     glm::vec2 textureScale(1);
+    bool isPlayer;
     bool inObjectBlock = false;
 
     while (std::getline(file, line)) {
@@ -134,12 +136,15 @@ bool Scene::loadScene(const std::string& scnName) {
             iss >> rotation.x >> rotation.y >> rotation.z;
         } else if (token == "scale") {
             iss >> scale.x >> scale.y >> scale.z;
+        } else if (token == "isPlayer") {
+            iss >> isPlayer;
         } else if (token == "endobject" && inObjectBlock) {
             auto obj = std::make_unique<Object>(objName, meshName, textureName, shaderName);
             obj->transform.position = position;
             obj->transform.rotation = rotation;
             obj->transform.scale = scale;
             obj->textureScale = textureScale;
+            obj->isPlayer = isPlayer;
 
             addObject(objName, std::move(obj));
             inObjectBlock = false;
@@ -170,6 +175,7 @@ bool Scene::saveScene(const std::string& scnName) {
         file << "position " << obj->transform.position.x << " " << obj->transform.position.y << " " << obj->transform.position.z << "\n";
         file << "rotation " << obj->transform.rotation.x << " " << obj->transform.rotation.y << " " << obj->transform.rotation.z << "\n";
         file << "scale " << obj->transform.scale.x << " " << obj->transform.scale.y << " " << obj->transform.scale.z << "\n";
+        file << "isPlayer " << obj->isPlayer << "\n";
         file << "endobject\n\n";
     }
 

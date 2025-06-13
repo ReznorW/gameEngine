@@ -69,7 +69,7 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 }
 
 // === Rendering ===
-void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Mode& mode) {
+void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode) {
     static bool openLoadScenePopup = false;
     static bool openSaveScenePopup = false;
 
@@ -130,6 +130,15 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                 if (mode == Mode::Editor) {
                     mode = Mode::Playtest;
                     playScene = std::make_unique<Scene>(scene);
+                    playScene->clearSelection();
+                    for (auto& obj : playScene->getObjects()) {
+                        if (obj->isPlayer) {
+                            playCamera.position = obj->transform.position + glm::vec3(0.0f, 1.6f, 0.0f); // TODO: Dynamically change camera position for object
+                            playCamera.yaw = -obj->transform.rotation.y;
+                            playCamera.pitch = obj->transform.rotation.x;
+                            playCamera.updateCameraVectors();
+                        }
+                    }
                 }
             }
             ImGui::EndMenu();
@@ -259,6 +268,16 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         }
         if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) {
             selected->textureScale.y = scale[1];
+        }
+    }
+
+    if (ImGui::Checkbox("Player", &selected->isPlayer)) {
+        if (selected->isPlayer) {
+            for (auto& other : scene.getObjects()) {
+                if (other != selected) {
+                    other->isPlayer = false;
+                }
+            }
         }
     }
 

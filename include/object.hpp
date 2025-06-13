@@ -41,6 +41,7 @@ struct OBB {
 struct Object {
     // Object data
     std::string name;
+    bool isPlayer = false;
 
     Mesh* mesh = nullptr;
     Shader* shader = nullptr;
