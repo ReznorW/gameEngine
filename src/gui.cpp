@@ -76,14 +76,17 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
     if (ImGui::BeginMainMenuBar()) {
         // File Menu
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New Scene")) {
+            if (ImGui::MenuItem("New")) {
                 scene.clear();
             }
-            if (ImGui::MenuItem("Load Scene")) {
+            if (ImGui::MenuItem("Load")) {
                 openLoadScenePopup = true; 
             }
-            if (ImGui::MenuItem("Save Scene")) {
+            if (ImGui::MenuItem("Save As")) {
                 openSaveScenePopup = true;
+            }
+            if (ImGui::MenuItem("Save")) {
+                // TODO: Implement quick saving
             }
             if (ImGui::MenuItem("Exit")) {
                 glfwSetWindowShouldClose(window.getGLFWwindow(), true);
@@ -93,7 +96,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
 
         // Edit Menu
         if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("New Object")) {
+            if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
                 scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", "default"));
                 scene.selectObject(objName);
@@ -109,10 +112,10 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
 
         // Selection Menu
         if (ImGui::BeginMenu("Selection")) {
-            if (ImGui::MenuItem("Deselect All")) {
+            if (ImGui::MenuItem("Deselect", "Escape")) {
                 scene.clearSelection();
             }
-            if (ImGui::MenuItem("Duplicate Selection")) {
+            if (ImGui::MenuItem("Duplicate Selection", "X")) {
                 Object* selected = scene.getSelectedObject();
                 if (selected) {
                     std::string newName = scene.duplicateObject(selected->name);
@@ -126,14 +129,14 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
 
         // Run Menu
         if (ImGui::BeginMenu("Run")) {
-            if (ImGui::MenuItem("Playtest")) {
+            if (ImGui::MenuItem("Playtest", "R")) {
                 if (mode == Mode::Editor) {
                     mode = Mode::Playtest;
                     playScene = std::make_unique<Scene>(scene);
                     playScene->clearSelection();
                     for (auto& obj : playScene->getObjects()) {
                         if (obj->isPlayer) {
-                            playCamera.position = obj->transform.position + glm::vec3(0.0f, 1.6f, 0.0f); // TODO: Dynamically change camera position for object
+                            playCamera.position = obj->transform.position; //+ glm::vec3(0.0f, 0.0f, 0.0f); // TODO: Dynamically change camera position for object
                             playCamera.yaw = -obj->transform.rotation.y;
                             playCamera.pitch = obj->transform.rotation.x;
                             playCamera.updateCameraVectors();
@@ -340,10 +343,16 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
     if (ImGui::Button("Delete Object")) {
         ImGui::OpenPopup("Confirm Delete");
     }
+    drawDeleteConfirmation(scene);
+
+    ImGui::End();
+}
+
+void Gui::drawDeleteConfirmation(Scene& scene) {
     if (ImGui::BeginPopupModal("Confirm Delete", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("Are you sure you want to delete this object?");
         if (ImGui::Button("Yes")) {
-            scene.deleteObject(selected->name);
+            scene.deleteObject(scene.getSelectedObject()->name);
             scene.clearSelection();
             ImGui::CloseCurrentPopup();
         }
@@ -353,8 +362,6 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         }
         ImGui::EndPopup();
     }
-
-    ImGui::End();
 }
 
 void Gui::drawLoadScenePopup(Scene& scene) {

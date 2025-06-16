@@ -12,12 +12,14 @@ class Input {
 public:
     // Input state
     static bool keys[512];
+    static bool previousKeys[512];
     static bool mouseButtons[5];
 
     // Input processing
-    static void processEditorInput(Window& windowStruct, Camera& camera, Scene& scene);
+    static void processEditorInput(Window& windowStruct, Camera& camera, Camera& playCamera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
     static void processPlaytestInput(Window& windowStruct, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode);
     static void processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch = true);
+    static bool isKeyPressedOnce(int key);
 
     // GLFW callbacks
     static void mouse_button_callback(GLFWwindow* glfwWindow, int button, int action, int mods);

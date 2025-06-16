@@ -91,7 +91,7 @@ int main() {
         // === Process input ===
         while (accumulator >= timestep) {
             if (mode == Mode::Editor) {
-                Input::processEditorInput(window, editorCamera, editorScene);
+                Input::processEditorInput(window, editorCamera, playCamera, editorScene, playScene, mode);
             } else {
                 Input::processPlaytestInput(window, playCamera, playScene, mode);
             }
@@ -119,6 +119,7 @@ int main() {
             // === Draw editor GUI ===
             gui.drawMainMenu(window, editorScene, playScene, editorCamera, playCamera, mode);
             gui.drawSidebar(editorScene);
+            gui.drawDeleteConfirmation(editorScene);
         }
 
         // === Playtest mode ===

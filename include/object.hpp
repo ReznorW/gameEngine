@@ -71,5 +71,5 @@ struct Object {
     void updateChildren();
     
     // Rendering
-    void draw(const Camera& camera, const bool selected, const bool inPlaytest) const;
+    void draw(const Camera& camera, const Object* selectedObject, const bool inPlaytest) const;
 };

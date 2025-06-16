@@ -26,6 +26,7 @@ public:
     void drawSidebar(Scene& scene);
     void drawObjectTree(Object& obj, Scene& scene);
     void drawObjectProperties(Scene& scene, Object* selected);
+    void drawDeleteConfirmation(Scene& scene);
     void drawLoadScenePopup(Scene& scene);
     void drawSaveScenePopup(Scene& scene);
     void drawPlaytestUI();

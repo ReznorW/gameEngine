@@ -26,10 +26,11 @@ float movementSpeed = 0.1f;
 float lookSpeed = 0.1f;
 
 bool Input::keys[512] = {false};
+bool Input::previousKeys[512] = {false};
 bool Input::mouseButtons[5] = {false};
 
 // === Input processing ===
-void Input::processEditorInput(Window& window, Camera& camera, Scene& scene) {
+void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode) {
     ImGuiIO& io = ImGui::GetIO();
 
     // Only process movement if ImGui doesn't want keyboard
@@ -42,9 +43,6 @@ void Input::processEditorInput(Window& window, Camera& camera, Scene& scene) {
         }
 
         // Movement using stored key states
-        if (keys[GLFW_KEY_ESCAPE]) {
-            scene.clearSelection();
-        }
         if (keys[GLFW_KEY_W]) {
             glm::vec3 forward = glm::normalize(glm::vec3(camera.getFront().x, 0.0f, camera.getFront().z));
             camera.move(forward, currentSpeed);
@@ -65,6 +63,44 @@ void Input::processEditorInput(Window& window, Camera& camera, Scene& scene) {
         if (keys[GLFW_KEY_LEFT_SHIFT]) {
             camera.moveVert(-camera.getWorldUp(), currentSpeed);
         }
+
+        // Editor controls
+        if (isKeyPressedOnce(GLFW_KEY_ESCAPE)) {
+            scene.clearSelection();
+        }
+        if (isKeyPressedOnce(GLFW_KEY_C)) {
+            std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
+            scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", "default"));
+            scene.selectObject(objName);
+        }
+        if (isKeyPressedOnce(GLFW_KEY_DELETE)) {
+            ImGui::OpenPopup("Confirm Delete");
+        }
+        if (isKeyPressedOnce(GLFW_KEY_X)) {
+            Object* selected = scene.getSelectedObject();
+            if (selected) {
+                std::string newName = scene.duplicateObject(selected->name);
+                if (!newName.empty()) {
+                    scene.selectObject(newName);
+                }
+            }
+        }
+        if (isKeyPressedOnce(GLFW_KEY_R)) {
+            if (mode == Mode::Editor) {
+                mode = Mode::Playtest;
+                playScene = std::make_unique<Scene>(scene);
+                playScene->clearSelection();
+                for (auto& obj : playScene->getObjects()) {
+                    if (obj->isPlayer) {
+                        playCamera.position = obj->transform.position + glm::vec3(0.0f, 1.6f, 0.0f); // TODO: Dynamically change camera position for object
+                        playCamera.yaw = -obj->transform.rotation.y;
+                        playCamera.pitch = obj->transform.rotation.x;
+                        playCamera.updateCameraVectors();
+                    }
+                }
+            }
+        }
+
         if (keys[GLFW_KEY_F1]) {
             if (camera.getFOV() < 135) {
                 camera.setFOV(camera.getFOV() + lookSpeed);
@@ -76,6 +112,9 @@ void Input::processEditorInput(Window& window, Camera& camera, Scene& scene) {
             }
         }
     }
+
+    // Copy over keys into previousKeys
+    std::memcpy(previousKeys, keys, sizeof(keys));
 }
 
 void Input::processPlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode) {
@@ -146,6 +185,10 @@ void Input::processMouseMovement(Camera& camera, float& xoffset, float& yoffset,
 
     // Update vectors
     camera.updateCameraVectors();
+}
+
+bool Input::isKeyPressedOnce(int key) {
+    return keys[key] && !previousKeys[key];
 }
 
 // === GLFW callbacks ===

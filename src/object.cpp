@@ -136,7 +136,9 @@ bool Object::isDescendant(const Object* target) const {
 }
 
 // === Rendering ===
-void Object::draw(const Camera& camera, const bool selected, const bool inPlaytest) const {
+void Object::draw(const Camera& camera, const Object* selectedObject, const bool inPlaytest) const {
+    bool isHighlighted = (this == selectedObject) || (selectedObject && selectedObject->isDescendant(this));
+
     if (!(inPlaytest && isPlayer)) {
         shader->use();
 
@@ -152,7 +154,7 @@ void Object::draw(const Camera& camera, const bool selected, const bool inPlayte
         shader->setVec3("fogColor", glm::vec3(0.5f, 0.6f, 0.7f)); // Adjust to your desired fog color
         shader->setFloat("fogStart", 50.0f);  // Distance where fog starts
         shader->setFloat("fogEnd", 100.0f);   // Distance where fog fully saturates
-        shader->setBool("isSelected", selected);    // Whether or not object is selected
+        shader->setBool("isSelected", isHighlighted);    // Whether or not object is selected
 
         // Set texture
         if (texture) {
@@ -165,6 +167,6 @@ void Object::draw(const Camera& camera, const bool selected, const bool inPlayte
     }
 
     for (const Object* child : children) {
-        child->draw(camera, selected, inPlaytest);
+        child->draw(camera, selectedObject, inPlaytest);
     }
 }

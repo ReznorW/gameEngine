@@ -351,10 +351,8 @@ void Scene::clearSelection() {
 void Scene::draw(const Camera& camera, bool inPlaytest) {
     for (const auto& [name, obj] : objects) {
         if (obj->parent) continue; // Only draw root objects
-
-        bool isHighlighted = selectedObject && (obj.get() == selectedObject || obj->isDescendant(selectedObject));
-
-        obj->draw(camera, isHighlighted, inPlaytest);
+        
+        obj->draw(camera, selectedObject, inPlaytest);
     }
 }
 
