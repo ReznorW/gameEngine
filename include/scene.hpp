@@ -53,7 +53,7 @@ public:
     void clearSelection();
 
     // Rendering
-    void draw(const Camera& camera);
+    void draw(const Camera& camera, bool inPlaytest);
 
 private:
     // Resource containers

@@ -7,6 +7,7 @@ position 0 -2.5 0
 rotation 90 0 0
 scale 21 21 1
 isPlayer 0
+parent None
 endobject
 
 object spike
@@ -18,28 +19,7 @@ position 0 0 0
 rotation 0 0 0
 scale 1 5 1
 isPlayer 1
-endobject
-
-object spike_copy
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 5
-position 10 0 0
-rotation 0 0 0
-scale 1 5 1
-isPlayer 0
-endobject
-
-object spike_copy4
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 5
-position 7.25 0 7.25
-rotation 0 45 0
-scale 1 5 1
-isPlayer 0
+parent None
 endobject
 
 object spike_copy1
@@ -51,6 +31,7 @@ position 0 0 10
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+parent None
 endobject
 
 object spike_copy3
@@ -62,6 +43,7 @@ position 0 0 -10
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+parent None
 endobject
 
 object spike_copy2
@@ -73,6 +55,19 @@ position -10 0 0
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+parent None
+endobject
+
+object spike_copy
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position 10 0 0
+rotation 0 0 0
+scale 1 5 1
+isPlayer 0
+parent None
 endobject
 
 object spike_copy5
@@ -84,6 +79,7 @@ position 7.25 0 -7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+parent None
 endobject
 
 object spike_copy6
@@ -95,6 +91,19 @@ position -7.25 0 7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+parent None
+endobject
+
+object spike_copy4
+mesh pyramid
+shader default
+texture cobblestone
+texturescale 1 5
+position 7.25 0 7.25
+rotation 0 45 0
+scale 1 5 1
+isPlayer 0
+parent None
 endobject
 
 object spike_copy7
@@ -106,5 +115,6 @@ position -7.25 0 -7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+parent None
 endobject
 

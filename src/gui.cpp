@@ -174,15 +174,39 @@ void Gui::drawSidebar(Scene& scene) {
     ImGui::SetNextWindowSize(ImVec2(200, ImGui::GetIO().DisplaySize.y - 20));
     ImGui::Begin("Objects", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-    auto objects = scene.getObjects();
-    for (Object* obj : objects) {
-        bool isSelected = (scene.getSelectedObject() == obj);
-        if (ImGui::Selectable(obj->name.c_str(), isSelected)) {
-            scene.selectObject(obj->name);
+    for (auto& obj : scene.getObjects()) {
+        if (obj->parent == nullptr) {  // Only draw root objects
+            drawObjectTree(*obj, scene);
         }
     }
 
     ImGui::End();
+}
+
+void Gui::drawObjectTree(Object& obj, Scene& scene) {
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (scene.getSelectedObject() == &obj) {
+        flags |= ImGuiTreeNodeFlags_Selected;
+    }
+
+    bool nodeOpen = false;
+    if (!obj.children.empty()) {
+        nodeOpen = ImGui::TreeNodeEx(obj.name.c_str(), flags);
+    } else {
+        flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+        ImGui::TreeNodeEx(obj.name.c_str(), flags);
+    }
+
+    if (ImGui::IsItemClicked()) {
+        scene.selectObject(obj.name);
+    }
+
+    if (nodeOpen) {
+        for (Object* child : obj.children) {
+            drawObjectTree(*child, scene);  // Recursive call
+        }
+        ImGui::TreePop();
+    }
 }
 
 void Gui::drawObjectProperties(Scene& scene, Object* selected) {
@@ -206,6 +230,34 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         ImGui::DragFloat3("Rotation", glm::value_ptr(selected->transform.rotation), 0.1f);
         ImGui::DragFloat3("Scale",    glm::value_ptr(selected->transform.scale),    0.1f);
         selected->transform.markDirty();
+
+        // Parent selector
+        std::string currentParentName = selected->parent ? selected->parent->name : "None";
+        if (ImGui::BeginCombo("Parent", currentParentName.c_str())) {
+            // Option to clear the parent
+            if (ImGui::Selectable("None", selected->parent == nullptr)) {
+                // Detach from current parent
+                if (selected->parent) {
+                    auto& siblings = selected->parent->children;
+                    siblings.erase(std::remove(siblings.begin(), siblings.end(), selected), siblings.end());
+                    selected->parent = nullptr;
+                }
+            }
+
+            // List all other objects as potential parents
+            for (Object* potentialParent : scene.getObjects()) {
+                if (potentialParent == selected) continue;
+
+                if (selected->isDescendant(potentialParent)) continue;
+
+                bool isSelected = (selected->parent == potentialParent);
+                if (ImGui::Selectable(potentialParent->name.c_str(), isSelected)) {
+                    selected->setParent(potentialParent);
+                }
+            }
+
+            ImGui::EndCombo();
+        }
 
         // Mesh selector
         std::string currentMesh = selected->mesh ? selected->mesh->getName() : "None";

@@ -13,35 +13,48 @@ Scene::Scene() {
 }
 
 Scene::Scene(const Scene& other) {
-    for (const auto& [name, obj] : other.objects) {
-        // Clone the object
-        std::unique_ptr<Object> cloned = std::make_unique<Object>();
+    // Map from original object pointer to cloned object pointer
+    std::unordered_map<const Object*, Object*> pointerMap;
 
-        // Copy primitive data
+    // First pass: clone objects without parent/children set
+    for (const auto& [name, obj] : other.objects) {
+        auto cloned = std::make_unique<Object>();
         cloned->transform = obj->transform;
         cloned->name = obj->name;
         cloned->textureScale = obj->textureScale;
         cloned->obb = obj->obb;
         cloned->isPlayer = obj->isPlayer;
 
-        // Share resources
         cloned->mesh = obj->mesh;
         cloned->shader = obj->shader;
         cloned->texture = obj->texture;
 
-        // Insert into this scene
+        pointerMap[obj.get()] = cloned.get();
         objects[name] = std::move(cloned);
     }
 
-    // Copy selected object pointer if it's set
-    if (other.selectedObject) {
-        std::string selectedName = other.selectedObject->name;
-        if (objects.find(selectedName) != objects.end()) {
-            selectedObject = objects[selectedName].get();
+    // Second pass: fix parent and children pointers
+    for (const auto& [name, obj] : other.objects) {
+        Object* clonedObj = pointerMap[obj.get()];
+        // Fix parent
+        if (obj->parent) {
+            clonedObj->parent = pointerMap[obj->parent];
+        } else {
+            clonedObj->parent = nullptr;
+        }
+
+        // Fix children
+        clonedObj->children.clear();
+        for (Object* child : obj->children) {
+            clonedObj->children.push_back(pointerMap[child]);
         }
     }
 
-    // Copy scene name
+    // Fix selectedObject pointer
+    if (other.selectedObject) {
+        selectedObject = pointerMap[other.selectedObject];
+    }
+
     name = other.name;
 }
 
@@ -104,12 +117,15 @@ bool Scene::loadScene(const std::string& scnName) {
     }
 
     std::string line;
-    std::string objName, meshName, textureName, shaderName;
+    std::string objName, meshName, textureName, shaderName, parentName = "None";
     glm::vec3 position(0), rotation(0), scale(1);
     glm::vec2 textureScale(1);
     bool isPlayer;
     bool inObjectBlock = false;
+    std::unordered_map<std::string, std::unique_ptr<Object>> tempObjects;
+    std::unordered_map<std::string, std::string> parentMap;
 
+    // Parse .scn file
     while (std::getline(file, line)) {
         std::istringstream iss(line);
         std::string token;
@@ -121,6 +137,8 @@ bool Scene::loadScene(const std::string& scnName) {
             position = rotation = glm::vec3(0);
             scale = glm::vec3(1);
             textureScale = glm::vec2(1);
+            isPlayer = false;
+            parentName = "None";
             inObjectBlock = true;
         } else if (token == "mesh") {
             iss >> meshName;
@@ -138,6 +156,8 @@ bool Scene::loadScene(const std::string& scnName) {
             iss >> scale.x >> scale.y >> scale.z;
         } else if (token == "isPlayer") {
             iss >> isPlayer;
+        } else if (token == "parent") {
+            iss >> parentName;
         } else if (token == "endobject" && inObjectBlock) {
             auto obj = std::make_unique<Object>(objName, meshName, textureName, shaderName);
             obj->transform.position = position;
@@ -146,9 +166,27 @@ bool Scene::loadScene(const std::string& scnName) {
             obj->textureScale = textureScale;
             obj->isPlayer = isPlayer;
 
-            addObject(objName, std::move(obj));
+            tempObjects[objName] = std::move(obj);
+            parentMap[objName] = parentName;
+
             inObjectBlock = false;
         }
+    }
+
+    // Fix parent pointers and children lists
+    for (auto& [name, obj] : tempObjects) {
+        std::string pName = parentMap[name];
+        if (pName != "None" && tempObjects.count(pName)) {
+            obj->parent = tempObjects[pName].get();
+            obj->parent->children.push_back(obj.get());
+        } else {
+            obj->parent = nullptr;
+        }
+    }
+
+    // Move objects into scene
+    for (auto& [name, obj] : tempObjects) {
+        addObject(name, std::move(obj));
     }
 
     return true;
@@ -159,23 +197,32 @@ bool Scene::saveScene(const std::string& scnName) {
     std::ofstream file(fileName);
     if (!file.is_open()) return false;
 
-    // Write objects
+    // Write objects from scene to .scn file
     for (const auto& objPtr : objects) {
         Object* obj = objPtr.second.get();
         file << "object " << obj->name << "\n";
         file << "mesh " << obj->mesh->getName() << "\n";
         file << "shader " << obj->shader->getName() << "\n";
+
         std::string textureName = obj->texture->getName();
         size_t lastDot = textureName.find_last_of('.');
         if (lastDot != std::string::npos) {
             textureName = textureName.substr(0, lastDot);
         }
+
         file << "texture " << textureName << "\n";
         file << "texturescale " << obj->textureScale.x << " " << obj->textureScale.y << "\n";
         file << "position " << obj->transform.position.x << " " << obj->transform.position.y << " " << obj->transform.position.z << "\n";
         file << "rotation " << obj->transform.rotation.x << " " << obj->transform.rotation.y << " " << obj->transform.rotation.z << "\n";
         file << "scale " << obj->transform.scale.x << " " << obj->transform.scale.y << " " << obj->transform.scale.z << "\n";
         file << "isPlayer " << obj->isPlayer << "\n";
+
+        if (obj->parent) {
+            file << "parent " << obj->parent->name << "\n";
+        } else {
+            file << "parent None\n";
+        }
+
         file << "endobject\n\n";
     }
 
@@ -301,9 +348,13 @@ void Scene::clearSelection() {
 }
 
 // === Rendering ===
-void Scene::draw(const Camera& camera) {
-    for (auto& obj : objects) {
-        obj.second->draw(camera, obj.second.get() == selectedObject);
+void Scene::draw(const Camera& camera, bool inPlaytest) {
+    for (const auto& [name, obj] : objects) {
+        if (obj->parent) continue; // Only draw root objects
+
+        bool isHighlighted = selectedObject && (obj.get() == selectedObject || obj->isDescendant(selectedObject));
+
+        obj->draw(camera, isHighlighted, inPlaytest);
     }
 }
 

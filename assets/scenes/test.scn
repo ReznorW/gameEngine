@@ -1,3 +1,51 @@
+object arm2
+mesh cube
+shader default
+texture cobblestone
+texturescale 1 1
+position -0.733333 0.166667 0
+rotation 0 -0 0
+scale 0.466667 0.666667 0.7
+isPlayer 0
+parent body
+endobject
+
+object arm1
+mesh cube
+shader default
+texture cobblestone
+texturescale 1 1
+position 0.733333 0.166667 0
+rotation 0 -0 0
+scale 0.466667 0.666667 0.7
+isPlayer 0
+parent body
+endobject
+
+object body
+mesh cube
+shader default
+texture cobblestone
+texturescale 1 1
+position 0 -1.25 0
+rotation 0 90 0
+scale 0.75 1.5 0.5
+isPlayer 0
+parent player
+endobject
+
+object player
+mesh cube
+shader default
+texture cobblestone
+texturescale 1 1
+position 0 1 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 1
+parent None
+endobject
+
 object ground
 mesh plane
 shader default
@@ -7,16 +55,6 @@ position 0 -2 0
 rotation 0 0 0
 scale 100 100 100
 isPlayer 0
-endobject
-
-object cube2
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 2 1
-position 6 2.8 0
-rotation 206.925 275.9 68.9751
-scale 2 1 1
-isPlayer 0
+parent None
 endobject
 

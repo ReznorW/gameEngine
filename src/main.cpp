@@ -78,15 +78,6 @@ int main() {
         // === Mode transition handling ===
         if (mode != prevMode) {
             Input::modeChange(mode, window.getGLFWwindow());
-            // if (mode == Mode::Playtest) {
-            //     for (auto& obj : playScene->getObjects()) {
-            //         if (obj->isPlayer) {
-            //             playCamera.position = obj->transform.position + glm::vec3(0.0f, 1.6f, 0.0f); // TODO: Dynamically change camera position for object
-            //             playCamera.yaw = -obj->transform.rotation.y;
-            //             playCamera.pitch = obj->transform.rotation.x;
-            //         }
-            //     }
-            // }
             prevMode = mode;
         }
 
@@ -123,7 +114,7 @@ int main() {
             context.camera = &editorCamera;
             context.scene = &editorScene;
 
-            editorScene.draw(editorCamera);
+            editorScene.draw(editorCamera, false);
 
             // === Draw editor GUI ===
             gui.drawMainMenu(window, editorScene, playScene, editorCamera, playCamera, mode);
@@ -137,13 +128,14 @@ int main() {
 
             for (auto& obj : playScene->getObjects()) {
                 if (obj->isPlayer) {
-                    obj->transform.position = playCamera.position - glm::vec3(0.0f, 1.6f, 0.0f); // TODO: Dynamically change camera position for object
+                    obj->transform.position = playCamera.position; //- glm::vec3(0.0f, 0.0f, 0.0f);  TODO: Dynamically change camera position for object
                     obj->transform.rotation.y = -playCamera.yaw;
                     obj->transform.markDirty();
+                    break;
                 }
             }
 
-            playScene->draw(playCamera);
+            playScene->draw(playCamera, true);
 
             gui.drawPlaytestUI();
 

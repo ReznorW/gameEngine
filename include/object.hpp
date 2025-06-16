@@ -23,6 +23,7 @@ struct Transform {
 
     // Get transformed model
     glm::mat4 getModelMatrix() const;
+    void setFromModelMatrix(const glm::mat4& model);
 };
 
 // Oriented Bounding Box (OBB) definition
@@ -62,7 +63,13 @@ struct Object {
     // OBB handling
     void initializeOBB(const glm::vec3& meshMin, const glm::vec3& meshMax);
     void updateOBB();
+
+    // Inheritance handling
+    glm::mat4 getWorldMatrix() const;
+    void setParent(Object* newParent);
+    bool isDescendant(const Object* target) const;
+    void updateChildren();
     
     // Rendering
-    void draw(const Camera& camera, const bool selected) const;
+    void draw(const Camera& camera, const bool selected, const bool inPlaytest) const;
 };
