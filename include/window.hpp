@@ -29,8 +29,8 @@ public:
 private:
     // Window data
     GLFWwindow* window;
-    int width = 800;
-    int height = 600;
+    int width = 1536;
+    int height = 864;
     bool isFullscreen;
 };
 

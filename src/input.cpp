@@ -47,7 +47,7 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
             glm::vec3 forward = glm::normalize(glm::vec3(camera.getFront().x, 0.0f, camera.getFront().z));
             camera.move(forward, currentSpeed);
         }
-        if (keys[GLFW_KEY_S]) {
+        if (keys[GLFW_KEY_S] && !keys[GLFW_KEY_LEFT_CONTROL]) {
             glm::vec3 backward = glm::normalize(glm::vec3(-camera.getFront().x, 0.0f, -camera.getFront().z));
             camera.move(backward, currentSpeed);
         }
@@ -60,13 +60,17 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
         if (keys[GLFW_KEY_SPACE]) {
             camera.moveVert(camera.getWorldUp(), currentSpeed);
         }
-        if (keys[GLFW_KEY_LEFT_SHIFT]) {
+        if (keys[GLFW_KEY_LEFT_SHIFT] && !keys[GLFW_KEY_LEFT_CONTROL]) {
             camera.moveVert(-camera.getWorldUp(), currentSpeed);
         }
 
         // Editor controls
         if (isKeyPressedOnce(GLFW_KEY_ESCAPE)) {
-            scene.clearSelection();
+            if (scene.getSelectedObject()) {
+                scene.clearSelection();
+            } else {
+                glfwSetWindowShouldClose(window.getGLFWwindow(), true);
+            }
         }
         if (isKeyPressedOnce(GLFW_KEY_C)) {
             std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
@@ -92,7 +96,7 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
                 playScene->clearSelection();
                 for (auto& obj : playScene->getObjects()) {
                     if (obj->isPlayer) {
-                        playCamera.position = obj->transform.position + glm::vec3(0.0f, 1.6f, 0.0f); // TODO: Dynamically change camera position for object
+                        playCamera.position = obj->transform.position;
                         playCamera.yaw = -obj->transform.rotation.y;
                         playCamera.pitch = obj->transform.rotation.x;
                         playCamera.updateCameraVectors();
@@ -100,7 +104,24 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
                 }
             }
         }
+        if (isKeyPressedOnce(GLFW_KEY_S) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
+            const std::string& sceneName = scene.getName();
 
+            if (!sceneName.empty()) {
+                scene.saveScene(sceneName);
+            } else {
+                ImGui::OpenPopup("Save Scene Popup");
+            }
+        }
+        if (isKeyPressedOnce(GLFW_KEY_S) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL]) && keys[GLFW_KEY_LEFT_SHIFT]) {
+            ImGui::OpenPopup("Save Scene Popup");
+        }
+        if (isKeyPressedOnce(GLFW_KEY_O) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
+            ImGui::OpenPopup("Load Scene Popup");
+        }
+        if (isKeyPressedOnce(GLFW_KEY_N) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
+            scene.clear();
+        }
         if (keys[GLFW_KEY_F1]) {
             if (camera.getFOV() < 135) {
                 camera.setFOV(camera.getFOV() + lookSpeed);

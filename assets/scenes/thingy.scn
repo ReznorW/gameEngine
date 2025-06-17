@@ -1,3 +1,15 @@
+object arm_copy
+mesh cube
+shader default
+texture wood
+texturescale 0.5 6
+position 2.3 -2 2.3
+rotation 0 -45 0
+scale 6 0.01 0.5
+isPlayer 0
+parent None
+endobject
+
 object spike_copy6
 mesh pyramid
 shader default
@@ -118,14 +130,14 @@ isPlayer 0
 parent None
 endobject
 
-object head_copy
-mesh triangle
+object spike_copy5
+mesh pyramid
 shader default
-texture wood
+texture cobblestone
 texturescale 1 1
-position 4.75 -2 4.75
-rotation -90 0 -135
-scale 1 1 1
+position 7.1 -2.25 -7.1
+rotation 0 45 0
+scale 1 0.5 1
 isPlayer 0
 parent None
 endobject
@@ -142,26 +154,14 @@ isPlayer 0
 parent None
 endobject
 
-object spike_copy5
-mesh pyramid
-shader default
-texture cobblestone
-texturescale 1 1
-position 7.1 -2.25 -7.1
-rotation 0 45 0
-scale 1 0.5 1
-isPlayer 0
-parent None
-endobject
-
-object arm_copy
-mesh cube
+object head_copy
+mesh triangle
 shader default
 texture wood
-texturescale 0.5 6
-position 2.3 -2 2.3
-rotation 0 -45 0
-scale 6 0.01 0.5
+texturescale 1 1
+position 4.75 -2 4.75
+rotation -90 0 -135
+scale 1 1 1
 isPlayer 0
 parent None
 endobject

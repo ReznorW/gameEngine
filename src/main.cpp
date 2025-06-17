@@ -23,7 +23,7 @@ int main() {
 
     // === Window setup ===
     std::cout << "===Setting up window===" << std::endl;
-    Window window("Game Engine", true);
+    Window window("Game Engine", false);
     context.window = &window;
     glEnable(GL_DEPTH_TEST);
     glfwSwapInterval(1); // VSync

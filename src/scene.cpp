@@ -126,6 +126,7 @@ bool Scene::loadScene(const std::string& scnName) {
     std::unordered_map<std::string, std::string> parentMap;
 
     // Parse .scn file
+    setName(scnName);
     while (std::getline(file, line)) {
         std::istringstream iss(line);
         std::string token;
@@ -198,6 +199,7 @@ bool Scene::saveScene(const std::string& scnName) {
     if (!file.is_open()) return false;
 
     // Write objects from scene to .scn file
+    setName(scnName);
     for (const auto& objPtr : objects) {
         Object* obj = objPtr.second.get();
         file << "object " << obj->name << "\n";
@@ -229,7 +231,6 @@ bool Scene::saveScene(const std::string& scnName) {
     file.close();
     return true;
 }
-
 
 std::vector<std::string> Scene::getSceneNames() const {
     std::vector<std::string> scenes;

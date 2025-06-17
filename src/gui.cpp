@@ -76,17 +76,22 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
     if (ImGui::BeginMainMenuBar()) {
         // File Menu
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New")) {
+            if (ImGui::MenuItem("New", "Crtl + N")) {
                 scene.clear();
             }
-            if (ImGui::MenuItem("Load")) {
+            if (ImGui::MenuItem("Open", "Crtl + O")) {
                 openLoadScenePopup = true; 
             }
-            if (ImGui::MenuItem("Save As")) {
+            if (ImGui::MenuItem("Save As", "Crtl + Shift + S")) {
                 openSaveScenePopup = true;
             }
-            if (ImGui::MenuItem("Save")) {
-                // TODO: Implement quick saving
+            if (ImGui::MenuItem("Save", "Ctrl + S")) {
+                const std::string& sceneName = scene.getName();
+                if (!sceneName.empty()) {
+                    scene.saveScene(sceneName);
+                } else {
+                    openSaveScenePopup = true;
+                }
             }
             if (ImGui::MenuItem("Exit")) {
                 glfwSetWindowShouldClose(window.getGLFWwindow(), true);
@@ -136,7 +141,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     playScene->clearSelection();
                     for (auto& obj : playScene->getObjects()) {
                         if (obj->isPlayer) {
-                            playCamera.position = obj->transform.position; //+ glm::vec3(0.0f, 0.0f, 0.0f); // TODO: Dynamically change camera position for object
+                            playCamera.position = obj->transform.position;
                             playCamera.yaw = -obj->transform.rotation.y;
                             playCamera.pitch = obj->transform.rotation.x;
                             playCamera.updateCameraVectors();
@@ -366,12 +371,24 @@ void Gui::drawDeleteConfirmation(Scene& scene) {
 
 void Gui::drawLoadScenePopup(Scene& scene) {
     static size_t selectedSceneIndex = 0;
+    static bool initialized = false;
     std::vector<std::string> scenes = scene.getSceneNames();
 
     if (ImGui::BeginPopupModal("Load Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("Select a scene to load:");
 
         if (!scenes.empty()) {
+            if (!initialized) {
+                std::string current = scene.getName();
+                for (size_t i = 0; i < scenes.size(); ++i) {
+                    if (scenes[i] == current) {
+                        selectedSceneIndex = i;
+                        break;
+                    }
+                }
+                initialized = true;
+            }
+
             if (selectedSceneIndex >= scenes.size()) {
                 selectedSceneIndex = 0;
             }
@@ -411,13 +428,16 @@ void Gui::drawLoadScenePopup(Scene& scene) {
 
 void Gui::drawSaveScenePopup(Scene& scene) {
     static char saveFileName[128] = "";
+    static bool popupJustClosed = false;
 
     if (ImGui::BeginPopupModal("Save Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        popupJustClosed = false;
         ImGui::InputText("Filename", saveFileName, IM_ARRAYSIZE(saveFileName));
 
         if (ImGui::Button("Save")) {
             if (scene.saveScene(saveFileName)) {
                 ImGui::CloseCurrentPopup();
+                popupJustClosed = true;
             } else {
                 // Handle save error
             }
@@ -425,9 +445,13 @@ void Gui::drawSaveScenePopup(Scene& scene) {
         ImGui::SameLine();
         if (ImGui::Button("Cancel")) {
             ImGui::CloseCurrentPopup();
+            popupJustClosed = true;
         }
 
         ImGui::EndPopup();
+    } else if (popupJustClosed) {
+        saveFileName[0] = '\0';
+        popupJustClosed = false;
     }
 }
 
