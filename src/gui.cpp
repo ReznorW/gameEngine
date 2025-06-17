@@ -93,7 +93,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     openSaveScenePopup = true;
                 }
             }
-            if (ImGui::MenuItem("Exit")) {
+            if (ImGui::MenuItem("Exit", "Ctrl + Q")) {
                 glfwSetWindowShouldClose(window.getGLFWwindow(), true);
             }
             ImGui::EndMenu();

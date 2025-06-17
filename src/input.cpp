@@ -66,11 +66,10 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
 
         // Editor controls
         if (isKeyPressedOnce(GLFW_KEY_ESCAPE)) {
-            if (scene.getSelectedObject()) {
-                scene.clearSelection();
-            } else {
-                glfwSetWindowShouldClose(window.getGLFWwindow(), true);
-            }
+            scene.clearSelection();
+        }
+        if (isKeyPressedOnce(GLFW_KEY_Q) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
+            glfwSetWindowShouldClose(window.getGLFWwindow(), true);
         }
         if (isKeyPressedOnce(GLFW_KEY_C)) {
             std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
