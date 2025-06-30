@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <memory>
 #include <vector>
 #include <glm/glm.hpp>
 #include <limits>
@@ -9,13 +11,19 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "scene.hpp"
 #include "mesh.hpp"
 
-// === Constructor ===
-Mesh::Mesh(const std::string& meshName, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices) {
+// === Constructors ===
+Mesh::Mesh(const std::string& meshName, const std::vector<Vertex>& verts, const std::vector<unsigned int>& inds)
+    : name(meshName), vertices(verts), indices(inds) {
     setupMesh(vertices, indices);
     indexCount = indices.size();
-    name = meshName;
+}
+
+Mesh::Mesh(const Mesh& other)
+    : indexCount(other.indexCount), name(other.name), minBounds(other.minBounds), maxBounds(other.maxBounds), vertices(other.vertices), indices(other.indices) {
+    setupMesh(vertices, indices);
 }
 
 // === Deconstructor ===
@@ -157,4 +165,36 @@ unsigned int loadTexture(const std::string& path) {
     stbi_image_free(data);
 
     return textureID;
+}
+
+bool saveMesh(const std::string& name, const Mesh& mesh, const std::string& filepath, Scene& scene) {
+    std::ofstream out(filepath);
+    if (!out.is_open()) return false;
+
+    out << std::fixed << std::setprecision(6);
+
+    const auto& vertices = mesh.getVertices();
+    const auto& indices = mesh.getIndices();
+
+    out << "n " << name << '\n';
+
+    for (const Vertex& v : vertices) {
+        out << "v "
+            << v.position.x << ' ' << v.position.y << ' ' << v.position.z << ' '
+            << v.color.r << ' ' << v.color.g << ' ' << v.color.b << ' '
+            << v.texCoords.x << ' ' << v.texCoords.y << '\n';
+    }
+
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        out << "i " << indices[i] << ' ' << indices[i + 1] << ' ' << indices[i + 2] << '\n';
+    }
+    out.close();
+
+    if (scene.getMesh(name)) {
+        scene.removeMesh(name);
+    }
+
+    scene.addMesh(std::make_unique<Mesh>(*loadVertFile(filepath)));
+
+    return true;
 }

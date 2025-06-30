@@ -1,7 +1,7 @@
 object cube
 mesh cube
 shader default
-texture default
+texture default.jpg
 texturescale 1 1
 position 0 0 0
 rotation 0 0 0
@@ -13,11 +13,11 @@ endobject
 object ground
 mesh plane
 shader default
-texture grass
-texturescale 1 1
+texture grass.jpg
+texturescale 150 150
 position 0 -2 0
 rotation 0 0 0
-scale 100 100 100
+scale 500 1 500
 isPlayer 0
 parent None
 endobject

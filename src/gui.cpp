@@ -5,6 +5,8 @@
 
 #include "gui.hpp"
 #include "mode.hpp"
+#include "object.hpp"
+#include "mesh.hpp"
 
 // === Constructor ===
 Gui::Gui(Window& window) {
@@ -103,7 +105,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", "default"));
+                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default"));
                 scene.selectObject(objName);
             }
             if (ImGui::MenuItem("Undo")) {
@@ -127,6 +129,15 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     if (!newName.empty()) {
                         scene.selectObject(newName);
                     }
+                }
+            }
+            if (ImGui::MenuItem("Save as Mesh", "Ctrl + M")) {
+                Object* selected = scene.getSelectedObject();
+                if (selected) {
+                    std::vector<Object*> objs;
+                    getDescendants(selected, objs);
+                    std::string filepath = "assets/models/" + selected->name + ".vert";
+                    saveMesh(selected->name, *combineMeshes(selected->name, objs), filepath, scene);
                 }
             }
             ImGui::EndMenu();
@@ -311,12 +322,16 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
             for (Texture* tex : textures) {
                 const std::string& texName = tex->getName();
                 bool isSelected = (selected->texture == tex);
+                ImGui::PushID(texName.c_str());
+                ImGui::Image(tex->getID(), ImVec2(16, 16));
+                ImGui::SameLine();
                 if (ImGui::Selectable(texName.c_str(), isSelected)) {
                     selected->texture = tex;
                 }
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();
                 }
+                ImGui::PopID();
             }
             ImGui::EndCombo();
         }

@@ -1,7 +1,7 @@
 object arm2
 mesh cube
 shader default
-texture cobblestone
+texture blue.png
 texturescale 1 1
 position -0.733333 0.166667 0
 rotation 0 -0 0
@@ -13,7 +13,7 @@ endobject
 object arm1
 mesh cube
 shader default
-texture cobblestone
+texture blue.png
 texturescale 1 1
 position 0.733333 0.166667 0
 rotation 0 -0 0
@@ -25,7 +25,7 @@ endobject
 object body
 mesh cube
 shader default
-texture cobblestone
+texture red.png
 texturescale 1 1
 position 0 -1.25 0
 rotation 0 90 0
@@ -37,7 +37,7 @@ endobject
 object player
 mesh cube
 shader default
-texture cobblestone
+texture yellow.png
 texturescale 1 1
 position 0 1 0
 rotation 0 0 0
@@ -49,11 +49,11 @@ endobject
 object ground
 mesh plane
 shader default
-texture grass
-texturescale 1 1
+texture grass.jpg
+texturescale 150 150
 position 0 -2 0
 rotation 0 0 0
-scale 100 100 100
+scale 500 500 500
 isPlayer 0
 parent None
 endobject

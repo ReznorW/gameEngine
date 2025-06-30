@@ -51,7 +51,7 @@ Object::Object(const std::string& name, const std::string& modelName, const std:
     : name(name) {
     std::string modelPath = "assets/models/" + modelName + ".vert";
     mesh = loadVertFile(modelPath);
-    std::string texturePath = "assets/textures/" + textureName + ".jpg";
+    std::string texturePath = "assets/textures/" + textureName;
     texture = new Texture(texturePath);
     std::string vertPath = "assets/shaders/" + shaderName + "/vertex.glsl";
     std::string fragPath = "assets/shaders/" + shaderName + "/fragment.glsl";
@@ -135,6 +135,13 @@ bool Object::isDescendant(const Object* target) const {
     return false;
 }
 
+void getDescendants(Object* obj, std::vector<Object*>& out) {
+    out.push_back(obj);
+    for (Object* child : obj->children) {
+        getDescendants(child, out);
+    }
+}
+
 // === Rendering ===
 void Object::draw(const Camera& camera, const Object* selectedObject, const bool inPlaytest) const {
     bool isHighlighted = (this == selectedObject) || (selectedObject && selectedObject->isDescendant(this));
@@ -169,4 +176,34 @@ void Object::draw(const Camera& camera, const Object* selectedObject, const bool
     for (const Object* child : children) {
         child->draw(camera, selectedObject, inPlaytest);
     }
+}
+
+std::unique_ptr<Mesh> combineMeshes(const std::string& name, const std::vector<Object*>& objects) {
+    std::vector<Vertex> combinedVertices;
+    std::vector<unsigned int> combinedIndices;
+
+    unsigned int indexOffset = 0;
+
+    for (Object* obj : objects) {
+        const glm::mat4 world = obj->getWorldMatrix();
+        const std::vector<Vertex>& verts = obj->mesh->getVertices();
+        const std::vector<unsigned int>& inds = obj->mesh->getIndices();
+
+        for (const Vertex& v : verts) {
+            Vertex transformed = v;
+            glm::vec4 worldPos = world * glm::vec4(v.position, 1.0f);
+            transformed.position = glm::vec3(worldPos);
+
+            // Transform normals?
+            combinedVertices.push_back(transformed);
+        }
+
+        for (unsigned int idx : inds) {
+            combinedIndices.push_back(idx + indexOffset);
+        }
+
+        indexOffset += verts.size();
+    }
+
+    return std::make_unique<Mesh>(name, combinedVertices, combinedIndices);
 }

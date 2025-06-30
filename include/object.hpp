@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <memory>
 
 #include "mesh.hpp"
 #include "camera.hpp"
@@ -68,8 +69,10 @@ struct Object {
     glm::mat4 getWorldMatrix() const;
     void setParent(Object* newParent);
     bool isDescendant(const Object* target) const;
-    void updateChildren();
     
     // Rendering
     void draw(const Camera& camera, const Object* selectedObject, const bool inPlaytest) const;
 };
+
+void getDescendants(Object* obj, std::vector<Object*>& out);
+std::unique_ptr<Mesh> combineMeshes(const std::string& name, const std::vector<Object*>& objects);

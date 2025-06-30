@@ -35,8 +35,9 @@ Texture::Texture(const std::string& path) {
 
 // === Deconstructor ===
 Texture::~Texture() {
-    if (id)
+    if (id) {
         glDeleteTextures(1, &id);
+    }
 }
 
 // === Usage ===

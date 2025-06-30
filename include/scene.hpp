@@ -20,6 +20,7 @@ public:
     // Mesh access
     Mesh* getMesh(const std::string& name) const;
     std::vector<Mesh*> getMeshes() const;
+    bool addMesh(std::unique_ptr<Mesh> mesh);
 
     // Shader access
     Shader* getShader(const std::string& name);

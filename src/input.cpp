@@ -71,13 +71,24 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
         if (isKeyPressedOnce(GLFW_KEY_Q) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
             glfwSetWindowShouldClose(window.getGLFWwindow(), true);
         }
+        if (isKeyPressedOnce(GLFW_KEY_M) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
+            Object* selected = scene.getSelectedObject();
+            if (selected) {
+                std::vector<Object*> objs;
+                getDescendants(selected, objs);
+                std::string filepath = "assets/models/" + selected->name + ".vert";
+                saveMesh(selected->name, *combineMeshes(selected->name, objs), filepath, scene);
+            }
+        }
         if (isKeyPressedOnce(GLFW_KEY_C)) {
             std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-            scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", "default"));
+            scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default"));
             scene.selectObject(objName);
         }
         if (isKeyPressedOnce(GLFW_KEY_DELETE)) {
-            ImGui::OpenPopup("Confirm Delete");
+            if (scene.getSelectedObject()) {
+                ImGui::OpenPopup("Confirm Delete");
+            }
         }
         if (isKeyPressedOnce(GLFW_KEY_X)) {
             Object* selected = scene.getSelectedObject();

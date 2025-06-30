@@ -73,6 +73,22 @@ std::vector<Mesh*> Scene::getMeshes() const {
     return result;
 }
 
+bool Scene::addMesh(std::unique_ptr<Mesh> mesh) {
+    if (!mesh) return false;
+    const std::string& name = mesh->getName();
+    meshes[name] = std::move(mesh);
+    return true;
+}
+
+bool Scene::removeMesh(const std::string& name) {
+    auto it = meshes.find(name);
+    if (it != meshes.end()) {
+        meshes.erase(it);
+        return true;
+    }
+    return false;
+}
+
 // === Shader access ===
 Shader* Scene::getShader(const std::string& name) {
     auto it = shaders.find(name);
@@ -205,14 +221,7 @@ bool Scene::saveScene(const std::string& scnName) {
         file << "object " << obj->name << "\n";
         file << "mesh " << obj->mesh->getName() << "\n";
         file << "shader " << obj->shader->getName() << "\n";
-
-        std::string textureName = obj->texture->getName();
-        size_t lastDot = textureName.find_last_of('.');
-        if (lastDot != std::string::npos) {
-            textureName = textureName.substr(0, lastDot);
-        }
-
-        file << "texture " << textureName << "\n";
+        file << "texture " << obj->texture->getName() << "\n";
         file << "texturescale " << obj->textureScale.x << " " << obj->textureScale.y << "\n";
         file << "position " << obj->transform.position.x << " " << obj->transform.position.y << " " << obj->transform.position.z << "\n";
         file << "rotation " << obj->transform.rotation.x << " " << obj->transform.rotation.y << " " << obj->transform.rotation.z << "\n";
