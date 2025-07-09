@@ -1,0 +1,38 @@
+object enemy
+mesh pyramid
+shader default
+script simpleFollow
+texture red.png
+texturescale 1 1
+position 0 0 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 0
+parent None
+endobject
+
+object player
+mesh player
+shader default
+script player
+texture orange.png
+texturescale 1 1
+position -4.3 0 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 1
+parent None
+endobject
+
+object ground
+mesh plane
+shader default
+texture grass.jpg
+texturescale 150 150
+position 0 -2 0
+rotation 0 0 0
+scale 500 1 500
+isPlayer 0
+parent None
+endobject
+

@@ -83,6 +83,7 @@ int main() {
                 for (auto& obj : playScene->getObjects()) {
                     if (obj->script) {
                         obj->script->setContext(&context);
+                        obj->script->onStart();
                     }
                 }
             }

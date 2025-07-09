@@ -28,6 +28,7 @@ public:
     void setContext(Context* contextPtr);
 
     // Execution
+    void onStart();
     void update(float dt);
 
 private:
@@ -41,9 +42,11 @@ private:
     static int lua_moveObject(lua_State* L);
     static int lua_setPosition(lua_State* L);
     static int lua_getPosition(lua_State* L);
+    static int lua_moveToward(lua_State* L);
     static int lua_rotateObject(lua_State* L);
     static int lua_setRotation(lua_State* L);
     static int lua_getRotation(lua_State* L);
+    static int lua_lookAt(lua_State* L);
     static int lua_setScale(lua_State* L);
     static int lua_getScale(lua_State* L);
 
@@ -51,6 +54,9 @@ private:
     static int lua_destroyObject(lua_State* L);
 
     static int lua_isKeyPressed(lua_State* L);
+
+    static int lua_getName(lua_State* L);
+    static int lua_getPlayerName(lua_State* L);
 
     // Lua utils
     static Context* getContext(lua_State* L);
