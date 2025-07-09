@@ -9,6 +9,8 @@
 #include "mesh.hpp"
 #include "texture.hpp"
 
+class Script;
+
 // Transform definition
 struct Transform {
     // Transform vectors
@@ -48,6 +50,8 @@ struct Object {
     Mesh* mesh = nullptr;
     Shader* shader = nullptr;
     Texture* texture = nullptr;
+    Script* script = nullptr;
+
     glm::vec2 textureScale = glm::vec2(1.0f, 1.0f);
 
     Transform transform;
@@ -58,7 +62,7 @@ struct Object {
 
     // Constructors
     Object() = default;
-    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName);
+    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName);
     Object(const Object& other);
         
     // OBB handling

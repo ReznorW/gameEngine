@@ -16,6 +16,7 @@
 #include "scene.hpp"
 #include "gui.hpp"
 #include "mode.hpp"
+#include "script.hpp"
 
 int main() {
     // === Context setup ===
@@ -78,6 +79,13 @@ int main() {
         // === Mode transition handling ===
         if (mode != prevMode) {
             Input::modeChange(mode, window.getGLFWwindow());
+            if (prevMode == Mode::Editor) {
+                for (auto& obj : playScene->getObjects()) {
+                    if (obj->script) {
+                        obj->script->setContext(&context);
+                    }
+                }
+            }
             prevMode = mode;
         }
 
@@ -128,6 +136,12 @@ int main() {
             context.scene = playScene.get();
 
             for (auto& obj : playScene->getObjects()) {
+                if (obj->script) {
+                    obj->script->update(frameTime);
+                }
+            }
+
+            for (auto& obj : playScene->getObjects()) {
                 if (obj->isPlayer) {
                     obj->transform.position = playCamera.position; //- glm::vec3(0.0f, 0.0f, 0.0f);  TODO: Dynamically change camera position for object
                     obj->transform.rotation.y = -playCamera.yaw;
@@ -139,13 +153,6 @@ int main() {
             playScene->draw(playCamera, true);
 
             gui.drawPlaytestUI();
-
-            if (Object* cube = playScene->getObject("cube")) {
-                cube->transform.rotation.x = newTime * 15.0f;
-                cube->transform.rotation.y = newTime * 20.0f;
-                cube->transform.rotation.z = newTime * 5.0f;
-                cube->transform.markDirty();
-            }
         }
 
         // === GUI end ===

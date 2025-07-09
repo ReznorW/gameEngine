@@ -8,6 +8,7 @@
 
 #include "object.hpp"
 #include "camera.hpp"
+#include "script.hpp"
 
 // ### Transform functions ###
 // === Update handling ===
@@ -47,7 +48,7 @@ OBB::OBB(const glm::vec3& min, const glm::vec3& max)
 
 // ### Object functions ###
 // === Constructor ===
-Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName)
+Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName)
     : name(name) {
     std::string modelPath = "assets/models/" + modelName + ".vert";
     mesh = loadVertFile(modelPath);
@@ -56,11 +57,21 @@ Object::Object(const std::string& name, const std::string& modelName, const std:
     std::string vertPath = "assets/shaders/" + shaderName + "/vertex.glsl";
     std::string fragPath = "assets/shaders/" + shaderName + "/fragment.glsl";
     shader = new Shader(vertPath, fragPath, shaderName);
+    if (!scriptName.empty()) {
+        std::string scriptPath = "assets/scripts/" + scriptName + ".lua";
+        script = new Script(scriptPath);
+    }
     Object::initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
 } 
 
 Object::Object(const Object& other)
-    : name(other.name), mesh(other.mesh), shader(other.shader), texture(other.texture), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr), children() {}
+    : name(other.name), mesh(other.mesh), shader(other.shader), texture(other.texture), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr), children() {
+    if (other.script) {
+        script = new Script(*(other.script));
+    } else {
+        script = nullptr;
+    }
+}
 
 // === OBB handling ===
 void Object::initializeOBB(const glm::vec3& meshMin, const glm::vec3& meshMax) {

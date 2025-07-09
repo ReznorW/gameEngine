@@ -9,6 +9,7 @@
 #include "camera.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
+#include "script.hpp"
 
 // Scene definition
 class Scene {
@@ -21,6 +22,7 @@ public:
     Mesh* getMesh(const std::string& name) const;
     std::vector<Mesh*> getMeshes() const;
     bool addMesh(std::unique_ptr<Mesh> mesh);
+    bool removeMesh(const std::string&);
 
     // Shader access
     Shader* getShader(const std::string& name);
@@ -29,6 +31,11 @@ public:
     // Texture access
     Texture* getTexture(const std::string& name);
     std::vector<Texture*> getTextures() const;
+
+    // Script access
+    Script* getScript(const std::string& name);
+    std::vector<Script*> getScripts() const;
+    bool addScript(std::unique_ptr<Script> script);
 
     // Scene handling
     bool loadScene(const std::string& name);
@@ -62,6 +69,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Shader>> shaders;
     std::unordered_map<std::string, std::unique_ptr<Texture>> textures;
     std::unordered_map<std::string, std::unique_ptr<Object>> objects;
+    std::unordered_map<std::string, std::unique_ptr<Script>> scripts;
 
     Object* selectedObject = nullptr;
 
@@ -71,4 +79,5 @@ private:
     void loadAllMeshes();
     void loadAllShaders();
     void loadAllTextures();
+    void loadAllScripts();
 };

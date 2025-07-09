@@ -1,4 +1,5 @@
 #include <imgui.h>
+#include <fstream>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -7,6 +8,7 @@
 #include "mode.hpp"
 #include "object.hpp"
 #include "mesh.hpp"
+#include "script.hpp"
 
 // === Constructor ===
 Gui::Gui(Window& window) {
@@ -105,7 +107,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default"));
+                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", ""));
                 scene.selectObject(objName);
             }
             if (ImGui::MenuItem("Undo")) {
@@ -228,7 +230,23 @@ void Gui::drawObjectTree(Object& obj, Scene& scene) {
     }
 }
 
+static bool InputTextMultilineStdString(const char* label, std::string& str, const ImVec2& size, ImGuiInputTextFlags flags = 0) {
+    static std::vector<char> buffer;
+    buffer.resize(std::max((size_t)str.size() + 1024, buffer.size())); // Ensure buffer is large enough
+    std::strncpy(buffer.data(), str.c_str(), buffer.size());
+
+    bool changed = ImGui::InputTextMultiline(label, buffer.data(), buffer.size(), size, flags);
+    if (changed) {
+        str = buffer.data();
+    }
+    return changed;
+}
+
 void Gui::drawObjectProperties(Scene& scene, Object* selected) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 350, 20));
+    ImGui::SetNextWindowSize(ImVec2(350, io.DisplaySize.y));
+
     if (ImGui::Begin("Object Properties")) {
         // Editable Name
         char nameBuffer[128];
@@ -353,6 +371,81 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
                     other->isPlayer = false;
                 }
             }
+        }
+    }
+
+    // Script selector
+    std::string currentScript = selected->script ? selected->script->getName() : "None";
+
+    if (ImGui::BeginCombo("Script", currentScript.c_str())) {
+    bool isSelected = (selected->script == nullptr);
+    if (ImGui::Selectable("None", isSelected)) {
+        selected->script = nullptr;
+    }
+    if (isSelected) {
+        ImGui::SetItemDefaultFocus();
+    }
+
+    auto scripts = scene.getScripts();
+    for (Script* script : scripts) {
+        const std::string& scriptName = script->getName();
+        bool isSelected = (scriptName == currentScript);
+        if (ImGui::Selectable(scriptName.c_str(), isSelected)) {
+            selected->script = script;
+        }
+        if (isSelected) {
+            ImGui::SetItemDefaultFocus();
+        }
+    }
+
+    ImGui::EndCombo();
+}
+
+    // Ensure a script is selected
+    if (selected->script) {
+        static std::string editableScriptCode;
+
+        // Load the script's current code only once (when script is assigned)
+        static std::string lastScriptName = "";
+        if (selected->script->getName() != lastScriptName) {
+            editableScriptCode = selected->script->getSource();
+            lastScriptName = selected->script->getName();
+        }
+
+        ImGui::SeparatorText("Script Code");
+
+        if (InputTextMultilineStdString("##ScriptEditor", editableScriptCode, ImVec2(-1, io.DisplaySize.y / 2), ImGuiInputTextFlags_AllowTabInput)) {
+            selected->script->updateSource(editableScriptCode);
+        }
+
+        if (ImGui::Button("Save Script")) {
+            selected->script->saveToFile();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("New Script")) {
+            // Create a new empty script and assign it
+            std::string newScriptName = "newScript";
+            int counter = 1;
+
+            // Ensure uniqueness
+            while (scene.getScript(newScriptName)) {
+                newScriptName = "newScript" + std::to_string(counter++);
+            }
+
+            // Create empty script file on disk
+            std::string fullPath = "assets/scripts/" + newScriptName + ".lua";
+            std::ofstream file(fullPath);
+            if (file.is_open()) {
+                file << "-- New script\n";
+                file << "function update(dt)\n\nend";
+                file.close();
+            }
+
+            // Load and assign it
+            scene.addScript(std::make_unique<Script>(fullPath));
+            selected->script = scene.getScript(newScriptName);
         }
     }
 
@@ -486,4 +579,3 @@ void Gui::drawPlaytestUI() {
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
     ImGui::End();
 }
-

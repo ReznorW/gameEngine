@@ -1,0 +1,384 @@
+#include <iostream>
+#include <ostream>
+#include <fstream>
+#include <filesystem>
+#include <glm/glm.hpp>
+
+#include "script.hpp"
+#include "object.hpp"
+#include "window.hpp"
+
+// === Constructors ===
+Script::Script(const std::string& scriptPath) {
+    L = luaL_newstate();
+    luaL_openlibs(L);
+    registerFunctions();
+
+    name = std::filesystem::path(scriptPath).stem().string();
+
+    std::ifstream file(scriptPath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open script file: " << scriptPath << std::endl;
+        return;
+    }
+
+    std::string code((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    sourceCode = code;
+
+    if (luaL_dostring(L, code.c_str()) != LUA_OK) {
+        lastError = lua_tostring(L, -1);
+        std::cerr << "[Lua Compile Error] " << lastError << std::endl;
+        lua_pop(L, 1);
+    }
+}
+
+Script::Script(const Script& other) {
+    name = other.name;
+    sourceCode = other.sourceCode;
+
+    L = luaL_newstate();
+    luaL_openlibs(L);
+    registerFunctions();
+
+    if (luaL_dostring(L, sourceCode.c_str()) != LUA_OK) {
+        lastError = lua_tostring(L, -1);
+        lua_pop(L, 1);
+    }
+}
+
+// === Deconstructor ===
+Script::~Script() {
+    lua_close(L);
+}
+
+void Script::setContext(Context* contextPtr) {
+    context = contextPtr;
+    lua_pushlightuserdata(L, static_cast<void*>(context));
+    lua_setglobal(L, "__context");
+}
+
+void Script::updateSource(const std::string& newCode) {
+    sourceCode = newCode;
+
+    if (luaL_dostring(L, sourceCode.c_str()) != LUA_OK) {
+        lastError = lua_tostring(L, -1);
+        lua_pop(L, 1);
+    }
+}
+
+void Script::saveToFile() {
+    std::ofstream out("assets/scripts/" + name + ".lua");
+    if (out.is_open()) {
+        out << sourceCode;
+        out.close();
+    }
+}
+
+// === Execution ===
+void Script::update(float dt) {
+    lua_getglobal(L, "update");
+    if (lua_isfunction(L, -1)) {
+        lua_pushnumber(L, dt);
+        if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+            lastError = lua_tostring(L, -1);
+            std::cerr << "[Lua Runtime Error] " << lastError << std::endl;
+            lua_pop(L, 1);
+        }
+    } else {
+        lua_pop(L, 1); // Not a function
+    }
+}
+
+// === Lua function bindings ===
+void Script::registerFunctions() {
+    // Transform functions
+    lua_register(L, "moveObject", lua_moveObject);
+    lua_register(L, "setPosition", lua_setPosition);
+    lua_register(L, "getPosition", lua_getPosition);
+    lua_register(L, "rotateObject", lua_rotateObject);
+    lua_register(L, "setRotation", lua_setRotation);
+    lua_register(L, "getRotation", lua_getRotation);
+    lua_register(L, "setScale", lua_setScale);
+    lua_register(L, "getScale", lua_getScale);
+
+    // Scene management
+    lua_register(L, "createObject", lua_createObject);
+    lua_register(L, "destroyObject", lua_destroyObject);
+
+    // Input management
+    lua_register(L, "isKeyPressed", lua_isKeyPressed);
+}
+
+int Script::lua_moveObject(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    Context* context = getContext(L);
+
+    if (Object* obj = context->scene->getObject(name)) {
+        obj->transform.position += glm::vec3(x, y, z);
+        obj->transform.markDirty();
+    }
+
+    return 0;
+}
+
+int Script::lua_setPosition(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        obj->transform.position = glm::vec3(x, y, z);
+        obj->transform.markDirty();
+    }
+
+    return 0;
+}
+
+int Script::lua_getPosition(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        glm::vec3 pos = obj->transform.position;
+        lua_pushnumber(L, pos.x);
+        lua_pushnumber(L, pos.y);
+        lua_pushnumber(L, pos.z);
+        return 3;
+    }
+
+    return 0;
+}
+
+int Script::lua_rotateObject(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    Context* context = getContext(L);
+
+    if (Object* obj = context->scene->getObject(name)) {
+        obj->transform.rotation = obj->transform.rotation + glm::vec3(x, y, z);
+        obj->transform.markDirty();
+    }
+
+    return 0;
+}
+
+int Script::lua_setRotation(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        obj->transform.rotation = glm::vec3(x, y, z);
+        obj->transform.markDirty();
+    }
+
+    return 0;
+}
+
+int Script::lua_getRotation(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        glm::vec3 rot = obj->transform.rotation;
+        lua_pushnumber(L, rot.x);
+        lua_pushnumber(L, rot.y);
+        lua_pushnumber(L, rot.z);
+        return 3;
+    }
+
+    return 0;
+}
+
+int Script::lua_setScale(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        obj->transform.scale = glm::vec3(x, y, z);
+        obj->transform.markDirty();
+    }
+
+    return 0;
+}
+
+int Script::lua_getScale(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        glm::vec3 scale = obj->transform.scale;
+        lua_pushnumber(L, scale.x);
+        lua_pushnumber(L, scale.y);
+        lua_pushnumber(L, scale.z);
+        return 3;
+    }
+
+    return 0;
+}
+
+int Script::lua_createObject(lua_State* L) {
+    const char* name       = luaL_checkstring(L, 1);
+    const char* model      = luaL_checkstring(L, 2);
+    const char* texture    = luaL_checkstring(L, 3);
+    const char* shader     = luaL_checkstring(L, 4);
+    const char* scriptName = luaL_checkstring(L, 5);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    // Avoid duplicates
+    if (context->scene->getObject(name)) {
+        std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
+        return 0;
+    }
+
+    // Create and add the object
+    std::unique_ptr<Object> obj = std::make_unique<Object>(name, model, texture, shader, scriptName);
+    context->scene->addObject(name, std::move(obj));
+
+    return 0;
+}
+
+int Script::lua_destroyObject(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
+
+    Context* context = getContext(L);
+    if (!context || !context->scene) return 0;
+
+    Object* obj = context->scene->getObject(name);
+    if (obj) {
+        context->scene->deleteObject(name);
+    }
+
+    return 0;
+}
+
+int Script::lua_isKeyPressed(lua_State* L) {
+    const char* keyStr = luaL_checkstring(L, 1);
+    if (!keyStr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+
+    Context* context = getContext(L);
+    GLFWwindow* window = context->window->getGLFWwindow();
+
+    // Convert string to key code
+    int key = -1;
+    if (strcmp(keyStr, "A") == 0) return GLFW_KEY_A;
+    else if (strcmp(keyStr, "B") == 0) return GLFW_KEY_B;
+    else if (strcmp(keyStr, "C") == 0) return GLFW_KEY_C;
+    else if (strcmp(keyStr, "D") == 0) return GLFW_KEY_D;
+    else if (strcmp(keyStr, "E") == 0) return GLFW_KEY_E;
+    else if (strcmp(keyStr, "F") == 0) return GLFW_KEY_F;
+    else if (strcmp(keyStr, "G") == 0) return GLFW_KEY_G;
+    else if (strcmp(keyStr, "H") == 0) return GLFW_KEY_H;
+    else if (strcmp(keyStr, "I") == 0) return GLFW_KEY_I;
+    else if (strcmp(keyStr, "J") == 0) return GLFW_KEY_J;
+    else if (strcmp(keyStr, "K") == 0) return GLFW_KEY_K;
+    else if (strcmp(keyStr, "L") == 0) return GLFW_KEY_L;
+    else if (strcmp(keyStr, "M") == 0) return GLFW_KEY_M;
+    else if (strcmp(keyStr, "N") == 0) return GLFW_KEY_N;
+    else if (strcmp(keyStr, "O") == 0) return GLFW_KEY_O;
+    else if (strcmp(keyStr, "P") == 0) return GLFW_KEY_P;
+    else if (strcmp(keyStr, "Q") == 0) return GLFW_KEY_Q;
+    else if (strcmp(keyStr, "R") == 0) return GLFW_KEY_R;
+    else if (strcmp(keyStr, "S") == 0) return GLFW_KEY_S;
+    else if (strcmp(keyStr, "T") == 0) return GLFW_KEY_T;
+    else if (strcmp(keyStr, "U") == 0) return GLFW_KEY_U;
+    else if (strcmp(keyStr, "V") == 0) return GLFW_KEY_V;
+    else if (strcmp(keyStr, "W") == 0) return GLFW_KEY_W;
+    else if (strcmp(keyStr, "X") == 0) return GLFW_KEY_X;
+    else if (strcmp(keyStr, "Y") == 0) return GLFW_KEY_Y;
+    else if (strcmp(keyStr, "Z") == 0) return GLFW_KEY_Z;
+
+    else if (strcmp(keyStr, "0") == 0) return GLFW_KEY_0;
+    else if (strcmp(keyStr, "1") == 0) return GLFW_KEY_1;
+    else if (strcmp(keyStr, "2") == 0) return GLFW_KEY_2;
+    else if (strcmp(keyStr, "3") == 0) return GLFW_KEY_3;
+    else if (strcmp(keyStr, "4") == 0) return GLFW_KEY_4;
+    else if (strcmp(keyStr, "5") == 0) return GLFW_KEY_5;
+    else if (strcmp(keyStr, "6") == 0) return GLFW_KEY_6;
+    else if (strcmp(keyStr, "7") == 0) return GLFW_KEY_7;
+    else if (strcmp(keyStr, "8") == 0) return GLFW_KEY_8;
+    else if (strcmp(keyStr, "9") == 0) return GLFW_KEY_9;
+
+    else if (strcmp(keyStr, "Space") == 0) return GLFW_KEY_SPACE;
+    else if (strcmp(keyStr, "Enter") == 0) return GLFW_KEY_ENTER;
+    else if (strcmp(keyStr, "Tab") == 0) return GLFW_KEY_TAB;
+    else if (strcmp(keyStr, "Backspace") == 0) return GLFW_KEY_BACKSPACE;
+    else if (strcmp(keyStr, "Left") == 0) return GLFW_KEY_LEFT;
+    else if (strcmp(keyStr, "Right") == 0) return GLFW_KEY_RIGHT;
+    else if (strcmp(keyStr, "Up") == 0) return GLFW_KEY_UP;
+    else if (strcmp(keyStr, "Down") == 0) return GLFW_KEY_DOWN;
+
+    else if (strcmp(keyStr, "LeftShift") == 0) return GLFW_KEY_LEFT_SHIFT;
+    else if (strcmp(keyStr, "RightShift") == 0) return GLFW_KEY_RIGHT_SHIFT;
+    else if (strcmp(keyStr, "LeftCtrl") == 0) return GLFW_KEY_LEFT_CONTROL;
+    else if (strcmp(keyStr, "RightCtrl") == 0) return GLFW_KEY_RIGHT_CONTROL;
+    else if (strcmp(keyStr, "LeftAlt") == 0) return GLFW_KEY_LEFT_ALT;
+    else if (strcmp(keyStr, "RightAlt") == 0) return GLFW_KEY_RIGHT_ALT;
+
+    else if (strcmp(keyStr, "F1") == 0) return GLFW_KEY_F1;
+    else if (strcmp(keyStr, "F2") == 0) return GLFW_KEY_F2;
+    else if (strcmp(keyStr, "F3") == 0) return GLFW_KEY_F3;
+    else if (strcmp(keyStr, "F4") == 0) return GLFW_KEY_F4;
+    else if (strcmp(keyStr, "F5") == 0) return GLFW_KEY_F5;
+    else if (strcmp(keyStr, "F6") == 0) return GLFW_KEY_F6;
+    else if (strcmp(keyStr, "F7") == 0) return GLFW_KEY_F7;
+    else if (strcmp(keyStr, "F8") == 0) return GLFW_KEY_F8;
+    else if (strcmp(keyStr, "F9") == 0) return GLFW_KEY_F9;
+    else if (strcmp(keyStr, "F10") == 0) return GLFW_KEY_F10;
+    else if (strcmp(keyStr, "F11") == 0) return GLFW_KEY_F11;
+    else if (strcmp(keyStr, "F12") == 0) return GLFW_KEY_F12;
+
+    if (key == -1) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+
+    int state = glfwGetKey(window, key);
+    lua_pushboolean(L, state == GLFW_PRESS);
+    return 1;
+}
+
+//=== Lua utils ===
+Context* Script::getContext(lua_State* L) {
+    lua_getglobal(L, "__context");
+    Context* context = static_cast<Context*>(lua_touserdata(L, -1));
+    lua_pop(L, 1);
+    return context;
+}

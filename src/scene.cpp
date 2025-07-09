@@ -10,6 +10,7 @@ Scene::Scene() {
     loadAllMeshes();
     loadAllShaders();
     loadAllTextures();
+    loadAllScripts();
 }
 
 Scene::Scene(const Scene& other) {
@@ -28,6 +29,7 @@ Scene::Scene(const Scene& other) {
         cloned->mesh = obj->mesh;
         cloned->shader = obj->shader;
         cloned->texture = obj->texture;
+        cloned->script = obj->script;
 
         pointerMap[obj.get()] = cloned.get();
         objects[name] = std::move(cloned);
@@ -120,6 +122,29 @@ std::vector<Texture*> Scene::getTextures() const {
     return result;
 }
 
+// === Script access ===
+Script* Scene::getScript(const std::string& name) {
+    if (scripts.count(name)) {
+        return scripts[name].get();
+    }
+    return nullptr;
+}
+
+std::vector<Script*> Scene::getScripts() const {
+    std::vector<Script*> result;
+    for (const auto& [name, script] : scripts) {
+        result.push_back(script.get());
+    }
+    return result;
+}
+
+bool Scene::addScript(std::unique_ptr<Script> script) {
+    if (!script) return false;
+    const std::string& name = script->getName();
+    scripts[name] = std::move(script);
+    return true;
+}
+
 // === Scene handling ===
 bool Scene::loadScene(const std::string& scnName) {
     clearSelection();
@@ -133,7 +158,7 @@ bool Scene::loadScene(const std::string& scnName) {
     }
 
     std::string line;
-    std::string objName, meshName, textureName, shaderName, parentName = "None";
+    std::string objName, meshName, textureName, shaderName, scriptName, parentName = "None";
     glm::vec3 position(0), rotation(0), scale(1);
     glm::vec2 textureScale(1);
     bool isPlayer;
@@ -150,7 +175,7 @@ bool Scene::loadScene(const std::string& scnName) {
 
         if (token == "object") {
             iss >> objName;
-            meshName = shaderName = textureName = "";
+            meshName = shaderName = textureName = scriptName = "";
             position = rotation = glm::vec3(0);
             scale = glm::vec3(1);
             textureScale = glm::vec2(1);
@@ -161,6 +186,8 @@ bool Scene::loadScene(const std::string& scnName) {
             iss >> meshName;
         } else if (token == "shader") {
             iss >> shaderName;
+        } else if (token == "script") {
+            iss >> scriptName;
         } else if (token == "texture") {
             iss >> textureName;
         } else if (token == "texturescale") {
@@ -176,7 +203,7 @@ bool Scene::loadScene(const std::string& scnName) {
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject" && inObjectBlock) {
-            auto obj = std::make_unique<Object>(objName, meshName, textureName, shaderName);
+            auto obj = std::make_unique<Object>(objName, meshName, textureName, shaderName, scriptName);
             obj->transform.position = position;
             obj->transform.rotation = rotation;
             obj->transform.scale = scale;
@@ -221,6 +248,9 @@ bool Scene::saveScene(const std::string& scnName) {
         file << "object " << obj->name << "\n";
         file << "mesh " << obj->mesh->getName() << "\n";
         file << "shader " << obj->shader->getName() << "\n";
+        if (obj->script) {
+            file << "script " << obj->script->getName() << "\n";
+        }
         file << "texture " << obj->texture->getName() << "\n";
         file << "texturescale " << obj->textureScale.x << " " << obj->textureScale.y << "\n";
         file << "position " << obj->transform.position.x << " " << obj->transform.position.y << " " << obj->transform.position.z << "\n";
@@ -413,6 +443,18 @@ void Scene::loadAllTextures() {
             std::string name = entry.path().stem().string();
             textures[name] = std::make_unique<Texture>(entry.path().string().c_str());
             std::cout << "    -" << name << " texture loaded" << std::endl;
+        }
+    }
+}
+
+void Scene::loadAllScripts() {
+    std::cout << "===Loading in all scripts===" << std::endl;
+    std::filesystem::path path = "assets/scripts";
+    for (const auto& entry : std::filesystem::directory_iterator(path)) {
+        if (entry.is_regular_file()) {
+            std::string name = entry.path().stem().string();
+            scripts[name] = std::make_unique<Script>(entry.path().string().c_str());
+            std::cout << "    -" << name << " script loaded" << std::endl;
         }
     }
 }
