@@ -107,7 +107,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", ""));
+                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "default", "", scene.getResources()));
                 scene.selectObject(objName);
             }
             if (ImGui::MenuItem("Undo")) {
@@ -300,8 +300,8 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         std::string currentMesh = selected->mesh ? selected->mesh->getName() : "None";
 
         if (ImGui::BeginCombo("Mesh", currentMesh.c_str())) {
-            auto meshes = scene.getMeshes();
-            for (Mesh* mesh : meshes) {
+            auto meshes = scene.getResources()->getMeshes();
+            for (const std::shared_ptr<Mesh>& mesh : meshes) {
                 const std::string& meshName = mesh->getName();
                 bool isSelected = (meshName == currentMesh);
                 if (ImGui::Selectable(meshName.c_str(), isSelected)) {
@@ -319,11 +319,12 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         std::string currentShader = selected->shader ? selected->shader->getName() : "None";
 
         if (ImGui::BeginCombo("Shader", currentShader.c_str())) {
-            auto shaderNames = scene.getShaderNames();
-            for (const auto& shaderName : shaderNames) {
-                bool isSelected = (shaderName == currentShader);
+            auto shaders = scene.getResources()->getShaders();
+            for (const std::shared_ptr<Shader>& shader : shaders) {
+                const std::string& shaderName = shader->getName();
+                bool isSelected = (selected->shader == shader);
                 if (ImGui::Selectable(shaderName.c_str(), isSelected)) {
-                    selected->shader = scene.getShader(shaderName);
+                    selected->shader = shader;
                 }
                 if (isSelected) {
                     ImGui::SetItemDefaultFocus();
@@ -336,8 +337,8 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         std::string currentTextureName = selected->texture ? selected->texture->getName() : "None";
 
         if (ImGui::BeginCombo("Texture", currentTextureName.c_str())) {
-            auto textures = scene.getTextures();
-            for (Texture* tex : textures) {
+            auto textures = scene.getResources()->getTextures();
+            for (const std::shared_ptr<Texture>& tex : textures) {
                 const std::string& texName = tex->getName();
                 bool isSelected = (selected->texture == tex);
                 ImGui::PushID(texName.c_str());
@@ -378,28 +379,28 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
     std::string currentScript = selected->script ? selected->script->getName() : "None";
 
     if (ImGui::BeginCombo("Script", currentScript.c_str())) {
-    bool isSelected = (selected->script == nullptr);
-    if (ImGui::Selectable("None", isSelected)) {
-        selected->script = nullptr;
-    }
-    if (isSelected) {
-        ImGui::SetItemDefaultFocus();
-    }
-
-    auto scripts = scene.getScripts();
-    for (Script* script : scripts) {
-        const std::string& scriptName = script->getName();
-        bool isSelected = (scriptName == currentScript);
-        if (ImGui::Selectable(scriptName.c_str(), isSelected)) {
-            selected->script = script;
+        bool isSelected = (selected->script == nullptr);
+        if (ImGui::Selectable("None", isSelected)) {
+            selected->script = nullptr;
         }
         if (isSelected) {
             ImGui::SetItemDefaultFocus();
         }
-    }
 
-    ImGui::EndCombo();
-}
+        auto scripts = scene.getResources()->getScripts();
+        for (const std::shared_ptr<Script>& script : scripts) {
+            const std::string& scriptName = script->getName();
+            bool isSelected = (scriptName == currentScript);
+            if (ImGui::Selectable(scriptName.c_str(), isSelected)) {
+                selected->script = script;
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+
+        ImGui::EndCombo();
+    }
 
     // Ensure a script is selected
     if (selected->script) {
@@ -430,7 +431,7 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
             int counter = 1;
 
             // Ensure uniqueness
-            while (scene.getScript(newScriptName)) {
+            while (scene.getResources()->getScript(newScriptName)) {
                 newScriptName = "newScript" + std::to_string(counter++);
             }
 
@@ -444,8 +445,8 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
             }
 
             // Load and assign it
-            scene.addScript(std::make_unique<Script>(fullPath));
-            selected->script = scene.getScript(newScriptName);
+            scene.getResources()->addScript(std::make_shared<Script>(fullPath));
+            selected->script = scene.getResources()->getScript(newScriptName);
         }
     }
 

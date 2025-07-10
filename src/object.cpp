@@ -9,6 +9,7 @@
 #include "object.hpp"
 #include "camera.hpp"
 #include "script.hpp"
+#include "resources.hpp"
 
 // ### Transform functions ###
 // === Update handling ===
@@ -48,30 +49,27 @@ OBB::OBB(const glm::vec3& min, const glm::vec3& max)
 
 // ### Object functions ###
 // === Constructor ===
-Object::Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName)
+Object::Object(const std::string& name, const std::string& meshName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName, Resources* resources)
     : name(name) {
-    std::string modelPath = "assets/models/" + modelName + ".vert";
-    mesh = loadVertFile(modelPath);
-    std::string texturePath = "assets/textures/" + textureName;
-    texture = new Texture(texturePath);
-    std::string vertPath = "assets/shaders/" + shaderName + "/vertex.glsl";
-    std::string fragPath = "assets/shaders/" + shaderName + "/fragment.glsl";
-    shader = new Shader(vertPath, fragPath, shaderName);
+    mesh = resources->getMesh(meshName);
+    texture = resources->getTexture(textureName);
+    shader = resources->getShader(shaderName);
     if (!scriptName.empty()) {
-        std::string scriptPath = "assets/scripts/" + scriptName + ".lua";
-        script = new Script(scriptPath);
-    }
-    Object::initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
-} 
-
-Object::Object(const Object& other)
-    : name(other.name), mesh(other.mesh), shader(other.shader), texture(other.texture), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr), children() {
-    if (other.script) {
-        script = new Script(*(other.script));
-    } else {
-        script = nullptr;
+        auto baseScript = resources->getScript(scriptName);
+        if (baseScript) {
+            script = std::make_shared<Script>(*baseScript);
+        }
     }
 }
+
+// Object::Object(const Object& other)
+//     : name(other.name), isPlayer(other.isPlayer), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+
+Object::Object(const Object& other)
+    : name(other.name), isPlayer(other.isPlayer), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+
+// === Deconstructor ===
+Object::~Object() {}
 
 // === OBB handling ===
 void Object::initializeOBB(const glm::vec3& meshMin, const glm::vec3& meshMax) {

@@ -336,7 +336,7 @@ int Script::lua_createObject(lua_State* L) {
     }
 
     // Create and add the object
-    std::unique_ptr<Object> obj = std::make_unique<Object>(name, model, texture, shader, scriptName);
+    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->scene->getResources());
     context->scene->addObject(name, std::move(obj));
 
     // Execute script if exists

@@ -82,7 +82,7 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
         }
         if (isKeyPressedOnce(GLFW_KEY_C)) {
             std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-            scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", ""));
+            scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", "", scene.getResources()));
             scene.selectObject(objName);
         }
         if (isKeyPressedOnce(GLFW_KEY_DELETE)) {

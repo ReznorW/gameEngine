@@ -17,6 +17,7 @@
 #include "gui.hpp"
 #include "mode.hpp"
 #include "script.hpp"
+#include "resources.hpp"
 
 int main() {
     // === Context setup ===
@@ -38,9 +39,13 @@ int main() {
     std::cout << "===Setting up GUI===" << std::endl;
     Gui gui(window);
 
+    // === Resource setup ===
+    std::cout << "===Loading resources===" << std::endl;
+    auto resources = std::make_shared<Resources>();
+
     // === Scene and objects ===
     std::cout << "===Initializing scene===" << std::endl;
-    Scene editorScene;
+    Scene editorScene(resources.get());
     std::unique_ptr<Scene> playScene;
     context.scene = &editorScene;
 

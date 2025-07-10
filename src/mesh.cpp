@@ -190,11 +190,11 @@ bool saveMesh(const std::string& name, const Mesh& mesh, const std::string& file
     }
     out.close();
 
-    if (scene.getMesh(name)) {
-        scene.removeMesh(name);
+    if (scene.getResources()->getMesh(name)) {
+        scene.getResources()->deleteMesh(name);
     }
 
-    scene.addMesh(std::make_unique<Mesh>(*loadVertFile(filepath)));
+    scene.getResources()->addMesh(std::make_shared<Mesh>(*loadVertFile(filepath)));
 
     return true;
 }

@@ -9,7 +9,9 @@
 #include "mesh.hpp"
 #include "texture.hpp"
 
+// Forward declarations
 class Script;
+class Resources;
 
 // Transform definition
 struct Transform {
@@ -47,10 +49,10 @@ struct Object {
     std::string name;
     bool isPlayer = false;
 
-    Mesh* mesh = nullptr;
-    Shader* shader = nullptr;
-    Texture* texture = nullptr;
-    Script* script = nullptr;
+    std::shared_ptr<Mesh> mesh = nullptr;
+    std::shared_ptr<Shader> shader = nullptr;
+    std::shared_ptr<Texture> texture = nullptr;
+    std::shared_ptr<Script> script = nullptr;
 
     glm::vec2 textureScale = glm::vec2(1.0f, 1.0f);
 
@@ -62,8 +64,11 @@ struct Object {
 
     // Constructors
     Object() = default;
-    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName);
+    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName, Resources* resources);
     Object(const Object& other);
+
+    // Deconstructor
+    ~Object();
         
     // OBB handling
     void initializeOBB(const glm::vec3& meshMin, const glm::vec3& meshMax);
