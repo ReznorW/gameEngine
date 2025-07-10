@@ -89,6 +89,7 @@ void Script::onStart() {
 }
 
 void Script::update(float dt) {
+    if (!L) return;
     lua_getglobal(L, "update");
     if (lua_isfunction(L, -1)) {
         lua_pushnumber(L, dt);
@@ -320,10 +321,10 @@ int Script::lua_getScale(lua_State* L) {
 }
 
 int Script::lua_createObject(lua_State* L) {
-    const char* name       = luaL_checkstring(L, 1);
-    const char* model      = luaL_checkstring(L, 2);
-    const char* texture    = luaL_checkstring(L, 3);
-    const char* shader     = luaL_checkstring(L, 4);
+    const char* name = luaL_checkstring(L, 1);
+    const char* model = luaL_checkstring(L, 2);
+    const char* texture = luaL_checkstring(L, 3);
+    const char* shader = luaL_checkstring(L, 4);
     const char* scriptName = luaL_checkstring(L, 5);
 
     Context* context = getContext(L);
@@ -358,7 +359,7 @@ int Script::lua_destroyObject(lua_State* L) {
 
     Object* obj = context->scene->getObject(name);
     if (obj) {
-        context->scene->deleteObject(name);
+        context->scene->markForDeletion(name);
     }
 
     return 0;

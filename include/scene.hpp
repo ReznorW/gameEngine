@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <vector>
 
@@ -30,7 +31,9 @@ public:
     std::vector<Object*> getObjects();
     std::vector<std::string> getObjectNames() const;
     size_t getObjectCount() const;
+    void markForDeletion(const std::string& name);
     void deleteObject(const std::string& name);
+    void processPendingDeletes();
     std::string duplicateObject(const std::string& name);
     std::string renameObject(const std::string& oldName, const std::string& newName);
     void clear();
@@ -49,4 +52,6 @@ private:
 
     std::unordered_map<std::string, std::shared_ptr<Object>> objects;
     Object* selectedObject = nullptr;
+
+    std::unordered_set<std::string> pendingDeletes;
 };

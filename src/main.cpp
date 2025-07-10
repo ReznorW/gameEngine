@@ -158,6 +158,8 @@ int main() {
 
             playScene->draw(playCamera, true);
 
+            playScene->processPendingDeletes();
+
             gui.drawPlaytestUI();
         }
 

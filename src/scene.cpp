@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <iostream>
 
+// === Constructors ===
 Scene::Scene(Resources* resources)
     : resources(resources) {}
 
@@ -34,6 +35,7 @@ Scene::Scene(const Scene& other)
     }
 }
 
+// === Scene management
 bool Scene::loadScene(const std::string& scnName) {
     clearSelection();
     clear();
@@ -153,6 +155,7 @@ void Scene::setName(const std::string& newName) {
     name = newName;
 }
 
+// === Object management ===
 void Scene::addObject(const std::string& name, std::shared_ptr<Object> obj) {
     objects[name] = obj;
 }
@@ -182,8 +185,19 @@ size_t Scene::getObjectCount() const {
     return objects.size();
 }
 
+void Scene::markForDeletion(const std::string& name) {
+    pendingDeletes.insert(name);
+}
+
 void Scene::deleteObject(const std::string& name) {
     objects.erase(name);
+}
+
+void Scene::processPendingDeletes() {
+    for (const std::string& name : pendingDeletes) {
+        deleteObject(name);
+    }
+    pendingDeletes.clear();
 }
 
 std::string Scene::duplicateObject(const std::string& originalName) {
@@ -233,6 +247,7 @@ void Scene::selectObject(const std::string& name) {
     selectedObject = getObject(name);
 }
 
+// === Selection ===
 Object* Scene::getSelectedObject() const {
     return selectedObject;
 }
@@ -241,6 +256,7 @@ void Scene::clearSelection() {
     selectedObject = nullptr;
 }
 
+// === Draw ===
 void Scene::draw(const Camera& camera, bool inPlaytest) {
     for (const auto& [_, obj] : objects) {
         if (obj->parent) continue;
