@@ -44,7 +44,7 @@ public:
     void clearSelection();
 
     // Drawing
-    void draw(const Camera& camera, bool inPlaytest);
+    void draw(const Camera& camera, bool inPlaytest, bool drawOBBs);
 
 private:
     std::string name;

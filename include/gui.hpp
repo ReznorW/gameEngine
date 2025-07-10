@@ -22,7 +22,7 @@ public:
     void syncKeyboardFromGLFW(GLFWwindow* window);
 
     // Rendering
-    void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode);
+    void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB);
     void drawSidebar(Scene& scene);
     void drawObjectTree(Object& obj, Scene& scene);
     void drawObjectProperties(Scene& scene, Object* selected);

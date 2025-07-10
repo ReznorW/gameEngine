@@ -8,6 +8,7 @@
 #include "shader.hpp"
 #include "mesh.hpp"
 #include "texture.hpp"
+#include "obb.hpp"
 
 // Forward declarations
 class Script;
@@ -29,18 +30,6 @@ struct Transform {
     // Get transformed model
     glm::mat4 getModelMatrix() const;
     void setFromModelMatrix(const glm::mat4& model);
-};
-
-// Oriented Bounding Box (OBB) definition
-struct OBB {
-    // OBB vectors
-    glm::vec3 center;
-    glm::vec3 extents;
-    glm::mat3 axes;
-    
-    // Constructors
-    OBB() : center(0.0f), extents(1.0f), axes(glm::mat3(1.0f)) {}
-    OBB(const glm::vec3& min, const glm::vec3& max);
 };
 
 // Object definition

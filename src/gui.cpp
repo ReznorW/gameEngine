@@ -73,7 +73,7 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 }
 
 // === Rendering ===
-void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode) {
+void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB) {
     static bool openLoadScenePopup = false;
     static bool openSaveScenePopup = false;
 
@@ -162,6 +162,12 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     }
                 }
             }
+            ImGui::EndMenu();
+        }
+
+        // Settings Menu
+        if (ImGui::BeginMenu("Settings")) {
+            ImGui::MenuItem("Show OBBs", nullptr, &drawOBB);
             ImGui::EndMenu();
         }
 

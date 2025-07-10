@@ -65,6 +65,9 @@ int main() {
     glfwSetKeyCallback(window.getGLFWwindow(), Input::key_callback);
     glfwSetCharCallback(window.getGLFWwindow(), Input::char_callback);
 
+    // === Debug setup ===
+    bool drawOBBs = false;
+
     // === Timing setup ===
     const double timestep = 1.0 / 60.0;
     double accumulator = 0.0;
@@ -128,10 +131,10 @@ int main() {
             context.camera = &editorCamera;
             context.scene = &editorScene;
 
-            editorScene.draw(editorCamera, false);
+            editorScene.draw(editorCamera, false, drawOBBs);
 
             // === Draw editor GUI ===
-            gui.drawMainMenu(window, editorScene, playScene, editorCamera, playCamera, mode);
+            gui.drawMainMenu(window, editorScene, playScene, editorCamera, playCamera, mode, drawOBBs);
             gui.drawSidebar(editorScene);
             gui.drawDeleteConfirmation(editorScene);
         }
@@ -156,7 +159,7 @@ int main() {
                 }
             }
 
-            playScene->draw(playCamera, true);
+            playScene->draw(playCamera, true, drawOBBs);
 
             playScene->processPendingDeletes();
 

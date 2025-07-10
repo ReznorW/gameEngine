@@ -42,11 +42,6 @@ void Transform::setFromModelMatrix(const glm::mat4& model) {
     rotation = glm::degrees(glm::eulerAngles(rotationQuat));
 }
 
-// ### OBB functions ###
-// === Constructor ===
-OBB::OBB(const glm::vec3& min, const glm::vec3& max) 
-    : center((min + max) * 0.5f), extents(max - center), axes(glm::mat3(1.0f)) {}
-
 // ### Object functions ###
 // === Constructor ===
 Object::Object(const std::string& name, const std::string& meshName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName, Resources* resources)

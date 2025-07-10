@@ -1,8 +1,10 @@
-#include "scene.hpp"
 #include <fstream>
 #include <sstream>
 #include <filesystem>
 #include <iostream>
+
+#include "scene.hpp"
+#include "obb.hpp"
 
 // === Constructors ===
 Scene::Scene(Resources* resources)
@@ -257,9 +259,16 @@ void Scene::clearSelection() {
 }
 
 // === Draw ===
-void Scene::draw(const Camera& camera, bool inPlaytest) {
+void Scene::draw(const Camera& camera, bool inPlaytest, bool drawOBBs) {
     for (const auto& [_, obj] : objects) {
         if (obj->parent) continue;
-        obj->draw(camera, selectedObject, inPlaytest);
+        obj->draw(camera, selectedObject, inPlaytest); 
+    }
+
+    if (drawOBBs) {
+        auto debugShader = resources->getShader("debug");
+        for (const auto& [_, obj] : objects) {
+            drawOBB(obj->obb, camera, debugShader.get(), glm::vec3(1.0f, 0.0f, 0.0f));
+        }
     }
 }
