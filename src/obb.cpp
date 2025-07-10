@@ -30,12 +30,6 @@ void drawOBB(const OBB& obb, const Camera& camera, Shader* debugShader, const gl
     model[2] = glm::vec4(obb.axes[2], 0.0f);
     model[3] = glm::vec4(obb.center, 1.0f);
 
-    glm::vec3 worldCorners[8];
-    for (int i = 0; i < 8; ++i) {
-        glm::vec4 wc = model * glm::vec4(corners[i], 1.0f);
-        worldCorners[i] = glm::vec3(wc);
-    }
-
     unsigned int indices[24] = {
         0,1, 1,2, 2,3, 3,0,
         4,5, 5,6, 6,7, 7,4,
@@ -50,7 +44,7 @@ void drawOBB(const OBB& obb, const Camera& camera, Shader* debugShader, const gl
     glBindVertexArray(vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(worldCorners), worldCorners, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(corners), corners, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);

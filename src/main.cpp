@@ -119,17 +119,17 @@ int main() {
         glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // === OBB updating ===
-        for (auto& obj : editorScene.getObjects()) {
-            if (obj->transform.needsUpdate()) {
-                obj->updateOBB();
-            }
-        }
-
         // === Editor mode ===
         if (mode == Mode::Editor) {
             context.camera = &editorCamera;
             context.scene = &editorScene;
+
+            // === OBB updating ===
+            for (auto& obj : editorScene.getObjects()) {
+                if (obj->transform.needsUpdate()) {
+                    obj->updateOBB();
+                }
+            }
 
             editorScene.draw(editorCamera, false, drawOBBs);
 
@@ -148,14 +148,15 @@ int main() {
                 if (obj->script) {
                     obj->script->update(frameTime);
                 }
-            }
 
-            for (auto& obj : playScene->getObjects()) {
+                if (obj->transform.needsUpdate()) {
+                    obj->updateOBB();
+                }
+
                 if (obj->isPlayer) {
-                    obj->transform.position = playCamera.position; //- glm::vec3(0.0f, 0.0f, 0.0f);  TODO: Dynamically change camera position for object
+                    obj->transform.position = playCamera.position;
                     obj->transform.rotation.y = -playCamera.yaw;
                     obj->transform.markDirty();
-                    break;
                 }
             }
 

@@ -92,7 +92,7 @@ void Object::updateOBB() {
     
     // 2. Apply scale to extents (in local space)
     glm::vec3 localExtents = mesh->getMaxBounds() - localCenter;
-    obb.extents = localExtents * transform.scale;
+    obb.extents = localExtents;
     
     // 3. Transform extents to account for rotation
     // (This handles non-uniform scaling correctly)
