@@ -23,7 +23,7 @@ float lastY = 0.0f;
 bool firstMouse = true;
 
 float movementSpeed = 0.1f;
-float playSpeed = 15.0f;
+float playSpeed = 5.0f;
 float lookSpeed = 0.1f;
 
 bool Input::keys[512] = {false};
@@ -182,9 +182,9 @@ void Input::processPlaytestInput(Window& window, Camera& camera, std::unique_ptr
                 if (keys[GLFW_KEY_LEFT_SHIFT]) move -= glm::vec3(0, 1, 0);
 
                 if (glm::length(move) > 0.0f) {
-                    move = glm::normalize(move) * currentSpeed * dt;
+                    move = glm::normalize(move) * currentSpeed;
 
-                    player->transform.position += move;
+                    player->transform.velocity += move;
                     player->transform.markDirty();
                 }
             }

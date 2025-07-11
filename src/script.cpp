@@ -121,6 +121,9 @@ void Script::registerFunctions() {
     lua_register(L, "createObject", lua_createObject);
     lua_register(L, "destroyObject", lua_destroyObject);
 
+    // Collision management
+    lua_register(L, "checkCollision", lua_checkCollision);
+
     // Input management
     lua_register(L, "isKeyPressed", lua_isKeyPressed);
 
@@ -330,6 +333,11 @@ int Script::lua_createObject(lua_State* L) {
     Context* context = getContext(L);
     if (!context || !context->scene) return 0;
 
+    const char* atThis = nullptr;
+    if (lua_gettop(L) >= 6 && lua_isstring(L, 6)) {
+        atThis = lua_tostring(L, 6);
+    }
+
     // Avoid duplicates
     if (context->scene->getObject(name)) {
         std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
@@ -338,6 +346,17 @@ int Script::lua_createObject(lua_State* L) {
 
     // Create and add the object
     std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->scene->getResources());
+
+    if (atThis) {
+        Object* base = context->scene->getObject(atThis);
+        if (base) {
+            obj->transform.position = base->transform.position;
+            obj->transform.markDirty();
+        } else {
+            std::cerr << "createObject: Base object '" << atThis << "' not found.\n";
+        }
+    }
+
     context->scene->addObject(name, std::move(obj));
 
     // Execute script if exists
@@ -363,6 +382,27 @@ int Script::lua_destroyObject(lua_State* L) {
     }
 
     return 0;
+}
+
+int Script::lua_checkCollision(lua_State* L) {
+    const char* nameA = lua_tostring(L, 1);
+    const char* nameB = lua_tostring(L, 2);
+
+    Context* context = getContext(L);
+
+    Object* objA = context->scene->getObject(nameA);
+    Object* objB = context->scene->getObject(nameB);
+
+    if (!objA || !objB) {
+        lua_pushstring(L, "One or both objects not found");
+        lua_error(L);
+        return 0;
+    }
+
+    bool colliding = areIntersecting(*objA, *objB);
+
+    lua_pushboolean(L, colliding);
+    return 1;
 }
 
 int Script::lua_isKeyPressed(lua_State* L) {

@@ -72,6 +72,7 @@ int main() {
     bool drawOBBs = false;
 
     // === Physics setup ===
+    const float EPSILON = 1e-4f;
     const glm::vec3 GRAVITY = glm::vec3(0.0f, -1.0f, 0.0f);
 
     // === Timing setup ===
@@ -163,6 +164,11 @@ int main() {
 
                 // Apply velocity
                 if (glm::length2(obj->transform.velocity) > 0.0f) {
+                    if (glm::length2(obj->transform.velocity) < EPSILON) {
+                        obj->transform.velocity *= 0.90f;
+                    } else {
+                        obj->transform.velocity = glm::vec3(0.0f);
+                    }
                     obj->transform.position += obj->transform.velocity * frameTime;
                     obj->transform.markDirty();
                 }
@@ -170,11 +176,13 @@ int main() {
                 // Resolve collisions
                 if (obj->transform.needsUpdate()) {
                     obj->updateOBB();
-                    for (auto& other : playScene->getObjects()) {
-                        if (other == obj) continue;
+                    if (obj->hasCollisions) {
+                        for (auto& other : playScene->getObjects()) {
+                            if (other == obj) continue;
 
-                        if (areIntersecting(*obj, *other)) {
-                            resolveCollision(*obj, *other);
+                            if (areIntersecting(*obj, *other)) {
+                                resolveCollision(*obj, *other);
+                            }
                         }
                     }
                 }

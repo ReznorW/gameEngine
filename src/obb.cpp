@@ -220,18 +220,4 @@ void resolveCollision(Object& objA, Object& objB) {
             }
         }
     }
-
-    if (objA.hasCollisions) {
-        float vDot = glm::dot(objA.transform.velocity, mtvAxis);
-        if (vDot < 0.0f) {
-            objA.transform.velocity -= mtvAxis * vDot;
-        }
-    }
-
-    if (objB.hasCollisions) {
-        float vDot = glm::dot(objB.transform.velocity, mtvAxis);
-        if (vDot > 0.0f) {
-            objB.transform.velocity -= mtvAxis * vDot;
-        }
-    }
 }

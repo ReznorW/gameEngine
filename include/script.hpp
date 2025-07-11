@@ -53,6 +53,8 @@ private:
     static int lua_createObject(lua_State* L);
     static int lua_destroyObject(lua_State* L);
 
+    static int lua_checkCollision(lua_State* L);
+
     static int lua_isKeyPressed(lua_State* L);
 
     static int lua_getName(lua_State* L);

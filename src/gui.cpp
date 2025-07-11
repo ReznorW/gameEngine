@@ -613,5 +613,6 @@ void Gui::drawPlaytestUI() {
 
     ImGui::Begin("PlaytestLabel", nullptr, flags);
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
+    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
     ImGui::End();
 }
