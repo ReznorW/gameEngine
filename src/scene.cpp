@@ -54,7 +54,7 @@ bool Scene::loadScene(const std::string& scnName) {
     std::string line, objName, meshName, textureName, shaderName, scriptName, parentName = "None";
     glm::vec3 position, rotation, scale(1);
     glm::vec2 textureScale(1);
-    bool isPlayer = false;
+    bool isPlayer, hasCollisions, isMoveable, hasGravity = false;
     bool inObject = false;
 
     setName(scnName);
@@ -91,6 +91,12 @@ bool Scene::loadScene(const std::string& scnName) {
             iss >> scale.x >> scale.y >> scale.z;
         } else if (token == "isPlayer") {
             iss >> isPlayer;
+        } else if (token == "hasCollisions") {
+            iss >> hasCollisions;
+        } else if (token == "isMoveable") {
+            iss >> isMoveable;
+        } else if (token == "hasGravity") {
+            iss >> hasGravity;
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject" && inObject) {
@@ -98,8 +104,12 @@ bool Scene::loadScene(const std::string& scnName) {
             obj->transform.position = position;
             obj->transform.rotation = rotation;
             obj->transform.scale = scale;
+            obj->transform.velocity = glm::vec3(0.0f);
             obj->textureScale = textureScale;
             obj->isPlayer = isPlayer;
+            obj->hasCollisions = hasCollisions;
+            obj->isMoveable = isMoveable;
+            obj->hasGravity = hasGravity;
 
             tempObjects[objName] = obj;
             parentMap[objName] = parentName;
@@ -136,6 +146,9 @@ bool Scene::saveScene(const std::string& scnName) {
         file << "rotation " << obj->transform.rotation.x << " " << obj->transform.rotation.y << " " << obj->transform.rotation.z << "\n";
         file << "scale " << obj->transform.scale.x << " " << obj->transform.scale.y << " " << obj->transform.scale.z << "\n";
         file << "isPlayer " << obj->isPlayer << "\n";
+        file << "hasCollisions " << obj->hasCollisions << "\n";
+        file << "isMoveable " << obj->isMoveable << "\n";
+        file << "hasGravity " << obj->hasGravity << "\n";
         file << "parent " << (obj->parent ? obj->parent->name : "None") << "\n";
         file << "endobject\n\n";
     }
@@ -165,6 +178,13 @@ void Scene::addObject(const std::string& name, std::shared_ptr<Object> obj) {
 Object* Scene::getObject(const std::string& name) {
     auto it = objects.find(name);
     return (it != objects.end()) ? it->second.get() : nullptr;
+}
+
+Object* Scene::getPlayerObject() const {
+    for (const auto& [_, obj] : objects) {
+        if (obj->isPlayer) return obj.get();
+    }
+    return nullptr;
 }
 
 std::vector<Object*> Scene::getObjects() {
@@ -213,6 +233,9 @@ std::string Scene::duplicateObject(const std::string& originalName) {
     }
 
     auto cloned = std::make_shared<Object>(*it->second);
+
+    cloned->name = newName;
+    if (cloned->isPlayer) {cloned->isPlayer = false;}
     cloned->name = newName;
     objects[newName] = cloned;
     return newName;

@@ -28,6 +28,7 @@ public:
     // Object management
     void addObject(const std::string& name, std::shared_ptr<Object> obj);
     Object* getObject(const std::string& name);
+    Object* getPlayerObject() const;
     std::vector<Object*> getObjects();
     std::vector<std::string> getObjectNames() const;
     size_t getObjectCount() const;

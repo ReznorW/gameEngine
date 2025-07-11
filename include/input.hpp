@@ -17,7 +17,7 @@ public:
 
     // Input processing
     static void processEditorInput(Window& windowStruct, Camera& camera, Camera& playCamera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
-    static void processPlaytestInput(Window& windowStruct, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode);
+    static void processPlaytestInput(Window& windowStruct, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt);
     static void processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch = true);
     static bool isKeyPressedOnce(int key);
 

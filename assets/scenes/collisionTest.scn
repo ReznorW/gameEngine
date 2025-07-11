@@ -1,0 +1,60 @@
+object player
+mesh cube
+shader default
+texture default.jpg
+texturescale 1 1
+position -3.4 0 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 1
+hasCollisions 1
+isMoveable 1
+hasGravity 0
+parent None
+endobject
+
+object static
+mesh cube
+shader default
+texture default.jpg
+texturescale 1 1
+position 0 0 2.7
+rotation 0 0 0
+scale 1 1 1
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 1
+parent None
+endobject
+
+object moveable
+mesh cube
+shader default
+texture default.jpg
+texturescale 1 1
+position -0.3 0.3 0
+rotation 0 0 0
+scale 1 1 1
+isPlayer 0
+hasCollisions 1
+isMoveable 1
+hasGravity 1
+parent None
+endobject
+
+object ground
+mesh cube
+shader default
+texture grass.jpg
+texturescale 100 100
+position 0 -2 0
+rotation 0 0 0
+scale 500 1 500
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+parent None
+endobject
+

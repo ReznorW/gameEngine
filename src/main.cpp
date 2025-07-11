@@ -1,4 +1,7 @@
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glad/glad.h>
+#include <glm/gtx/norm.hpp>
 #include <iostream>
 #include <chrono>
 #include <memory>
@@ -68,6 +71,9 @@ int main() {
     // === Debug setup ===
     bool drawOBBs = false;
 
+    // === Physics setup ===
+    const glm::vec3 GRAVITY = glm::vec3(0.0f, -1.0f, 0.0f);
+
     // === Timing setup ===
     const double timestep = 1.0 / 60.0;
     double accumulator = 0.0;
@@ -80,7 +86,7 @@ int main() {
         window.pollEvents();
 
         double newTime = glfwGetTime();
-        double frameTime = newTime - currentTime;
+        float frameTime = newTime - currentTime;
         currentTime = newTime;
         accumulator += frameTime;
 
@@ -110,7 +116,7 @@ int main() {
             if (mode == Mode::Editor) {
                 Input::processEditorInput(window, editorCamera, playCamera, editorScene, playScene, mode);
             } else {
-                Input::processPlaytestInput(window, playCamera, playScene, mode);
+                Input::processPlaytestInput(window, playCamera, playScene, mode, frameTime);
             }
             accumulator -= timestep;
         }
@@ -145,16 +151,37 @@ int main() {
             context.scene = playScene.get();
 
             for (auto& obj : playScene->getObjects()) {
+                // Run scripts
                 if (obj->script) {
                     obj->script->update(frameTime);
                 }
 
-                if (obj->transform.needsUpdate()) {
-                    obj->updateOBB();
+                // Apply gravity
+                if (obj->hasGravity) {
+                    obj->transform.velocity += GRAVITY * frameTime;
                 }
 
+                // Apply velocity
+                if (glm::length2(obj->transform.velocity) > 0.0f) {
+                    obj->transform.position += obj->transform.velocity * frameTime;
+                    obj->transform.markDirty();
+                }
+
+                // Resolve collisions
+                if (obj->transform.needsUpdate()) {
+                    obj->updateOBB();
+                    for (auto& other : playScene->getObjects()) {
+                        if (other == obj) continue;
+
+                        if (areIntersecting(*obj, *other)) {
+                            resolveCollision(*obj, *other);
+                        }
+                    }
+                }
+
+                // Move camera with player
                 if (obj->isPlayer) {
-                    obj->transform.position = playCamera.position;
+                    playCamera.position = obj->transform.position;
                     obj->transform.rotation.y = -playCamera.yaw;
                     obj->transform.markDirty();
                 }

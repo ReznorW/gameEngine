@@ -8,6 +8,9 @@ position 0 0 0
 rotation 0 0 0
 scale 1 1 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -21,6 +24,9 @@ position -4.3 0 0
 rotation 0 0 0
 scale 1 1 1
 isPlayer 1
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -33,6 +39,9 @@ position 0 -2 0
 rotation 0 0 0
 scale 500 1 500
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 

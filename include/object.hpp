@@ -20,6 +20,7 @@ struct Transform {
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale = glm::vec3(1.0f);
+    glm::vec3 velocity = glm::vec3(0.0f);
 
     // Update handling
     bool dirty = true;
@@ -37,6 +38,9 @@ struct Object {
     // Object data
     std::string name;
     bool isPlayer = false;
+    bool hasCollisions = false;
+    bool isMoveable = false;
+    bool hasGravity = false;
 
     std::shared_ptr<Mesh> mesh = nullptr;
     std::shared_ptr<Shader> shader = nullptr;

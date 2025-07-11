@@ -376,6 +376,35 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
             for (auto& other : scene.getObjects()) {
                 if (other != selected) {
                     other->isPlayer = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (ImGui::Checkbox("Collisions", &selected->hasCollisions)) {
+        if (selected->hasCollisions) {
+            
+        }
+    }
+
+    if (ImGui::Checkbox("Moveable", &selected->isMoveable)) {
+        if (selected->isMoveable) {
+            for (auto& other : scene.getObjects()) {
+                if (other != selected) {
+                    other->isMoveable = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (ImGui::Checkbox("Gravity", &selected->hasGravity)) {
+        if (selected->hasGravity) {
+            for (auto& other : scene.getObjects()) {
+                if (other != selected) {
+                    other->hasGravity = false;
+                    break;
                 }
             }
         }

@@ -7,6 +7,9 @@ position 0 -2.5 0
 rotation 90 0 0
 scale 21 21 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -19,6 +22,9 @@ position 0 0 0
 rotation 0 0 0
 scale 1 5 1
 isPlayer 1
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -31,6 +37,9 @@ position 0 0 10
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -43,6 +52,9 @@ position 0 0 -10
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -55,6 +67,9 @@ position -10 0 0
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -67,6 +82,9 @@ position 10 0 0
 rotation 0 0 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -79,6 +97,9 @@ position 7.25 0 -7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -91,6 +112,9 @@ position -7.25 0 7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -103,6 +127,9 @@ position 7.25 0 7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 
@@ -115,6 +142,9 @@ position -7.25 0 -7.25
 rotation 0 45 0
 scale 1 5 1
 isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
 parent None
 endobject
 

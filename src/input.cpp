@@ -23,6 +23,7 @@ float lastY = 0.0f;
 bool firstMouse = true;
 
 float movementSpeed = 0.1f;
+float playSpeed = 15.0f;
 float lookSpeed = 0.1f;
 
 bool Input::keys[512] = {false};
@@ -148,12 +149,12 @@ void Input::processEditorInput(Window& window, Camera& camera, Camera& playCamer
     std::memcpy(previousKeys, keys, sizeof(keys));
 }
 
-void Input::processPlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode) {
+void Input::processPlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt) {
     ImGuiIO& io = ImGui::GetIO();
 
     // Only process movement if ImGui doesn't want keyboard
     if (!io.WantCaptureKeyboard) {
-        float currentSpeed = movementSpeed;
+        float currentSpeed = playSpeed;
         
         // Speed boost when holding Left Control
         if (keys[GLFW_KEY_LEFT_CONTROL]) {
@@ -165,26 +166,30 @@ void Input::processPlaytestInput(Window& window, Camera& camera, std::unique_ptr
             mode = Mode::Editor;
             playScene.reset();
         }
-        if (keys[GLFW_KEY_W]) {
-            glm::vec3 forward = glm::normalize(glm::vec3(camera.getFront().x, 0.0f, camera.getFront().z));
-            camera.move(forward, currentSpeed);
+
+        if (playScene) {
+            Object* player = playScene->getPlayerObject();
+            if (player) {
+                glm::vec3 forward = glm::normalize(glm::vec3(camera.getFront().x, 0.0f, camera.getFront().z));
+                glm::vec3 right   = glm::normalize(glm::vec3(camera.getRight().x, 0.0f, camera.getRight().z));
+                glm::vec3 move(0.0f);
+
+                if (keys[GLFW_KEY_W]) move += forward;
+                if (keys[GLFW_KEY_S]) move -= forward;
+                if (keys[GLFW_KEY_A]) move -= right;
+                if (keys[GLFW_KEY_D]) move += right;
+                if (keys[GLFW_KEY_SPACE]) move += glm::vec3(0, 1, 0);
+                if (keys[GLFW_KEY_LEFT_SHIFT]) move -= glm::vec3(0, 1, 0);
+
+                if (glm::length(move) > 0.0f) {
+                    move = glm::normalize(move) * currentSpeed * dt;
+
+                    player->transform.position += move;
+                    player->transform.markDirty();
+                }
+            }
         }
-        if (keys[GLFW_KEY_S]) {
-            glm::vec3 backward = glm::normalize(glm::vec3(-camera.getFront().x, 0.0f, -camera.getFront().z));
-            camera.move(backward, currentSpeed);
-        }
-        if (keys[GLFW_KEY_A]) {
-            camera.move(-camera.getRight(), currentSpeed);
-        }
-        if (keys[GLFW_KEY_D]) {
-            camera.move(camera.getRight(), currentSpeed);
-        }
-        if (keys[GLFW_KEY_SPACE]) {
-            camera.moveVert(camera.getWorldUp(), currentSpeed);
-        }
-        if (keys[GLFW_KEY_LEFT_SHIFT]) {
-            camera.moveVert(-camera.getWorldUp(), currentSpeed);
-        }
+
         if (keys[GLFW_KEY_F1]) {
             if (camera.getFOV() < 135) {
                 camera.setFOV(camera.getFOV() + lookSpeed);

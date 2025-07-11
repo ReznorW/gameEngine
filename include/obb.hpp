@@ -5,6 +5,7 @@
 // Forward declarations
 class Camera;
 class Shader;
+class Object;
 
 struct OBB {
     glm::vec3 center;
@@ -16,3 +17,7 @@ struct OBB {
 };
 
 void drawOBB(const OBB& obb, const Camera& camera, Shader* debugShader, const glm::vec3& color);
+bool areIntersecting(Object& objA, Object& objB);
+bool getMinimumTranslationVector(const OBB& a, const OBB& b, glm::vec3& mtvAxis, float& mtvDistance);
+void projectOntoAxis(const OBB& obb, const glm::vec3& axis, float& min, float& max);
+void resolveCollision(Object& objA, Object& objB);
