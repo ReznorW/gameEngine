@@ -1,6 +1,7 @@
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <iostream>
@@ -53,15 +54,13 @@ Object::Object(const std::string& name, const std::string& meshName, const std::
         auto baseScript = resources->getScript(scriptName);
         if (baseScript) {
             script = std::make_shared<Script>(*baseScript);
+            script->setOwner(this);
         }
     }
 }
 
-// Object::Object(const Object& other)
-//     : name(other.name), isPlayer(other.isPlayer), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
-
 Object::Object(const Object& other)
-    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+    : name(other.name), isPlayer(other.isPlayer), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
 
 // === Deconstructor ===
 Object::~Object() {}

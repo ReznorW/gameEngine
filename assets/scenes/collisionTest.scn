@@ -16,7 +16,7 @@ endobject
 object static
 mesh cube
 shader default
-texture default.jpg
+texture red.png
 texturescale 1 1
 position 0 0 2.7
 rotation 0 0 0
@@ -31,7 +31,7 @@ endobject
 object moveable
 mesh cube
 shader default
-texture default.jpg
+texture blue.png
 texturescale 1 1
 position -0.3 0.3 0
 rotation 0 0 0

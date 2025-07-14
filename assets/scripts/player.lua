@@ -1,3 +1,5 @@
+local counter
+
 function onStart()
     counter = 1
 end

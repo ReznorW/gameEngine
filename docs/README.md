@@ -51,11 +51,12 @@ Note: Project was not tested with Linux. Some features may be missing or broken.
 
 ## Documentation
 
-For using the provided lua function for scripting refer to docs/scripts.md for function definitions and usage.
+For using the provided lua functions for scripting refer to [Documentation](./Documentation.md) for function definitions and usage.
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome. 
+For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
 

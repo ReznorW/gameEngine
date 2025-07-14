@@ -73,7 +73,7 @@ int main() {
 
     // === Physics setup ===
     const float EPSILON = 1e-4f;
-    const glm::vec3 GRAVITY = glm::vec3(0.0f, -1.0f, 0.0f);
+    const glm::vec3 GRAVITY = glm::vec3(0.0f, -5.0f, 0.0f);
 
     // === Timing setup ===
     const double timestep = 1.0 / 60.0;
@@ -98,6 +98,7 @@ int main() {
                 for (auto& obj : playScene->getObjects()) {
                     if (obj->script) {
                         obj->script->setContext(&context);
+                        obj->script->setOwner(obj);
                         obj->script->onStart();
                     }
                 }
@@ -164,12 +165,12 @@ int main() {
 
                 // Apply velocity
                 if (glm::length2(obj->transform.velocity) > 0.0f) {
-                    if (glm::length2(obj->transform.velocity) < EPSILON) {
+                    if (glm::length2(obj->transform.velocity) > EPSILON) {
+                        obj->transform.position += obj->transform.velocity * frameTime;
                         obj->transform.velocity *= 0.90f;
                     } else {
                         obj->transform.velocity = glm::vec3(0.0f);
                     }
-                    obj->transform.position += obj->transform.velocity * frameTime;
                     obj->transform.markDirty();
                 }
 

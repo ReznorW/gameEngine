@@ -1,10 +1,9 @@
 function onStart()
-    targetName = getPlayerName()
-    selfName = getName()
 	followSpeed = 2
 end
 
 function update(dt)
-	moveToward(selfName, targetName, followSpeed, dt)
-    lookAt(selfName, targetName)
+	target = getObject(getPlayerName())
+	self:moveToward(target, followSpeed)
+    self:lookAt(target)
 end
