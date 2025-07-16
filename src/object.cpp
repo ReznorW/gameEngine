@@ -60,7 +60,7 @@ Object::Object(const std::string& name, const std::string& meshName, const std::
 }
 
 Object::Object(const Object& other)
-    : name(other.name), isPlayer(other.isPlayer), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
 
 // === Deconstructor ===
 Object::~Object() {}

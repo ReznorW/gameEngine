@@ -74,9 +74,6 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 
 // === Rendering ===
 void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB) {
-    static bool openLoadScenePopup = false;
-    static bool openSaveScenePopup = false;
-
     if (ImGui::BeginMainMenuBar()) {
         // File Menu
         if (ImGui::BeginMenu("File")) {
@@ -148,7 +145,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         // Run Menu
         if (ImGui::BeginMenu("Run")) {
             if (ImGui::MenuItem("Playtest", "R")) {
-                if (mode == Mode::Editor) {
+                if (mode == Mode::SceneEditor) {
                     mode = Mode::Playtest;
                     playScene = std::make_unique<Scene>(scene);
                     playScene->clearSelection();
@@ -177,23 +174,6 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
 
         ImGui::EndMainMenuBar();
     }
-
-    // Show object properties if one is selected
-    if (Object* selected = scene.getSelectedObject()) {
-        drawObjectProperties(scene, selected);
-    }
-
-    if (openLoadScenePopup) {
-        ImGui::OpenPopup("Load Scene Popup");
-        openLoadScenePopup = false;
-    }
-    drawLoadScenePopup(scene);
-
-    if (openSaveScenePopup) {
-        ImGui::OpenPopup("Save Scene Popup");
-        openSaveScenePopup = false;
-    }
-    drawSaveScenePopup(scene);
 }
 
 void Gui::drawSidebar(Scene& scene) {
@@ -230,25 +210,57 @@ void Gui::drawObjectTree(Object& obj, Scene& scene) {
 
     if (nodeOpen) {
         for (Object* child : obj.children) {
-            drawObjectTree(*child, scene);  // Recursive call
+            drawObjectTree(*child, scene);
         }
         ImGui::TreePop();
     }
 }
 
-static bool InputTextMultilineStdString(const char* label, std::string& str, const ImVec2& size, ImGuiInputTextFlags flags = 0) {
-    static std::vector<char> buffer;
-    buffer.resize(std::max((size_t)str.size() + 1024, buffer.size())); // Ensure buffer is large enough
-    std::strncpy(buffer.data(), str.c_str(), buffer.size());
+void Gui::drawPlaytestUI(Scene& scene) {
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10, 10), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
 
-    bool changed = ImGui::InputTextMultiline(label, buffer.data(), buffer.size(), size, flags);
-    if (changed) {
-        str = buffer.data();
-    }
-    return changed;
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+
+    ImGui::Begin("PlaytestLabel", nullptr, flags);
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
+    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+    ImGui::Text("Objects: %d", scene.getObjectCount());
+    ImGui::End();
 }
 
-void Gui::drawObjectProperties(Scene& scene, Object* selected) {
+// === Popup rendering ===
+void Gui::drawPopups(Scene& scene) {
+    if (Object* selected = scene.getSelectedObject()) {
+        drawObjectPropertiesPopup(scene, selected);
+    }
+
+    if (openLoadScenePopup) {
+        ImGui::OpenPopup("Load Scene Popup");
+        openLoadScenePopup = false;
+    }
+    drawLoadScenePopup(scene);
+
+    if (openSaveScenePopup) {
+        ImGui::OpenPopup("Save Scene Popup");
+        openSaveScenePopup = false;
+    }
+    drawSaveScenePopup(scene);
+
+    if (openDeleteConfirmationPopup) {
+        ImGui::OpenPopup("Confirm Delete");
+        openDeleteConfirmationPopup = false;
+    }
+    drawDeleteConfirmationPopup(scene);
+}
+
+void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 350, 20));
     ImGui::SetNextWindowSize(ImVec2(350, io.DisplaySize.y));
@@ -382,33 +394,9 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
         }
     }
 
-    if (ImGui::Checkbox("Collisions", &selected->hasCollisions)) {
-        if (selected->hasCollisions) {
-            
-        }
-    }
-
-    if (ImGui::Checkbox("Moveable", &selected->isMoveable)) {
-        if (selected->isMoveable) {
-            for (auto& other : scene.getObjects()) {
-                if (other != selected) {
-                    other->isMoveable = false;
-                    break;
-                }
-            }
-        }
-    }
-
-    if (ImGui::Checkbox("Gravity", &selected->hasGravity)) {
-        if (selected->hasGravity) {
-            for (auto& other : scene.getObjects()) {
-                if (other != selected) {
-                    other->hasGravity = false;
-                    break;
-                }
-            }
-        }
-    }
+    ImGui::Checkbox("Collisions", &selected->hasCollisions);
+    ImGui::Checkbox("Moveable", &selected->isMoveable);
+    ImGui::Checkbox("Gravity", &selected->hasGravity);
 
     // Script selector
     std::string currentScript = selected->script ? selected->script->getName() : "None";
@@ -490,33 +478,16 @@ void Gui::drawObjectProperties(Scene& scene, Object* selected) {
 
     // Delete object
     if (ImGui::Button("Delete Object")) {
-        ImGui::OpenPopup("Confirm Delete");
+        openDeleteConfirmationPopup = true;
     }
-    drawDeleteConfirmation(scene);
 
     ImGui::End();
-}
-
-void Gui::drawDeleteConfirmation(Scene& scene) {
-    if (ImGui::BeginPopupModal("Confirm Delete", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Are you sure you want to delete this object?");
-        if (ImGui::Button("Yes")) {
-            scene.deleteObject(scene.getSelectedObject()->name);
-            scene.clearSelection();
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
 }
 
 void Gui::drawLoadScenePopup(Scene& scene) {
     static size_t selectedSceneIndex = 0;
     static bool initialized = false;
-    std::vector<std::string> scenes = scene.getSceneNames();
+    std::vector<std::string> scenes = scene.getResources()->getSceneNames();
 
     if (ImGui::BeginPopupModal("Load Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("Select a scene to load:");
@@ -599,20 +570,31 @@ void Gui::drawSaveScenePopup(Scene& scene) {
     }
 }
 
-void Gui::drawPlaytestUI() {
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10, 10), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
-    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+void Gui::drawDeleteConfirmationPopup(Scene& scene) {
+    if (ImGui::BeginPopupModal("Confirm Delete", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Are you sure you want to delete this object?");
+        if (ImGui::Button("Yes")) {
+            scene.deleteObject(scene.getSelectedObject()->name);
+            scene.clearSelection();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
 
-    ImGuiWindowFlags flags =
-        ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoNav;
+// === ImGui utils ===
+bool Gui::InputTextMultilineStdString(const char* label, std::string& str, const ImVec2& size, ImGuiInputTextFlags flags = 0) {
+    static std::vector<char> buffer;
+    buffer.resize(std::max((size_t)str.size() + 1024, buffer.size())); // Ensure buffer is large enough
+    std::strncpy(buffer.data(), str.c_str(), buffer.size());
 
-    ImGui::Begin("PlaytestLabel", nullptr, flags);
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
-    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::End();
+    bool changed = ImGui::InputTextMultiline(label, buffer.data(), buffer.size(), size, flags);
+    if (changed) {
+        str = buffer.data();
+    }
+    return changed;
 }

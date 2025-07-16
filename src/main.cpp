@@ -28,15 +28,17 @@ int main() {
 
     // === Window setup ===
     std::cout << "===Setting up window===" << std::endl;
-    Window window("Game Engine", false);
-    context.window = &window;
+    context.window = std::make_unique<Window>("Game Engine", false);
+    Window& window = *context.window;
     glEnable(GL_DEPTH_TEST);
     glfwSwapInterval(1); // VSync
 
     // === Camera setup ===
-    Camera editorCamera(static_cast<float>(window.getWidth()) / window.getHeight());
-    Camera playCamera = editorCamera;
-    context.camera = &editorCamera;
+    int lastWidth = window.getWidth();
+    int lastHeight = window.getHeight();
+    float aspect = static_cast<float>(lastWidth) / lastHeight;
+    context.sceneCamera = std::make_unique<Camera>(aspect);
+    context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
 
     // === Gui setup ===
     std::cout << "===Setting up GUI===" << std::endl;
@@ -48,17 +50,15 @@ int main() {
 
     // === Scene and objects ===
     std::cout << "===Initializing scene===" << std::endl;
-    Scene editorScene(resources.get());
-    std::unique_ptr<Scene> playScene;
-    context.scene = &editorScene;
+    context.editorScene = std::make_unique<Scene>(resources.get());
+    context.playScene = std::make_unique<Scene>(*context.editorScene);
 
     std::cout << "===Loading scene===" << std::endl;
-    editorScene.loadScene("default");
+    context.editorScene->loadScene("default");
 
     // === Initialize mode ===
-    Mode mode = Mode::Editor;
-    Mode prevMode = mode;
-    context.mode = &mode;
+    context.currentMode = Mode::SceneEditor;
+    context.previousMode = Mode::SceneEditor;
 
     // === Input setup ===
     std::cout << "===Setting up input===" << std::endl;
@@ -68,42 +68,31 @@ int main() {
     glfwSetKeyCallback(window.getGLFWwindow(), Input::key_callback);
     glfwSetCharCallback(window.getGLFWwindow(), Input::char_callback);
 
-    // === Debug setup ===
-    bool drawOBBs = false;
-
-    // === Physics setup ===
-    const float EPSILON = 1e-4f;
-    const glm::vec3 GRAVITY = glm::vec3(0.0f, -5.0f, 0.0f);
-
     // === Timing setup ===
     const double timestep = 1.0 / 60.0;
     double accumulator = 0.0;
     double currentTime = glfwGetTime();
 
-    // Main render loop
+    // === Constants setup ===
+    const float EPSILON = 1e-4f;
+    const glm::vec3 GRAVITY = glm::vec3(0.0f, -5.0f, 0.0f);
+    bool drawOBBs = false;
+
+    // === Main loop ===
     std::cout << "===Rendering===" << std::endl;
     while (!window.shouldClose()) {
         // === Poll for events ===
         window.pollEvents();
 
         double newTime = glfwGetTime();
-        float frameTime = newTime - currentTime;
+        float dt = newTime - currentTime;
         currentTime = newTime;
-        accumulator += frameTime;
+        accumulator += dt;
 
         // === Mode transition handling ===
-        if (mode != prevMode) {
-            Input::modeChange(mode, window.getGLFWwindow());
-            if (prevMode == Mode::Editor) {
-                for (auto& obj : playScene->getObjects()) {
-                    if (obj->script) {
-                        obj->script->setContext(&context);
-                        obj->script->setOwner(obj);
-                        obj->script->onStart();
-                    }
-                }
-            }
-            prevMode = mode;
+        if (context.currentMode != context.previousMode) {
+            Input::modeChange(context);
+            context.previousMode = context.currentMode;
         }
 
         // Synchronize mouse before ImGui frame
@@ -115,11 +104,7 @@ int main() {
 
         // === Process input ===
         while (accumulator >= timestep) {
-            if (mode == Mode::Editor) {
-                Input::processEditorInput(window, editorCamera, playCamera, editorScene, playScene, mode);
-            } else {
-                Input::processPlaytestInput(window, playCamera, playScene, mode, frameTime);
-            }
+            Input::processInput(context, dt);
             accumulator -= timestep;
         }
 
@@ -128,45 +113,45 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // === Editor mode ===
-        if (mode == Mode::Editor) {
-            context.camera = &editorCamera;
-            context.scene = &editorScene;
+        if (context.currentMode == Mode::SceneEditor) {
+            Camera& camera = *context.sceneCamera;
+            Scene& scene = *context.editorScene;
 
             // === OBB updating ===
-            for (auto& obj : editorScene.getObjects()) {
+            for (auto& obj : scene.getObjects()) {
                 if (obj->transform.needsUpdate()) {
                     obj->updateOBB();
                 }
             }
 
-            editorScene.draw(editorCamera, false, drawOBBs);
+            scene.draw(camera, false, drawOBBs);
 
             // === Draw editor GUI ===
-            gui.drawMainMenu(window, editorScene, playScene, editorCamera, playCamera, mode, drawOBBs);
-            gui.drawSidebar(editorScene);
-            gui.drawDeleteConfirmation(editorScene);
+            gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs);
+            gui.drawSidebar(scene);
+            gui.drawPopups(scene);
         }
 
         // === Playtest mode ===
-        else if (mode == Mode::Playtest) {
-            context.camera = &playCamera;
-            context.scene = playScene.get();
+        else if (context.currentMode == Mode::Playtest) {
+            Camera& camera = *context.playCamera;
+            Scene& scene = *context.playScene;
 
-            for (auto& obj : playScene->getObjects()) {
+            for (auto& obj : scene.getObjects()) {
                 // Run scripts
                 if (obj->script) {
-                    obj->script->update(frameTime);
+                    obj->script->update(dt);
                 }
 
                 // Apply gravity
                 if (obj->hasGravity) {
-                    obj->transform.velocity += GRAVITY * frameTime;
+                    obj->transform.velocity += GRAVITY * dt;
                 }
 
                 // Apply velocity
                 if (glm::length2(obj->transform.velocity) > 0.0f) {
                     if (glm::length2(obj->transform.velocity) > EPSILON) {
-                        obj->transform.position += obj->transform.velocity * frameTime;
+                        obj->transform.position += obj->transform.velocity * dt;
                         obj->transform.velocity *= 0.90f;
                     } else {
                         obj->transform.velocity = glm::vec3(0.0f);
@@ -178,10 +163,8 @@ int main() {
                 if (obj->transform.needsUpdate()) {
                     obj->updateOBB();
                     if (obj->hasCollisions) {
-                        for (auto& other : playScene->getObjects()) {
-                            if (other == obj) continue;
-
-                            if (areIntersecting(*obj, *other)) {
+                        for (auto& other : scene.getObjects()) {
+                            if (other != obj && areIntersecting(*obj, *other)) {
                                 resolveCollision(*obj, *other);
                             }
                         }
@@ -190,28 +173,32 @@ int main() {
 
                 // Move camera with player
                 if (obj->isPlayer) {
-                    playCamera.position = obj->transform.position;
-                    obj->transform.rotation.y = -playCamera.yaw;
+                    camera.position = obj->transform.position;
+                    obj->transform.rotation.y = -camera.yaw;
                     obj->transform.markDirty();
                 }
             }
 
-            playScene->draw(playCamera, true, drawOBBs);
-
-            playScene->processPendingDeletes();
-
-            gui.drawPlaytestUI();
+            scene.draw(camera, true, drawOBBs);
+            scene.processPendingDeletes();
+            gui.drawPlaytestUI(scene);
         }
 
         // === GUI end ===
         gui.endFrame();
 
-        // === Buffer Swap and Events ===
+        // === Buffer Swap ===
         window.swapBuffers();
 
         // === Update camera aspect ratio ===
-        editorCamera.setAspectRatio(static_cast<float>(window.getWidth()) / window.getHeight());
-        playCamera.setAspectRatio(static_cast<float>(window.getWidth()) / window.getHeight());
+        int width = window.getWidth();
+        int height = window.getHeight();
+        if (width != lastWidth || height != lastHeight) {
+            context.sceneCamera->setAspectRatio(static_cast<float>(width) / height);
+            context.playCamera->setAspectRatio(static_cast<float>(width) / height);
+            lastWidth = width;
+            lastHeight = height;
+        }
     }
 
     // === Cleanup ===

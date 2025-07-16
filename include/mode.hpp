@@ -1,6 +1,8 @@
 #pragma once
 
 enum class Mode {
-    Editor,
+    SceneEditor,
+    ScriptEditor,
+    ModelEditor,
     Playtest
 };

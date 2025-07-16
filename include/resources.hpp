@@ -39,6 +39,9 @@ public:
     void addScript(const std::shared_ptr<Script>& script);
     void deleteScript(const std::string& name);
 
+    // Scenes
+    std::vector<std::string> getSceneNames() const;
+
 private:
     // Resource containers
     std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes;

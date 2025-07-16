@@ -51,15 +51,16 @@ Script::~Script() {
     lua_close(L);
 }
 
+// === Setters ===
 void Script::setContext(Context* contextPtr) {
     context = contextPtr;
     lua_pushlightuserdata(L, static_cast<void*>(context));
     lua_setglobal(L, "__context");
 }
 
+// === Editing ===
 void Script::updateSource(const std::string& newCode) {
     sourceCode = newCode;
-
     if (luaL_dostring(L, sourceCode.c_str()) != LUA_OK) {
         lastError = lua_tostring(L, -1);
         lua_pop(L, 1);
@@ -85,6 +86,7 @@ void Script::onStart() {
         lua_setglobal(L, "self");
     }
 
+    // Run onStart function
     lua_getglobal(L, "onStart");
     if (lua_isfunction(L, -1)) {
         if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
@@ -99,6 +101,7 @@ void Script::onStart() {
 
 void Script::update(float dt) {
     if (!L) return;
+    // Run update function
     lua_getglobal(L, "update");
     if (lua_isfunction(L, -1)) {
         lua_pushnumber(L, dt);
@@ -112,24 +115,27 @@ void Script::update(float dt) {
     }
 }
 
-// === Lua function bindings ===
+// === Lua function registration ===
 void Script::registerFunctions() {
     // Object
     registerObject(L);
-    lua_register(L, "getObject", lua_getObject);
     lua_register(L, "Object", lua_Object);
 
-    // Scene management
+    // Player
+    lua_register(L, "getPlayer", lua_getPlayer);
+    lua_register(L, "getPlayerName", lua_getPlayerName);
+
+    // Scene
     lua_register(L, "createObject", lua_createObject);
     lua_register(L, "destroyObject", lua_destroyObject);
+    lua_register(L, "getObject", lua_getObject);
 
-    // Input management
+    // Input
     lua_register(L, "isKeyPressed", lua_isKeyPressed);
-
-    lua_register(L, "getPlayerName", lua_getPlayerName);
-    lua_register(L, "getPlayer", lua_getPlayer);
 }
 
+// === Lua object bindings ===
+// --- Object registration ---
 void Script::registerObject(lua_State* L) {
     luaL_newmetatable(L, "Object");
 
@@ -137,56 +143,151 @@ void Script::registerObject(lua_State* L) {
     lua_setfield(L, -2, "__index");
 
     luaL_Reg methods[] = {
-        {"move", obj_move},
-        {"setPosition", obj_setPosition},
-        {"getPosition", obj_getPosition},
-        {"moveToward", obj_moveToward},
-        {"rotate", obj_rotate},
-        {"setRotation", obj_setRotation},
-        {"getRotation", obj_getRotation},
-        {"lookAt", obj_lookAt},
-        {"setScale", obj_setScale},
-        {"getScale", obj_getScale},
         {"destroy", obj_destroy},
-        {"checkCollision", obj_checkCollision},
+        {"getPosition", obj_getPosition},
+        {"getRotation", obj_getRotation},
+        {"getScale", obj_getScale},
         {"getName", obj_getName},
+        {"setPosition", obj_setPosition},
+        {"setRotation", obj_setRotation},
+        {"setScale", obj_setScale},
+        {"move", obj_move},
+        {"rotate", obj_rotate},
+        {"checkCollision", obj_checkCollision},
+        {"moveToward", obj_moveToward},
+        {"lookAt", obj_lookAt},
         {nullptr, nullptr}
     };
 
     luaL_setfuncs(L, methods, 0);
 }
 
-int Script::lua_getObject(lua_State* L) {
+// --- Constructors ---
+int Script::lua_Object(lua_State* L) {
+    // Get parameters
     const char* name = luaL_checkstring(L, 1);
+    const char* model = luaL_checkstring(L, 2);
+    const char* texture = luaL_checkstring(L, 3);
+    const char* shader = luaL_checkstring(L, 4);
+    const char* scriptName = luaL_checkstring(L, 5);
+
+    // Get context
     Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
+    if (!context || !context->playScene) return 0;
 
-    Object* obj = context->scene->getObject(name);
-    if (!obj) return 0;
+    // Check for translation
+    const char* atThis = nullptr;
+    if (lua_gettop(L) >= 6 && lua_isstring(L, 6)) {
+        atThis = lua_tostring(L, 6);
+    }
 
+    // Avoid duplicates
+    if (context->playScene->getObject(name)) {
+        std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
+        return 0;
+    }
+
+    // Create and add the object
+    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->playScene->getResources());
+
+    // Apply the translation
+    if (atThis) {
+        Object* base = context->playScene->getObject(atThis);
+        if (base) {
+            obj->transform.position = base->transform.position;
+            obj->transform.markDirty();
+        } else {
+            std::cerr << "createObject: Base object '" << atThis << "' not found.\n";
+        }
+    }
+
+    context->playScene->addObject(name, std::move(obj));
+
+    // Execute script if exists
+    Object* newObj = context->playScene->getObject(name);
+
+    if (newObj && newObj->script) {
+        newObj->script->setContext(context);
+        newObj->script->onStart();
+    }
+
+    // Push results
     Object** udata = (Object**)lua_newuserdata(L, sizeof(Object*));
-    *udata = obj;
-
+    *udata = newObj;
     luaL_getmetatable(L, "Object");
     lua_setmetatable(L, -2);
     return 1;
 }
 
-int Script::obj_move(lua_State* L) {
+// --- Destructors ---
+int Script::obj_destroy(lua_State* L) {
     // Get parameters
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
+
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) return 0;
 
     // Perform function
-    obj->transform.velocity += glm::vec3(x, y, z);
-    obj->transform.markDirty();
+    context->playScene->markForDeletion(obj->name);
 
     // Push results
     return 0;
 }
 
+// --- Getters ---
+int Script::obj_getPosition(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+
+    // Perform function
+    glm::vec3 pos = obj->transform.position;
+
+    // Push results
+    lua_pushnumber(L, pos.x);
+    lua_pushnumber(L, pos.y);
+    lua_pushnumber(L, pos.z);
+    return 3;
+}
+
+int Script::obj_getRotation(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+
+    // Perform function
+    glm::vec3 rot = obj->transform.rotation;
+
+    // Push results
+    lua_pushnumber(L, rot.x);
+    lua_pushnumber(L, rot.y);
+    lua_pushnumber(L, rot.z);
+    return 3;
+}
+
+int Script::obj_getScale(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+
+    // Perform function
+    glm::vec3 scale = obj->transform.scale;
+
+    // Push results
+    lua_pushnumber(L, scale.x);
+    lua_pushnumber(L, scale.y);
+    lua_pushnumber(L, scale.z);
+    return 3;
+}
+
+int Script::obj_getName(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+
+    // Push results
+    lua_pushstring(L, obj->name.c_str());
+    return 1;
+}
+
+// --- Setters ---
 int Script::obj_setPosition(lua_State* L) {
     // Get parameters
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
@@ -202,27 +303,112 @@ int Script::obj_setPosition(lua_State* L) {
     return 0;
 }
 
-int Script::obj_getPosition(lua_State* L) {
+int Script::obj_setRotation(lua_State* L) {
     // Get parameters
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
 
     // Perform function
-    glm::vec3 pos = obj->transform.position;
+    obj->transform.rotation = glm::vec3(x, y, z);
+    obj->transform.markDirty();
 
     // Push results
-    lua_pushnumber(L, pos.x);
-    lua_pushnumber(L, pos.y);
-    lua_pushnumber(L, pos.z);
-    return 3;
+    return 0;
 }
 
+int Script::obj_setScale(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    float x = luaL_checknumber(L, 2);
+
+    // Perform function
+    if (lua_gettop(L) == 4) {
+        float y = luaL_checknumber(L, 3);
+        float z = luaL_checknumber(L, 4);
+        obj->transform.scale = glm::vec3(x, y, z);
+    } else {
+        obj->transform.scale = glm::vec3(x, x, x);
+    }
+    obj->transform.markDirty();
+
+    // Push results
+    return 0;
+}
+
+// --- Physics ---
+int Script::obj_move(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    // Perform function
+    obj->transform.velocity += glm::vec3(x, y, z);
+    obj->transform.markDirty();
+
+    // Push results
+    return 0;
+}
+
+int Script::obj_rotate(lua_State* L) {
+    // Get parameters
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    float x = luaL_checknumber(L, 2);
+    float y = luaL_checknumber(L, 3);
+    float z = luaL_checknumber(L, 4);
+
+    // Perform function
+    obj->transform.rotation = obj->transform.rotation + glm::vec3(x, y, z);
+    obj->transform.markDirty();
+
+    // Push results
+    return 0;
+}
+
+int Script::obj_checkCollision(lua_State* L) {
+    // Get parameters
+    Object* objA = *(Object**)luaL_checkudata(L, 1, "Object");
+
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) return 0;
+
+    Object* objB = nullptr;
+
+    if (lua_isstring(L, 2)) {
+        const char* nameB = lua_tostring(L, 2);
+        objB = context->playScene->getObject(nameB);
+        if (!objB) {
+            std::string msg = std::string("Object '") + nameB + "' not found";
+            lua_pushstring(L, msg.c_str());
+            lua_error(L);
+            return 0;
+        }
+    } else if (luaL_testudata(L, 2, "Object")) {
+        objB = *(Object**)luaL_checkudata(L, 2, "Object");
+    } else {
+        return luaL_error(L, "checkCollision expects (String) or (Object)");
+    }
+
+    // Perform function
+    bool colliding = areIntersecting(*objA, *objB);
+
+    // Push result
+    lua_pushboolean(L, colliding);
+    return 1;
+}
+
+// --- Trackers ---
 int Script::obj_moveToward(lua_State* L) {
     // Get parameters
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
 
     // Get context
     Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
+    if (!context || !context->playScene) return 0;
 
     Object* target = nullptr;
     float speed = 0.0f;
@@ -230,7 +416,7 @@ int Script::obj_moveToward(lua_State* L) {
     if (lua_gettop(L) == 3) {
         if (lua_isstring(L, 2)) {
             const char* targetName = lua_tostring(L, 2);
-            target = context->scene->getObject(targetName);
+            target = context->playScene->getObject(targetName);
         } else if (luaL_testudata(L, 2, "Object")) {
             target = *(Object**)luaL_checkudata(L, 2, "Object");
         } else {
@@ -264,63 +450,19 @@ int Script::obj_moveToward(lua_State* L) {
     return 0;
 }
 
-int Script::obj_rotate(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
-
-    // Perform function
-    obj->transform.rotation = obj->transform.rotation + glm::vec3(x, y, z);
-    obj->transform.markDirty();
-
-    // Push results
-    return 0;
-}
-
-int Script::obj_setRotation(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
-
-    // Perform function
-    obj->transform.rotation = glm::vec3(x, y, z);
-    obj->transform.markDirty();
-
-    // Push results
-    return 0;
-}
-
-int Script::obj_getRotation(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-
-    // Perform function
-    glm::vec3 rot = obj->transform.rotation;
-
-    // Push results
-    lua_pushnumber(L, rot.x);
-    lua_pushnumber(L, rot.y);
-    lua_pushnumber(L, rot.z);
-    return 3;
-}
-
 int Script::obj_lookAt(lua_State* L) {
     // Get parameters
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
 
     // Get the context
     Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
+    if (!context || !context->playScene) return 0;
 
     Object* target = nullptr;
 
     if (lua_isstring(L, 2)) {
         const char* targetName = lua_tostring(L, 2);
-        target = context->scene->getObject(targetName);
+        target = context->playScene->getObject(targetName);
     } else if (luaL_testudata(L, 2, "Object")) {
         target = *(Object**)luaL_checkudata(L, 2, "Object");
     } else {
@@ -340,39 +482,40 @@ int Script::obj_lookAt(lua_State* L) {
     return 0;
 }
 
-int Script::obj_setScale(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
+// === Lua player bindings ===
+int Script::lua_getPlayer(lua_State* L) {
+    Context* context = getContext(L);
 
-    // Perform function
-    if (lua_gettop(L) == 4) {
-        float y = luaL_checknumber(L, 3);
-        float z = luaL_checknumber(L, 4);
-        obj->transform.scale = glm::vec3(x, y, z);
-    } else {
-        obj->transform.scale = glm::vec3(x, x, x);
+    for (const auto& obj : context->playScene->getObjects()) {
+        if (obj && obj->isPlayer) {
+            // Push results
+            Object** udata = (Object**)lua_newuserdata(L, sizeof(Object*));
+            *udata = obj;
+            luaL_getmetatable(L, "Object");
+            lua_setmetatable(L, -2);
+            return 1;
+        }
     }
-    obj->transform.markDirty();
 
-    // Push results
-    return 0;
+    lua_pushnil(L); // Player not found
+    return 1;
 }
 
-int Script::obj_getScale(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+int Script::lua_getPlayerName(lua_State* L) {
+    Context* context = getContext(L);
 
-    // Perform function
-    glm::vec3 scale = obj->transform.scale;
+    for (const auto& obj : context->playScene->getObjects()) {
+        if (obj && obj->isPlayer) {
+            lua_pushstring(L, obj->name.c_str());
+            return 1;
+        }
+    }
 
-    // Push results
-    lua_pushnumber(L, scale.x);
-    lua_pushnumber(L, scale.y);
-    lua_pushnumber(L, scale.z);
-    return 3;
+    lua_pushnil(L); // Player not found
+    return 1;
 }
 
+// === Lua scene bindings ===
 int Script::lua_createObject(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     const char* model = luaL_checkstring(L, 2);
@@ -381,7 +524,7 @@ int Script::lua_createObject(lua_State* L) {
     const char* scriptName = luaL_checkstring(L, 5);
 
     Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
+    if (!context || !context->playScene) return 0;
 
     const char* atThis = nullptr;
     if (lua_gettop(L) >= 6 && lua_isstring(L, 6)) {
@@ -389,16 +532,16 @@ int Script::lua_createObject(lua_State* L) {
     }
 
     // Avoid duplicates
-    if (context->scene->getObject(name)) {
+    if (context->playScene->getObject(name)) {
         std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
         return 0;
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->scene->getResources());
+    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->playScene->getResources());
 
     if (atThis) {
-        Object* base = context->scene->getObject(atThis);
+        Object* base = context->playScene->getObject(atThis);
         if (base) {
             obj->transform.position = base->transform.position;
             obj->transform.markDirty();
@@ -407,10 +550,10 @@ int Script::lua_createObject(lua_State* L) {
         }
     }
 
-    context->scene->addObject(name, std::move(obj));
+    context->playScene->addObject(name, std::move(obj));
 
     // Execute script if exists
-    Object* newObj = context->scene->getObject(name);
+    Object* newObj = context->playScene->getObject(name);
 
     if (newObj && newObj->script) {
         newObj->script->setContext(context);
@@ -420,73 +563,17 @@ int Script::lua_createObject(lua_State* L) {
     return 0;
 }
 
-int Script::lua_Object(lua_State* L) {
-    // Get parameters
-    const char* name = luaL_checkstring(L, 1);
-    const char* model = luaL_checkstring(L, 2);
-    const char* texture = luaL_checkstring(L, 3);
-    const char* shader = luaL_checkstring(L, 4);
-    const char* scriptName = luaL_checkstring(L, 5);
-
-    // Get context
-    Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
-
-    // Check for translation
-    const char* atThis = nullptr;
-    if (lua_gettop(L) >= 6 && lua_isstring(L, 6)) {
-        atThis = lua_tostring(L, 6);
-    }
-
-    // Avoid duplicates
-    if (context->scene->getObject(name)) {
-        std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
-        return 0;
-    }
-
-    // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->scene->getResources());
-
-    // Apply the translation
-    if (atThis) {
-        Object* base = context->scene->getObject(atThis);
-        if (base) {
-            obj->transform.position = base->transform.position;
-            obj->transform.markDirty();
-        } else {
-            std::cerr << "createObject: Base object '" << atThis << "' not found.\n";
-        }
-    }
-
-    context->scene->addObject(name, std::move(obj));
-
-    // Execute script if exists
-    Object* newObj = context->scene->getObject(name);
-
-    if (newObj && newObj->script) {
-        newObj->script->setContext(context);
-        newObj->script->onStart();
-    }
-
-    // Push results
-    Object** udata = (Object**)lua_newuserdata(L, sizeof(Object*));
-    *udata = newObj;
-    luaL_getmetatable(L, "Object");
-    lua_setmetatable(L, -2);
-    return 1;
-}
-
 int Script::lua_destroyObject(lua_State* L) {
     // Get the context
     Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
+    if (!context || !context->playScene) return 0;
 
     // Get parameters
     Object* obj = nullptr;
 
     if (lua_isstring(L, 1)) {
         const char* name = lua_tostring(L, 1);
-        obj = context->scene->getObject(name);
+        obj = context->playScene->getObject(name);
     } else if (luaL_testudata(L, 1, "Object")) {
         obj = *(Object**)luaL_checkudata(L, 1, "Object");
     } else {
@@ -494,60 +581,29 @@ int Script::lua_destroyObject(lua_State* L) {
     }
 
     if (obj) {
-        context->scene->markForDeletion(obj->name);
+        context->playScene->markForDeletion(obj->name);
     }
 
     return 0;
 }
 
-int Script::obj_destroy(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-
-    // Get context
+int Script::lua_getObject(lua_State* L) {
+    const char* name = luaL_checkstring(L, 1);
     Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
+    if (!context || !context->playScene) return 0;
 
-    // Perform function
-    context->scene->markForDeletion(obj->name);
+    Object* obj = context->playScene->getObject(name);
+    if (!obj) return 0;
 
-    // Push results
-    return 0;
-}
+    Object** udata = (Object**)lua_newuserdata(L, sizeof(Object*));
+    *udata = obj;
 
-int Script::obj_checkCollision(lua_State* L) {
-    // Get parameters
-    Object* objA = *(Object**)luaL_checkudata(L, 1, "Object");
-
-    // Get context
-    Context* context = getContext(L);
-    if (!context || !context->scene) return 0;
-
-    Object* objB = nullptr;
-
-    if (lua_isstring(L, 2)) {
-        const char* nameB = lua_tostring(L, 2);
-        objB = context->scene->getObject(nameB);
-        if (!objB) {
-            std::string msg = std::string("Object '") + nameB + "' not found";
-            lua_pushstring(L, msg.c_str());
-            lua_error(L);
-            return 0;
-        }
-    } else if (luaL_testudata(L, 2, "Object")) {
-        objB = *(Object**)luaL_checkudata(L, 2, "Object");
-    } else {
-        return luaL_error(L, "checkCollision expects (String) or (Object)");
-    }
-
-    // Perform function
-    bool colliding = areIntersecting(*objA, *objB);
-
-    // Push result
-    lua_pushboolean(L, colliding);
+    luaL_getmetatable(L, "Object");
+    lua_setmetatable(L, -2);
     return 1;
 }
 
+// === Lua input bindings ===
 int Script::lua_isKeyPressed(lua_State* L) {
     const char* keyStr = luaL_checkstring(L, 1);
     if (!keyStr) {
@@ -634,47 +690,6 @@ int Script::lua_isKeyPressed(lua_State* L) {
 
     int state = glfwGetKey(window, key);
     lua_pushboolean(L, state == GLFW_PRESS);
-    return 1;
-}
-
-int Script::obj_getName(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-
-    // Push results
-    lua_pushstring(L, obj->name.c_str());
-    return 1;
-}
-
-int Script::lua_getPlayerName(lua_State* L) {
-    Context* context = getContext(L);
-
-    for (const auto& obj : context->scene->getObjects()) {
-        if (obj && obj->isPlayer) {
-            lua_pushstring(L, obj->name.c_str());
-            return 1;
-        }
-    }
-
-    lua_pushnil(L); // Player not found
-    return 1;
-}
-
-int Script::lua_getPlayer(lua_State* L) {
-    Context* context = getContext(L);
-
-    for (const auto& obj : context->scene->getObjects()) {
-        if (obj && obj->isPlayer) {
-            // Push results
-            Object** udata = (Object**)lua_newuserdata(L, sizeof(Object*));
-            *udata = obj;
-            luaL_getmetatable(L, "Object");
-            lua_setmetatable(L, -2);
-            return 1;
-        }
-    }
-
-    lua_pushnil(L); // Player not found
     return 1;
 }
 

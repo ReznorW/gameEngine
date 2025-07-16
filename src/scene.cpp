@@ -15,19 +15,19 @@ Scene::Scene(const Scene& other)
 
     std::unordered_map<const Object*, std::shared_ptr<Object>> pointerMap;
 
-    // First pass: clone objects
+    // Clone objects
     for (const auto& [name, obj] : other.objects) {
         auto cloned = std::make_shared<Object>(*obj);
         pointerMap[obj.get()] = cloned;
         objects[name] = cloned;
     }
 
-    // Second pass: fix hierarchy
+    // Fix parent/child hierarchy
     for (const auto& [name, obj] : other.objects) {
         auto cloned = pointerMap[obj.get()];
         cloned->parent = obj->parent ? pointerMap[obj->parent].get() : nullptr;
         cloned->children.clear();
-        for (Object* child : obj->children) {
+        for (auto* child : obj->children) {
             cloned->children.push_back(pointerMap[child].get());
         }
     }
@@ -37,13 +37,50 @@ Scene::Scene(const Scene& other)
     }
 }
 
-// === Scene management
+// === Getters ===
+Object* Scene::getObject(const std::string& name) {
+    auto it = objects.find(name);
+    return (it != objects.end()) ? it->second.get() : nullptr;
+}
+
+std::vector<Object*> Scene::getObjects() {
+    std::vector<Object*> result;
+    for (const auto& [_, obj] : objects) {
+        result.push_back(obj.get());
+    }
+    return result;
+}
+
+std::vector<std::string> Scene::getObjectNames() const {
+    std::vector<std::string> names;
+    for (const auto& [name, _] : objects) {
+        names.push_back(name);
+    }
+    return names;
+}
+
+int Scene::getObjectCount() const {
+    return objects.size();
+}
+
+Object* Scene::getPlayerObject() const {
+    for (const auto& [_, obj] : objects) {
+        if (obj->isPlayer) return obj.get();
+    }
+    return nullptr;
+}
+
+Object* Scene::getSelectedObject() const {
+    return selectedObject;
+}
+
+// === Scene management ===
 bool Scene::loadScene(const std::string& scnName) {
     clearSelection();
     clear();
 
     std::ifstream file("assets/scenes/" + scnName + ".scn");
-    if (!file.is_open()) {
+    if (!file) {
         std::cerr << "Failed to open scene file: " << scnName << "\n";
         return false;
     }
@@ -156,70 +193,9 @@ bool Scene::saveScene(const std::string& scnName) {
     return true;
 }
 
-std::vector<std::string> Scene::getSceneNames() const {
-    std::vector<std::string> names;
-    for (const auto& entry : std::filesystem::directory_iterator("assets/scenes")) {
-        if (entry.path().extension() == ".scn") {
-            names.push_back(entry.path().stem().string());
-        }
-    }
-    return names;
-}
-
-void Scene::setName(const std::string& newName) {
-    name = newName;
-}
-
 // === Object management ===
 void Scene::addObject(const std::string& name, std::shared_ptr<Object> obj) {
     objects[name] = obj;
-}
-
-Object* Scene::getObject(const std::string& name) {
-    auto it = objects.find(name);
-    return (it != objects.end()) ? it->second.get() : nullptr;
-}
-
-Object* Scene::getPlayerObject() const {
-    for (const auto& [_, obj] : objects) {
-        if (obj->isPlayer) return obj.get();
-    }
-    return nullptr;
-}
-
-std::vector<Object*> Scene::getObjects() {
-    std::vector<Object*> result;
-    for (const auto& [_, obj] : objects) {
-        result.push_back(obj.get());
-    }
-    return result;
-}
-
-std::vector<std::string> Scene::getObjectNames() const {
-    std::vector<std::string> names;
-    for (const auto& [name, _] : objects) {
-        names.push_back(name);
-    }
-    return names;
-}
-
-size_t Scene::getObjectCount() const {
-    return objects.size();
-}
-
-void Scene::markForDeletion(const std::string& name) {
-    pendingDeletes.insert(name);
-}
-
-void Scene::deleteObject(const std::string& name) {
-    objects.erase(name);
-}
-
-void Scene::processPendingDeletes() {
-    for (const std::string& name : pendingDeletes) {
-        deleteObject(name);
-    }
-    pendingDeletes.clear();
 }
 
 std::string Scene::duplicateObject(const std::string& originalName) {
@@ -239,6 +215,21 @@ std::string Scene::duplicateObject(const std::string& originalName) {
     cloned->name = newName;
     objects[newName] = cloned;
     return newName;
+}
+
+void Scene::deleteObject(const std::string& name) {
+    objects.erase(name);
+}
+
+void Scene::markForDeletion(const std::string& name) {
+    pendingDeletes.insert(name);
+}
+
+void Scene::processPendingDeletes() {
+    for (const std::string& name : pendingDeletes) {
+        deleteObject(name);
+    }
+    pendingDeletes.clear();
 }
 
 std::string Scene::renameObject(const std::string& oldName, const std::string& newName) {
@@ -268,13 +259,9 @@ void Scene::clear() {
     selectedObject = nullptr;
 }
 
+// === Selection ===
 void Scene::selectObject(const std::string& name) {
     selectedObject = getObject(name);
-}
-
-// === Selection ===
-Object* Scene::getSelectedObject() const {
-    return selectedObject;
 }
 
 void Scene::clearSelection() {

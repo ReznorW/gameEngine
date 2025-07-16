@@ -8,63 +8,63 @@
 
 - #### Contructors
 
-    - [`Object Object(String objName, String modelName, String textureName, String shaderName)`](#Object-Object(String-objName,-String-modelName,-String-textureName,-String-shaderName))
-    - [`Object Object(String objName, String modelName, String textureName, String shaderName, string scriptName)`](#Object-Object(String-objName,-String-modelName,-String-textureName,-String-shaderName,-string-scriptName))
+    - [`Object Object(String objName, String modelName, String textureName, String shaderName)`](#object-objectstring-objname-string-modelname-string-texturename-string-shadername)
+    - [`Object Object(String objName, String modelName, String textureName, String shaderName, string scriptName)`](#object-objectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname)
 
 - #### Destructors
 
-    - [`void destroy()`](#void-destroy())
+    - [`void destroy()`](#void-destroy)
 
 - #### Getters
 
-    - [`Number[3] getPosition()`](#Number[3]-getPosition())
-    - [`Number[3] getRotation()`](#Number[3]-getRotation())
-    - [`Number[3] getScale()`](#Number[3]-getScale())
-    - [`String getName()`](#String-getName())
+    - [`Number[3] getPosition()`](#number3-getposition)
+    - [`Number[3] getRotation()`](#number3-getrotation)
+    - [`Number[3] getScale()`](#number3-getscale)
+    - [`String getName()`](#string-getname)
 
 - #### Setters
 
-    - [`void setPosition(Number x, Number y, Number z)`](#void-setPosition(Number-x,-Number-y,-Number-z))
-    - [`void setRotation(Number pitch, Number yaw, Number roll)`](#void-setRotation(Number-pitch,-Number-yaw,-Number-roll))
-    - [`void setScale(Number x, Number y, Number z)`](#void-setScale(Number-x,-Number-y,-Number-z))
-    - [`void setScale(Number scale)`](#void-setScale(Number-scale))
+    - [`void setPosition(Number x, Number y, Number z)`](#void-setpositionnumber-x-number-y-number-z)
+    - [`void setRotation(Number pitch, Number yaw, Number roll)`](#void-setrotationnumber-pitch-number-yaw-number-roll)
+    - [`void setScale(Number x, Number y, Number z)`](#void-setscalenumber-x-number-y-number-z)
+    - [`void setScale(Number scale)`](#void-setscalenumber-scale)
 
 - #### Physics
 
-    - [`void move(Number x, Number y, Number z)`](#void-move(Number-x,-Number-y,-Number-z))
-    - [`void rotate(Number pitch, Number yaw, Number roll)`](#void-rotate(Number-pitch,-Number-yaw,-Number-roll))
-    - [`Bool checkCollision(String objName)`](#Bool-checkCollision(String-objName))
-    - [`Bool checkCollison(Object obj)`](#Bool-checkCollison(Object-obj))
+    - [`void move(Number x, Number y, Number z)`](#void-movenumber-x-number-y-number-z)
+    - [`void rotate(Number pitch, Number yaw, Number roll)`](#void-rotatenumber-pitch-number-yaw-number-roll)
+    - [`Bool checkCollision(String objName)`](#bool-checkcollisionstring-objname)
+    - [`Bool checkCollison(Object obj)`](#bool-checkcollisionobject-obj)
 
 - #### Trackers
 
-    - [`void moveToward(String objName, Number speed)`](#void-moveToward(String-objName,-Number-speed))
-    - [`void moveToward(Object obj, Number speed)`](#void-moveToward(Object-obj,-Number-speed))
-    - [`void lookAt(String objName)`](#void-lookAt(String-objName))
-    - [`void lookAt(Object obj)`](#void-lookAt(Object-obj))
+    - [`void moveToward(String objName, Number speed)`](#void-movetowardstring-objname-number-speed)
+    - [`void moveToward(Object obj, Number speed)`](#void-movetowardobject-obj-number-speed)
+    - [`void lookAt(String objName)`](#void-lookatstring-objname)
+    - [`void lookAt(Object obj)`](#void-lookatobject-obj)
 
 ### **Player**
 
 ---
 
-- [`Object getPlayer()`](#String-getPlayer())
-- [`String getPlayerName()`](#String-getPlayerName())
+- [`Object getPlayer()`](#object-getplayer)
+- [`String getPlayerName()`](#string-getplayername)
 
 ### **Scene**
 
 ---
 
-- [`void createObject(String objName, String modelName, String textureName, String shaderName)`](#void-createObject(String-objName,-String-modelName,-String-textureName,-String-shaderName))
-- [`void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName)`](#void-createObject(String-objName,-String-modelName,-String-textureName,-String-shaderName,-String-scriptName))
-- [`void destroyObject(String objName)`](#void-destroyObject(String-objName))
-- [`void destroyObject(Object obj)`](#void-destroyObject(Object-obj))
-- [`Object getObject(String objName)`](#Object-getObject(String-objName))
+- [`void createObject(String objName, String modelName, String textureName, String shaderName)`](#void-createobjectstring-objname-string-modelname-string-texturename-string-shadername)
+- [`void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName)`](#void-createobjectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname)
+- [`void destroyObject(String objName)`](#void-destroyobjectstring-objname)
+- [`void destroyObject(Object obj)`](#void-destroyobjectobject-obj)
+- [`Object getObject(String objName)`](#object-getobjectstring-objname)
 
 ### **Input**
 
 ---
 
-- [`Bool isKeyPressed(String key)`](#Bool-isKeyPressed(String-key))
+- [`Bool isKeyPressed(String key)`](#bool-iskeypressesstring-key)
 
 ## **Function Definitions**
 
@@ -76,7 +76,7 @@
 
 ---
 
-#### `Object Object(String objName, String modelName, String textureName, String shaderName)`  
+#### `Object Object(String objName, String modelName, String textureName, String shaderName)`
 
 Creates and returns a new Object with a specified name, model, texture, and shader.
 
@@ -127,7 +127,7 @@ Destroys `this`.
 
 ---
 
-#### `Number[3] getPosition()`  
+#### `Number[3] getPosition()`
 
 Returns the x, y, and z positions of `this`.
 
@@ -141,7 +141,7 @@ Returns the x, y, and z positions of `this`.
 
     local x, y, z = obj:getPosition()
 
-#### `Number[3] getRotation()`  
+#### `Number[3] getRotation()`
 
 Returns the degrees of pitch, yaw, and roll of `this`.
 
@@ -155,7 +155,7 @@ Returns the degrees of pitch, yaw, and roll of `this`.
 
     local pitch, yaw, roll = obj:getRotation()
 
-#### `Number[3] getScale()`  
+#### `Number[3] getScale()`
 
 Returns the x, y, and z scales of `this`.
 
@@ -169,7 +169,7 @@ Returns the x, y, and z scales of `this`.
 
     local x, y, z = obj:getScale()
 
-#### `String getName()`  
+#### `String getName()`
 
 Returns the name of `this`.
 
@@ -185,7 +185,7 @@ Returns the name of `this`.
 
 ---
 
-#### `void setPosition(Number x, Number y, Number z)`  
+#### `void setPosition(Number x, Number y, Number z)`
 
 Sets the x, y, and z positions of `this` to specified values.
 
@@ -199,7 +199,7 @@ Sets the x, y, and z positions of `this` to specified values.
 
     obj:setPosition(1, 2, 3)
 
-#### `void setRotation(Number pitch, Number yaw, Number roll)`  
+#### `void setRotation(Number pitch, Number yaw, Number roll)`
 
 Sets the pitch, yaw, and roll of `this` to specified degrees.
 

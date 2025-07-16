@@ -36,8 +36,11 @@ private:
 
 // Context defintion
 struct Context {
-    Window* window;
-    Camera* camera;
-    Scene* scene;
-    Mode* mode;
+    std::unique_ptr<Window> window;
+    std::unique_ptr<Camera> sceneCamera;
+    std::unique_ptr<Camera> playCamera;
+    std::unique_ptr<Scene> editorScene;
+    std::unique_ptr<Scene> playScene;
+    Mode currentMode = Mode::SceneEditor;
+    Mode previousMode = Mode::SceneEditor;
 };

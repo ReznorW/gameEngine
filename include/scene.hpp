@@ -16,32 +16,34 @@ public:
     explicit Scene(Resources* resources);
     Scene(const Scene& other);
 
+    // Getters
     Resources* getResources() const {return resources;}
+    std::string getName() const {return name;}
+    Object* getObject(const std::string& name);
+    std::vector<Object*> getObjects();
+    std::vector<std::string> getObjectNames() const;
+    int getObjectCount() const;
+    Object* getPlayerObject() const;
+    Object* getSelectedObject() const;
+
+    // Setters
+    void setName(const std::string& newName) {name = newName;}
 
     // Scene management
     bool loadScene(const std::string& name);
     bool saveScene(const std::string& name);
-    std::vector<std::string> getSceneNames() const;
-    void setName(const std::string& name);
-    std::string getName() const {return name;}
 
     // Object management
     void addObject(const std::string& name, std::shared_ptr<Object> obj);
-    Object* getObject(const std::string& name);
-    Object* getPlayerObject() const;
-    std::vector<Object*> getObjects();
-    std::vector<std::string> getObjectNames() const;
-    size_t getObjectCount() const;
-    void markForDeletion(const std::string& name);
-    void deleteObject(const std::string& name);
-    void processPendingDeletes();
     std::string duplicateObject(const std::string& name);
+    void deleteObject(const std::string& name);
+    void markForDeletion(const std::string& name);
+    void processPendingDeletes();
     std::string renameObject(const std::string& oldName, const std::string& newName);
     void clear();
 
     // Selection
     void selectObject(const std::string& name);
-    Object* getSelectedObject() const;
     void clearSelection();
 
     // Drawing

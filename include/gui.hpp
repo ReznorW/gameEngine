@@ -21,13 +21,25 @@ public:
     void syncMouseFromGLFW(GLFWwindow* window);
     void syncKeyboardFromGLFW(GLFWwindow* window);
 
-    // Rendering
+    // Gui Rendering
     void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB);
     void drawSidebar(Scene& scene);
     void drawObjectTree(Object& obj, Scene& scene);
-    void drawObjectProperties(Scene& scene, Object* selected);
-    void drawDeleteConfirmation(Scene& scene);
+    void drawPlaytestUI(Scene& scene);
+
+    // Popup Rendering
+    void drawPopups(Scene& scene);
+    void drawObjectPropertiesPopup(Scene& scene, Object* selected);
     void drawLoadScenePopup(Scene& scene);
     void drawSaveScenePopup(Scene& scene);
-    void drawPlaytestUI();
+    void drawDeleteConfirmationPopup(Scene& scene);
+
+private:
+    // Popup bools
+    bool openLoadScenePopup = false;
+    bool openSaveScenePopup = false;
+    bool openDeleteConfirmationPopup = false;
+
+    // ImGui utils
+    bool InputTextMultilineStdString(const char* label, std::string& str, const ImVec2& size, ImGuiInputTextFlags flags);
 };

@@ -16,8 +16,7 @@ public:
     static bool mouseButtons[5];
 
     // Input processing
-    static void processEditorInput(Window& windowStruct, Camera& camera, Camera& playCamera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
-    static void processPlaytestInput(Window& windowStruct, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt);
+    static void processInput(Context& context, float dt);
     static void processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch = true);
     static bool isKeyPressedOnce(int key);
 
@@ -28,7 +27,11 @@ public:
     static void char_callback(GLFWwindow* window, unsigned int c);
 
     // Mode changing
-    static void modeChange(Mode newMode, GLFWwindow* window);
+    static void modeChange(Context& context);
+
+private:
+    static void handleEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
+    static void handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt);
 };
 
 // Raycasting utils

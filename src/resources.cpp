@@ -54,6 +54,16 @@ std::vector<std::shared_ptr<Script>> Resources::getScripts() const {
     return result;
 }
 
+std::vector<std::string> Resources::getSceneNames() const {
+    std::vector<std::string> names;
+    for (const auto& entry : std::filesystem::directory_iterator("assets/scenes")) {
+        if (entry.path().extension() == ".scn") {
+            names.push_back(entry.path().stem().string());
+        }
+    }
+    return names;
+}
+
 void Resources::addMesh(const std::shared_ptr<Mesh>& mesh) {
     if (mesh) meshes[mesh->getName()] = mesh;
 }
