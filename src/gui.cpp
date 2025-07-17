@@ -235,8 +235,80 @@ void Gui::drawPlaytestUI(Scene& scene) {
     ImGui::End();
 }
 
+void Gui::drawWelcomeScreen(Context& context) {
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+    // Fill entire screen
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(displaySize);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+
+    ImGui::Begin("WelcomeScreen", nullptr,
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoNav
+    );
+
+    // Centered welcome card
+    ImVec2 cardSize(400, 300);
+    ImVec2 cardPos((displaySize.x - cardSize.x) * 0.5f, (displaySize.y - cardSize.y) * 0.5f);
+    ImGui::SetCursorPos(cardPos);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(24, 24));
+
+    ImGui::BeginChild("WelcomeCard", cardSize, true, ImGuiWindowFlags_NoScrollbar);
+
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX((cardSize.x - ImGui::CalcTextSize("Welcome to the Vertex Game Engine").x) * 0.5f);
+    ImGui::TextColored(ImVec4(1, 1, 1, 1), "Welcome to the Vertex Game Engine");
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    ImGui::Dummy(ImVec2(0, ImGui::GetTextLineHeight()));
+    
+    ImGui::Spacing();
+    ImGui::Spacing();
+
+    float buttonWidth = 200;
+    float buttonHeight = 40;
+    float buttonX = (cardSize.x - buttonWidth) * 0.5f;
+
+    ImGui::SetCursorPosX(buttonX);
+    if (ImGui::Button("Create New Project", ImVec2(buttonWidth, buttonHeight))) {
+        // TODO: Make projects
+
+        context.currentMode = Mode::SceneEditor;
+    }
+
+    ImGui::Spacing();
+
+    ImGui::SetCursorPosX(buttonX);
+    if (ImGui::Button("Load Project", ImVec2(buttonWidth, buttonHeight))) {
+        openLoadScenePopup = true;
+    }
+
+    ImGui::EndChild();
+    ImGui::PopStyleVar(2);
+    ImGui::End();
+    ImGui::PopStyleVar(3);
+}
+
+
 // === Popup rendering ===
-void Gui::drawPopups(Scene& scene) {
+void Gui::drawPopups(Context& context) {
+    Scene& scene = *context.editorScene;
+
     if (Object* selected = scene.getSelectedObject()) {
         drawObjectPropertiesPopup(scene, selected);
     }
@@ -245,7 +317,7 @@ void Gui::drawPopups(Scene& scene) {
         ImGui::OpenPopup("Load Scene Popup");
         openLoadScenePopup = false;
     }
-    drawLoadScenePopup(scene);
+    drawLoadScenePopup(scene, context.currentMode);
 
     if (openSaveScenePopup) {
         ImGui::OpenPopup("Save Scene Popup");
@@ -350,6 +422,11 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
             }
             ImGui::EndCombo();
         }
+
+        ImGui::Text("Material Properties");
+        ImGui::SliderFloat("Ambient",  &selected->material.ambient,  0.0f, 1.0f);
+        ImGui::SliderFloat("Specular", &selected->material.specular, 0.0f, 2.0f);
+        ImGui::SliderFloat("Shininess", &selected->material.shininess, 1.0f, 128.0f);
 
         // Texture selector
         std::string currentTextureName = selected->texture ? selected->texture->getName() : "None";
@@ -484,7 +561,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     ImGui::End();
 }
 
-void Gui::drawLoadScenePopup(Scene& scene) {
+void Gui::drawLoadScenePopup(Scene& scene, Mode& mode) {
     static size_t selectedSceneIndex = 0;
     static bool initialized = false;
     std::vector<std::string> scenes = scene.getResources()->getSceneNames();
@@ -522,6 +599,9 @@ void Gui::drawLoadScenePopup(Scene& scene) {
             }
 
             if (ImGui::Button("Load")) {
+                if (mode != Mode::SceneEditor) {
+                    mode = Mode::SceneEditor;
+                }
                 scene.clear();
                 scene.loadScene(scenes[selectedSceneIndex]);
                 ImGui::CloseCurrentPopup();

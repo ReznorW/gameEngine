@@ -1,7 +1,7 @@
 object player
 mesh cube
 shader default
-texture default.jpg
+texture default.png
 texturescale 1 1
 position -3.4 0 0
 rotation 0 0 0
@@ -46,7 +46,7 @@ endobject
 object ground
 mesh cube
 shader default
-texture grass.jpg
+texture grass.png
 texturescale 100 100
 position 0 -2 0
 rotation 0 0 0

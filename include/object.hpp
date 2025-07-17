@@ -33,6 +33,13 @@ struct Transform {
     void setFromModelMatrix(const glm::mat4& model);
 };
 
+// Material definition
+struct Material {
+    float ambient = 0.2f;
+    float specular = 0.5f;
+    float shininess = 32.0f;
+};
+
 // Object definition
 struct Object {
     // Object data
@@ -50,6 +57,7 @@ struct Object {
     glm::vec2 textureScale = glm::vec2(1.0f, 1.0f);
 
     Transform transform;
+    Material material;
     OBB obb;
 
     Object* parent = nullptr;

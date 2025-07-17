@@ -26,11 +26,12 @@ public:
     void drawSidebar(Scene& scene);
     void drawObjectTree(Object& obj, Scene& scene);
     void drawPlaytestUI(Scene& scene);
+    void drawWelcomeScreen(Context& context);
 
     // Popup Rendering
-    void drawPopups(Scene& scene);
+    void drawPopups(Context& context);
     void drawObjectPropertiesPopup(Scene& scene, Object* selected);
-    void drawLoadScenePopup(Scene& scene);
+    void drawLoadScenePopup(Scene& scene, Mode& mode);
     void drawSaveScenePopup(Scene& scene);
     void drawDeleteConfirmationPopup(Scene& scene);
 

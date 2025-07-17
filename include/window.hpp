@@ -26,6 +26,9 @@ public:
     int getWidth();
     int getHeight();
 
+    // Setters
+    void setSize(int w, int h);
+
 private:
     // Window data
     GLFWwindow* window;

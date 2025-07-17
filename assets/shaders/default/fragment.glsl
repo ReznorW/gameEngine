@@ -19,13 +19,17 @@ uniform vec3 fogColor;
 uniform float fogStart;
 uniform float fogEnd;
 
+// Material uniforms
+uniform float ambientStrength;
+uniform float specularStrength;
+uniform float shininess;
+
 void main() {
     vec3 norm = normalize(Normal);
     vec3 lightDirNorm = normalize(-lightDir);
     vec3 viewDir = normalize(viewPos - FragPos);
 
     // Ambient
-    float ambientStrength = 0.2;
     vec3 ambient = ambientStrength * lightColor;
 
     // Diffuse
@@ -33,9 +37,8 @@ void main() {
     vec3 diffuse = diff * lightColor;
 
     // Specular (Blinn-Phong)
-    float specularStrength = 0.5;
     vec3 halfwayDir = normalize(lightDirNorm + viewDir);
-    float spec = pow(max(dot(norm, halfwayDir), 0.0), 32.0); // shininess = 32
+    float spec = pow(max(dot(norm, halfwayDir), 0.0), shininess);
     vec3 specular = specularStrength * spec * lightColor;
 
     vec3 lighting = ambient + diffuse + specular;
@@ -43,11 +46,8 @@ void main() {
     // Sample the texture color
     vec3 texColor = texture(texture1, TexCoords * textureScale).rgb;
 
-    // Combine lighting with texture (ignore Color from vertex)
+    // Combine lighting with texture
     vec3 result = lighting * texColor;
-
-    // Apply lighting to vertex color
-    //vec3 result = lighting * Color;
 
     // Gamma correction (assuming gamma = 2.2)
     result = pow(result, vec3(1.0 / 2.2));

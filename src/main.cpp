@@ -28,7 +28,7 @@ int main() {
 
     // === Window setup ===
     std::cout << "===Setting up window===" << std::endl;
-    context.window = std::make_unique<Window>("Game Engine", false);
+    context.window = std::make_unique<Window>("Vertex Game Engine", false);
     Window& window = *context.window;
     glEnable(GL_DEPTH_TEST);
     glfwSwapInterval(1); // VSync
@@ -53,12 +53,9 @@ int main() {
     context.editorScene = std::make_unique<Scene>(resources.get());
     context.playScene = std::make_unique<Scene>(*context.editorScene);
 
-    std::cout << "===Loading scene===" << std::endl;
-    context.editorScene->loadScene("default");
-
     // === Initialize mode ===
-    context.currentMode = Mode::SceneEditor;
-    context.previousMode = Mode::SceneEditor;
+    context.currentMode = Mode::WelcomeScreen;
+    context.previousMode = Mode::WelcomeScreen;
 
     // === Input setup ===
     std::cout << "===Setting up input===" << std::endl;
@@ -67,6 +64,7 @@ int main() {
     glfwSetCursorPosCallback(window.getGLFWwindow(), Input::cursor_position_callback);
     glfwSetKeyCallback(window.getGLFWwindow(), Input::key_callback);
     glfwSetCharCallback(window.getGLFWwindow(), Input::char_callback);
+    glfwSetFramebufferSizeCallback(window.getGLFWwindow(), Input::framebuffer_size_callback);
 
     // === Timing setup ===
     const double timestep = 1.0 / 60.0;
@@ -95,6 +93,7 @@ int main() {
             context.previousMode = context.currentMode;
         }
 
+
         // Synchronize mouse before ImGui frame
         gui.syncMouseFromGLFW(window.getGLFWwindow());
         gui.syncKeyboardFromGLFW(window.getGLFWwindow());
@@ -108,14 +107,15 @@ int main() {
             accumulator -= timestep;
         }
 
-        // === Flush screen ===
-        glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         // === Editor mode ===
         if (context.currentMode == Mode::SceneEditor) {
             Camera& camera = *context.sceneCamera;
             Scene& scene = *context.editorScene;
+
+            // === Flush screen ===
+            glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
             // === OBB updating ===
             for (auto& obj : scene.getObjects()) {
@@ -129,13 +129,18 @@ int main() {
             // === Draw editor GUI ===
             gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs);
             gui.drawSidebar(scene);
-            gui.drawPopups(scene);
+            gui.drawPopups(context);
         }
 
         // === Playtest mode ===
         else if (context.currentMode == Mode::Playtest) {
             Camera& camera = *context.playCamera;
             Scene& scene = *context.playScene;
+
+            // === Flush screen ===
+            glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
             for (auto& obj : scene.getObjects()) {
                 // Run scripts
@@ -184,6 +189,15 @@ int main() {
             gui.drawPlaytestUI(scene);
         }
 
+        else if (context.currentMode == Mode::WelcomeScreen) {
+            // === Flush screen ===
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            gui.drawWelcomeScreen(context);
+            gui.drawPopups(context);
+        }
+
         // === GUI end ===
         gui.endFrame();
 
@@ -199,6 +213,7 @@ int main() {
             lastWidth = width;
             lastHeight = height;
         }
+
     }
 
     // === Cleanup ===

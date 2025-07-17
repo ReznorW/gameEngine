@@ -42,17 +42,6 @@ Window::Window(const std::string& title, bool fullscreen)
     // Bind OpenGL to current thread
     glfwMakeContextCurrent(window);
 
-    // Resize viewport when screen resizes
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int w, int h) {
-        glViewport(0, 0, w, h);
-        
-        // Set new dims
-        Window* self = static_cast<Window*>(glfwGetWindowUserPointer(win));
-        self->width = w;
-        self->height = h;
-    });
-
     // Load OpenGL functions using GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD\n";
@@ -93,4 +82,10 @@ int Window::getWidth() {
 
 int Window::getHeight() {
     return height;
+}
+
+// === Setters ===
+void Window::setSize(int w, int h) {
+    width = w;
+    height = h;
 }

@@ -4,5 +4,6 @@ enum class Mode {
     SceneEditor,
     ScriptEditor,
     ModelEditor,
-    Playtest
+    Playtest,
+    WelcomeScreen
 };

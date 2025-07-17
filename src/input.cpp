@@ -49,6 +49,9 @@ void Input::processInput(Context& context, float dt) {
         case Mode::ModelEditor:
             // TODO: handleModelEditorInput()
             break;
+
+        case Mode::WelcomeScreen:
+            break;
     }
 
     std::memcpy(previousKeys, keys, sizeof(keys));
@@ -429,6 +432,20 @@ void Input::char_callback(GLFWwindow* window, unsigned int c) {
     ImGui_ImplGlfw_CharCallback(window, c);
 }
 
+void Input::framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+
+    Context* context = static_cast<Context*>(glfwGetWindowUserPointer(window));
+    if (!context) return;
+
+    context->window->setSize(width, height);
+
+    if (context->sceneCamera)
+        context->sceneCamera->setAspectRatio(static_cast<float>(width) / height);
+    if (context->playCamera)
+        context->playCamera->setAspectRatio(static_cast<float>(width) / height);
+}
+
 // === Raycasting utils ===
 glm::vec3 calculateRayFromMouse(double mouseX, double mouseY, int screenWidth, int screenHeight, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
     // Convert mouse position to Normalized Device Coordinates (NDC)
@@ -497,6 +514,9 @@ void Input::modeChange(Context& context) {
 
         case Mode::ModelEditor:
             // Switch to model editor
+            break;
+
+        case Mode::WelcomeScreen:
             break;
 
         case Mode::Playtest:

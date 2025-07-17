@@ -33,7 +33,7 @@ endobject
 object ground
 mesh plane
 shader default
-texture grass.jpg
+texture grass.png
 texturescale 150 150
 position 0 -2 0
 rotation 0 0 0

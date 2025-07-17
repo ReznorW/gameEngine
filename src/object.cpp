@@ -151,7 +151,7 @@ void Object::draw(const Camera& camera, const Object* selectedObject, const bool
 
     if (!(inPlaytest && isPlayer)) {
         shader->use();
-
+        
         // Set 3D model
         shader->setMat4("model", getWorldMatrix());
         shader->setMat4("view", camera.getViewMatrix());
@@ -165,6 +165,9 @@ void Object::draw(const Camera& camera, const Object* selectedObject, const bool
         shader->setFloat("fogStart", 50.0f);  // Distance where fog starts
         shader->setFloat("fogEnd", 100.0f);   // Distance where fog fully saturates
         shader->setBool("isSelected", isHighlighted);    // Whether or not object is selected
+        shader->setFloat("ambientStrength", material.ambient);
+        shader->setFloat("specularStrength", material.specular);
+        shader->setFloat("shininess", material.shininess);
 
         // Set texture
         if (texture) {

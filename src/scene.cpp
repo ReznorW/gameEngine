@@ -91,6 +91,7 @@ bool Scene::loadScene(const std::string& scnName) {
     std::string line, objName, meshName, textureName, shaderName, scriptName, parentName = "None";
     glm::vec3 position, rotation, scale(1);
     glm::vec2 textureScale(1);
+    float ambient, specular, shininess;
     bool isPlayer, hasCollisions, isMoveable, hasGravity = false;
     bool inObject = false;
 
@@ -114,6 +115,12 @@ bool Scene::loadScene(const std::string& scnName) {
             iss >> meshName;
         } else if (token == "shader") {
             iss >> shaderName;
+        } else if (token == "ambient") {
+            iss >> ambient;
+        } else if (token == "specular") {
+            iss >> specular;
+        } else if (token == "shininess") {
+            iss >> shininess;
         } else if (token == "script") {
             iss >> scriptName;
         } else if (token == "texture") {
@@ -142,6 +149,9 @@ bool Scene::loadScene(const std::string& scnName) {
             obj->transform.rotation = rotation;
             obj->transform.scale = scale;
             obj->transform.velocity = glm::vec3(0.0f);
+            obj->material.ambient = ambient;
+            obj->material.specular = specular;
+            obj->material.shininess = shininess;
             obj->textureScale = textureScale;
             obj->isPlayer = isPlayer;
             obj->hasCollisions = hasCollisions;
@@ -176,6 +186,9 @@ bool Scene::saveScene(const std::string& scnName) {
         file << "object " << obj->name << "\n";
         file << "mesh " << obj->mesh->getName() << "\n";
         file << "shader " << obj->shader->getName() << "\n";
+        file << "ambient " << obj->material.ambient << "\n";
+        file << "specular " << obj->material.specular << "\n";
+        file << "shininess " << obj->material.shininess << "\n";
         if (obj->script) file << "script " << obj->script->getName() << "\n";
         file << "texture " << obj->texture->getName() << "\n";
         file << "texturescale " << obj->textureScale.x << " " << obj->textureScale.y << "\n";
