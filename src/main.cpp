@@ -112,7 +112,7 @@ int main() {
             Camera& camera = *context.sceneCamera;
             Scene& scene = *context.editorScene;
 
-            // === Flush screen ===
+            // Flush screen
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -137,7 +137,7 @@ int main() {
             Camera& camera = *context.playCamera;
             Scene& scene = *context.playScene;
 
-            // === Flush screen ===
+            // Flush screen
             glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -189,12 +189,23 @@ int main() {
             gui.drawPlaytestUI(scene);
         }
 
+        // === Welcome Screen ===
         else if (context.currentMode == Mode::WelcomeScreen) {
-            // === Flush screen ===
+            // Flush screen
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             gui.drawWelcomeScreen(context);
+            gui.drawPopups(context);
+        }
+
+        // === Script Editor ===
+        else if (context.currentMode == Mode::ScriptEditor) {
+            // Flush screen
+            glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            gui.drawScriptEditor(context);
             gui.drawPopups(context);
         }
 
@@ -203,17 +214,6 @@ int main() {
 
         // === Buffer Swap ===
         window.swapBuffers();
-
-        // === Update camera aspect ratio ===
-        int width = window.getWidth();
-        int height = window.getHeight();
-        if (width != lastWidth || height != lastHeight) {
-            context.sceneCamera->setAspectRatio(static_cast<float>(width) / height);
-            context.playCamera->setAspectRatio(static_cast<float>(width) / height);
-            lastWidth = width;
-            lastHeight = height;
-        }
-
     }
 
     // === Cleanup ===

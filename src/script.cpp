@@ -24,10 +24,10 @@ Script::Script(const std::string& scriptPath) {
 
     std::string code((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     sourceCode = code;
+    clearErrors();
 
     if (luaL_dostring(L, code.c_str()) != LUA_OK) {
-        lastError = lua_tostring(L, -1);
-        std::cerr << "[Lua Compile Error] " << lastError << std::endl;
+        logError(std::string("[Lua Compile Error] ") + lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -39,9 +39,10 @@ Script::Script(const Script& other) {
     L = luaL_newstate();
     luaL_openlibs(L);
     registerFunctions();
+    clearErrors();
 
     if (luaL_dostring(L, sourceCode.c_str()) != LUA_OK) {
-        lastError = lua_tostring(L, -1);
+        logError(std::string("[Lua Compile Error] ") + lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -52,6 +53,20 @@ Script::~Script() {
 }
 
 // === Setters ===
+void Script::setName(const std::string& newName) {
+    if (newName == name || newName.empty()) return;
+
+    std::string oldPath = "assets/scripts/" + name + ".lua";
+    std::string newPath = "assets/scripts/" + newName + ".lua";
+
+    // Attempt to rename the file
+    if (std::rename(oldPath.c_str(), newPath.c_str()) == 0) {
+        name = newName;
+    } else {
+        std::cerr << "Failed to rename file from " << oldPath << " to " << newPath << '\n';
+    }
+}
+
 void Script::setContext(Context* contextPtr) {
     context = contextPtr;
     lua_pushlightuserdata(L, static_cast<void*>(context));
@@ -61,8 +76,10 @@ void Script::setContext(Context* contextPtr) {
 // === Editing ===
 void Script::updateSource(const std::string& newCode) {
     sourceCode = newCode;
+    clearErrors();
+
     if (luaL_dostring(L, sourceCode.c_str()) != LUA_OK) {
-        lastError = lua_tostring(L, -1);
+        logError(std::string("[Lua Compile Error] ") + lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
@@ -73,6 +90,22 @@ void Script::saveToFile() {
         out << sourceCode;
         out.close();
     }
+}
+
+// === Error handling ===
+void Script::logError(const std::string& error) {
+    errorLog.push_back(error);
+    if (errorLog.size() > 100) {
+        errorLog.erase(errorLog.begin());
+    }
+}
+
+void Script::clearErrors() {
+    errorLog.clear();
+}
+
+bool Script::hasErrors() const {
+    return !errorLog.empty();
 }
 
 // === Execution ===
@@ -90,8 +123,7 @@ void Script::onStart() {
     lua_getglobal(L, "onStart");
     if (lua_isfunction(L, -1)) {
         if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
-            lastError = lua_tostring(L, -1);
-            std::cerr << "[Lua Runtime Error in onStart] " << lastError << std::endl;
+            logError(std::string("[Lua Runtime Error] ") + lua_tostring(L, -1));
             lua_pop(L, 1);
         }
     } else {
@@ -106,8 +138,7 @@ void Script::update(float dt) {
     if (lua_isfunction(L, -1)) {
         lua_pushnumber(L, dt);
         if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
-            lastError = lua_tostring(L, -1);
-            std::cerr << "[Lua Runtime Error] " << lastError << std::endl;
+            logError(std::string("[Lua Runtime Error] ") + lua_tostring(L, -1));
             lua_pop(L, 1);
         }
     } else {

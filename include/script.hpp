@@ -17,17 +17,22 @@ public:
 
     // Getters
     std::string getName() const {return name;}
-    std::string getLastError() const {return lastError;}
+    std::vector<std::string> getErrorLog() const {return errorLog;}
     std::string getSource() const {return sourceCode;}
 
     // Setters
-    void setName(const std::string& newName) {name = newName;}
+    void setName(const std::string& newName);
     void setOwner(Object* obj) {owner = obj;}
     void setContext(Context* contextPtr);
 
     // Editing
     void updateSource(const std::string& newCode);
     void saveToFile();
+
+    // Error handling
+    void logError(const std::string& error);
+    void clearErrors();
+    bool hasErrors() const;
 
     // Execution
     void onStart();
@@ -38,7 +43,7 @@ public:
 
 private:
     lua_State* L = nullptr;
-    std::string lastError;
+    std::vector<std::string> errorLog;
     std::string name;
     std::string sourceCode;
     Context* context = nullptr;

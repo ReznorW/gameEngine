@@ -1,8 +1,11 @@
 #include <imgui.h>
 #include <fstream>
+#include <sstream>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "imgui_markdown.h"
 
 #include "gui.hpp"
 #include "mode.hpp"
@@ -142,6 +145,14 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
             ImGui::EndMenu();
         }
 
+        // View Menu
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::MenuItem("Script Editor")) {
+                mode = Mode::ScriptEditor;
+            }
+            ImGui::EndMenu();
+        }
+
         // Run Menu
         if (ImGui::BeginMenu("Run")) {
             if (ImGui::MenuItem("Playtest", "R")) {
@@ -182,7 +193,7 @@ void Gui::drawSidebar(Scene& scene) {
     ImGui::Begin("Objects", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
     for (auto& obj : scene.getObjects()) {
-        if (obj->parent == nullptr) {  // Only draw root objects
+        if (obj->parent == nullptr) {
             drawObjectTree(*obj, scene);
         }
     }
@@ -218,7 +229,7 @@ void Gui::drawObjectTree(Object& obj, Scene& scene) {
 
 void Gui::drawPlaytestUI(Scene& scene) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10, 10), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
-    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+    ImGui::SetNextWindowBgAlpha(0.35f);
 
     ImGuiWindowFlags flags =
         ImGuiWindowFlags_NoDecoration |
@@ -238,7 +249,6 @@ void Gui::drawPlaytestUI(Scene& scene) {
 void Gui::drawWelcomeScreen(Context& context) {
     ImVec2 displaySize = ImGui::GetIO().DisplaySize;
 
-    // Fill entire screen
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(displaySize);
 
@@ -246,17 +256,16 @@ void Gui::drawWelcomeScreen(Context& context) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
-    ImGui::Begin("WelcomeScreen", nullptr,
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoBringToFrontOnFocus |
-        ImGuiWindowFlags_NoNav
-    );
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar |
+                                    ImGuiWindowFlags_NoResize |
+                                    ImGuiWindowFlags_NoMove |
+                                    ImGuiWindowFlags_NoCollapse |
+                                    ImGuiWindowFlags_NoScrollbar |
+                                    ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                    ImGuiWindowFlags_NoNav;
 
-    // Centered welcome card
+    ImGui::Begin("WelcomeScreen", nullptr, window_flags);
+
     ImVec2 cardSize(400, 300);
     ImVec2 cardPos((displaySize.x - cardSize.x) * 0.5f, (displaySize.y - cardSize.y) * 0.5f);
     ImGui::SetCursorPos(cardPos);
@@ -304,12 +313,165 @@ void Gui::drawWelcomeScreen(Context& context) {
     ImGui::PopStyleVar(3);
 }
 
+void Gui::drawScriptEditor(Context& context) {
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
+                                    ImGuiWindowFlags_NoMove |
+                                    ImGuiWindowFlags_NoResize |
+                                    ImGuiWindowFlags_NoSavedSettings |
+                                    ImGuiWindowFlags_MenuBar |
+                                    ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+    ImGui::Begin("Script Editor", nullptr, window_flags);
+
+    static std::shared_ptr<Script> currentScript = nullptr;
+    static std::string currentScriptContent = "";
+    static bool dirty = false;
+
+    // Menu Bar
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("New Script")) {
+                currentScript = std::make_shared<Script>("new_script.lua");
+                currentScriptContent = currentScript->getSource();
+                dirty = true;
+                context.editorScene->getResources()->addScript(currentScript); // If you support adding scripts at runtime
+            }
+            if (ImGui::MenuItem("Save", nullptr, false, dirty && currentScript != nullptr)) {
+                currentScript->updateSource(currentScriptContent);
+                currentScript->saveToFile();
+
+                std::vector<Object*> matchingObjects;
+                for (auto& object : context.editorScene->getObjects()) {
+                    if (object->script && object->script->getName() == currentScript->getName()) {
+                        matchingObjects.push_back(object);
+                    }
+                }
+
+                for (auto& object : matchingObjects) {
+                    object->script = currentScript;
+                }
+
+                dirty = false;
+            }
+            if (ImGui::MenuItem("Reload", nullptr, false, currentScript != nullptr)) {
+                currentScriptContent = currentScript->getSource();
+                dirty = false;
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::MenuItem("Scene Editor")) {
+                context.currentMode = Mode::SceneEditor;
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("View Documentation")) {
+                if (documentation.empty()) {
+                    std::ifstream file("docs/Documentation.md");
+                    if (file) {
+                        std::stringstream buffer;
+                        buffer << file.rdbuf();
+                        documentation = buffer.str();
+                    } else {
+                        documentation = "Failed to load Documentation.md.";
+                    }
+                }
+                openHelpPopup = true;
+            }
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMenuBar();
+    }
+
+    // Layout
+    ImGui::Columns(2, nullptr, true);
+    ImGui::SetColumnWidth(0, 200);
+
+    // Script list
+    ImGui::BeginChild("Scripts", ImVec2(0, 0), true);
+    auto scripts = context.editorScene->getResources()->getScripts();
+    for (const std::shared_ptr<Script>& script : scripts) {
+        ImGui::PushID(script->getName().c_str());
+
+        bool selected = (currentScript == script);
+        if (ImGui::Selectable(script->getName().c_str(), selected)) {
+            currentScript = script;
+            currentScriptContent = currentScript->getSource();
+            dirty = false;
+        }
+
+        if (ImGui::BeginPopupContextItem()) {
+            if (ImGui::MenuItem("Rename")) {
+                openRenameScriptPopup = true;
+                scriptToRename = script;
+            }
+            if (ImGui::MenuItem("Delete")) {
+                context.editorScene->getResources()->deleteScript(script->getName());
+                if (currentScript == script)
+                    currentScript = nullptr;
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::PopID();
+    }
+
+    ImGui::EndChild();
+
+    ImGui::NextColumn();
+
+    // Text editor
+    ImGui::BeginChild("Script Editor Area", ImVec2(0, 0), true);
+
+    if (dirty) {
+        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Unsaved changes");
+    }
+
+    if (currentScript) {
+        ImVec2 editorSize = ImVec2(-1, ImGui::GetContentRegionAvail().y * 0.7f);
+        ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput | ImGuiInputTextFlags_CallbackResize;
+        if (InputTextMultilineStdString("##LuaText", currentScriptContent, editorSize, flags)) {
+            dirty = true;
+        }
+
+        // Error log
+        ImGui::Separator();
+        ImGui::Text("Error Log:");
+        ImGui::BeginChild("LuaErrorTerminal", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+        const std::vector<std::string>& errorLog = currentScript->getErrorLog();
+        if (!errorLog.empty()) {
+            for (const auto& line : errorLog) {
+                ImGui::TextUnformatted(line.c_str());
+            }
+        } else {
+            ImGui::TextDisabled("No errors.");
+        }
+
+        ImGui::EndChild();
+    } else {
+        ImGui::Text("No script selected.");
+    }
+
+    ImGui::EndChild();
+
+    ImGui::Columns(1);
+    ImGui::End();
+}
 
 // === Popup rendering ===
 void Gui::drawPopups(Context& context) {
     Scene& scene = *context.editorScene;
 
-    if (Object* selected = scene.getSelectedObject()) {
+    Object* selected = scene.getSelectedObject();
+    if (selected && context.currentMode == Mode::SceneEditor) {
         drawObjectPropertiesPopup(scene, selected);
     }
 
@@ -330,6 +492,16 @@ void Gui::drawPopups(Context& context) {
         openDeleteConfirmationPopup = false;
     }
     drawDeleteConfirmationPopup(scene);
+
+    if (openRenameScriptPopup) {
+        ImGui::OpenPopup("Rename Script Popup");
+        openRenameScriptPopup = false;
+    }
+    drawRenameScriptPopup(context);
+
+    if(openHelpPopup && (context.currentMode == Mode::ScriptEditor)) {
+        drawDocumentationPopup();
+    }
 }
 
 void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
@@ -493,6 +665,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
             bool isSelected = (scriptName == currentScript);
             if (ImGui::Selectable(scriptName.c_str(), isSelected)) {
                 selected->script = script;
+                script->setOwner(selected);
             }
             if (isSelected) {
                 ImGui::SetItemDefaultFocus();
@@ -500,54 +673,6 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
         }
 
         ImGui::EndCombo();
-    }
-
-    // Ensure a script is selected
-    if (selected->script) {
-        static std::string editableScriptCode;
-
-        // Load the script's current code only once (when script is assigned)
-        static std::string lastScriptName = "";
-        if (selected->script->getName() != lastScriptName) {
-            editableScriptCode = selected->script->getSource();
-            lastScriptName = selected->script->getName();
-        }
-
-        ImGui::SeparatorText("Script Code");
-
-        if (InputTextMultilineStdString("##ScriptEditor", editableScriptCode, ImVec2(-1, io.DisplaySize.y / 2), ImGuiInputTextFlags_AllowTabInput)) {
-            selected->script->updateSource(editableScriptCode);
-        }
-
-        if (ImGui::Button("Save Script")) {
-            selected->script->saveToFile();
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("New Script")) {
-            // Create a new empty script and assign it
-            std::string newScriptName = "newScript";
-            int counter = 1;
-
-            // Ensure uniqueness
-            while (scene.getResources()->getScript(newScriptName)) {
-                newScriptName = "newScript" + std::to_string(counter++);
-            }
-
-            // Create empty script file on disk
-            std::string fullPath = "assets/scripts/" + newScriptName + ".lua";
-            std::ofstream file(fullPath);
-            if (file.is_open()) {
-                file << "-- New script\n";
-                file << "function update(dt)\n\nend";
-                file.close();
-            }
-
-            // Load and assign it
-            scene.getResources()->addScript(std::make_shared<Script>(fullPath));
-            selected->script = scene.getResources()->getScript(newScriptName);
-        }
     }
 
     ImGui::Spacing();
@@ -666,15 +791,73 @@ void Gui::drawDeleteConfirmationPopup(Scene& scene) {
     }
 }
 
-// === ImGui utils ===
-bool Gui::InputTextMultilineStdString(const char* label, std::string& str, const ImVec2& size, ImGuiInputTextFlags flags = 0) {
-    static std::vector<char> buffer;
-    buffer.resize(std::max((size_t)str.size() + 1024, buffer.size())); // Ensure buffer is large enough
-    std::strncpy(buffer.data(), str.c_str(), buffer.size());
+void Gui::drawRenameScriptPopup(Context& context) {
+    static char nameBuffer[128] = "";
+    static bool initialized = false;
 
-    bool changed = ImGui::InputTextMultiline(label, buffer.data(), buffer.size(), size, flags);
-    if (changed) {
-        str = buffer.data();
+    if (scriptToRename && ImGui::BeginPopupModal("Rename Script Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (!initialized) {
+            std::strncpy(nameBuffer, scriptToRename->getName().c_str(), sizeof(nameBuffer));
+            nameBuffer[sizeof(nameBuffer) - 1] = '\0';
+            initialized = true;
+        }
+
+        ImGui::InputText("New Name", nameBuffer, IM_ARRAYSIZE(nameBuffer));
+
+        if (ImGui::Button("Rename")) {
+            std::string newName(nameBuffer);
+            if (!newName.empty() && newName != scriptToRename->getName()) {
+                scriptToRename->setName(newName);
+            }
+            scriptToRename = nullptr;
+            initialized = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) {
+            scriptToRename = nullptr;
+            initialized = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    } else {
+        initialized = false;
     }
+}
+
+void Gui::drawDocumentationPopup() {
+    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Documentation", &openHelpPopup)) {
+        static ImGui::MarkdownConfig config;
+
+        ImGui::BeginChild("DocScroll", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::Markdown(documentation.c_str(), documentation.size(), config);
+        ImGui::EndChild();
+    }
+    ImGui::End();
+}
+
+// === ImGui utils ===
+bool InputTextMultilineStdString(const char* label, std::string& str, const ImVec2& size, ImGuiInputTextFlags flags) {
+    flags |= ImGuiInputTextFlags_CallbackResize;
+
+    if (str.empty()) {
+        str = "";
+    }
+
+    bool changed = ImGui::InputTextMultiline(label, (char*)str.c_str(), str.capacity() + 1, size, flags, InputTextCallback, (void*)&str);
+
     return changed;
+}
+
+int InputTextCallback(ImGuiInputTextCallbackData* data) {
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+        std::string* str = reinterpret_cast<std::string*>(data->UserData);
+        IM_ASSERT(str != nullptr);
+        str->resize(data->BufTextLen);
+        data->Buf = (char*)str->c_str();
+    }
+    return 0;
 }

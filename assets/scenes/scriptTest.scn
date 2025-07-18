@@ -1,6 +1,9 @@
 object enemy
 mesh pyramid
 shader default
+ambient 0.27
+specular 0.986
+shininess 40.725
 script simpleFollow
 texture red.png
 texturescale 1 1
@@ -17,6 +20,9 @@ endobject
 object player
 mesh player
 shader default
+ambient 0.427
+specular 0.929
+shininess 40.725
 script player
 texture orange.png
 texturescale 1 1
@@ -33,6 +39,9 @@ endobject
 object ground
 mesh plane
 shader default
+ambient 0.256
+specular 0.834
+shininess 50.957
 texture grass.png
 texturescale 150 150
 position 0 -2 0
