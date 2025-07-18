@@ -35,7 +35,7 @@ void Input::processInput(Context& context, float dt) {
 
     switch (context.currentMode) {
         case Mode::SceneEditor:
-            handleEditorInput(*context.window, *context.sceneCamera, *context.editorScene, context.playScene, context.currentMode);
+            handleSceneEditorInput(*context.window, *context.sceneCamera, *context.editorScene, context.playScene, context.currentMode);
             break;
 
         case Mode::Playtest:
@@ -43,7 +43,7 @@ void Input::processInput(Context& context, float dt) {
             break;
 
         case Mode::ScriptEditor:
-            // TODO: handleScriptEditorInput()
+            handleScriptEditorInput(context.currentMode);
             break;
 
         case Mode::ModelEditor:
@@ -57,7 +57,7 @@ void Input::processInput(Context& context, float dt) {
     std::memcpy(previousKeys, keys, sizeof(keys));
 }
 
-void Input::handleEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode) {
+void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode) {
     // --- Movement controls ---
     float currentSpeed = movementSpeed;
 
@@ -177,13 +177,18 @@ void Input::handleEditorInput(Window& window, Camera& camera, Scene& scene, std:
         scene.clear();
     }
 
-    // Increase FOV (F1)
-    if (keys[GLFW_KEY_F1] && camera.getFOV() < 135) {
+    // Switch to script editor (F2)
+    if (keys[GLFW_KEY_F2]) {
+        mode = Mode::ScriptEditor;
+    }
+
+    // Increase FOV (F9)
+    if (keys[GLFW_KEY_F9] && camera.getFOV() < 135) {
         camera.setFOV(camera.getFOV() + lookSpeed);
     }
 
-    // Decrease FOV (F2)
-    if (keys[GLFW_KEY_F2] && camera.getFOV() > 20) {
+    // Decrease FOV (F10)
+    if (keys[GLFW_KEY_F10] && camera.getFOV() > 20) {
         camera.setFOV(camera.getFOV() - lookSpeed);
     }
 }
@@ -256,6 +261,13 @@ void Input::handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<
     // Decrease FOV (F2)
     if (keys[GLFW_KEY_F2] && camera.getFOV() > 20) {
         camera.setFOV(camera.getFOV() - lookSpeed);
+    }
+}
+
+void Input::handleScriptEditorInput(Mode& mode) {
+    // Switch to scene editor (F1)
+    if (keys[GLFW_KEY_F1]) {
+        mode = Mode::SceneEditor;
     }
 }
 

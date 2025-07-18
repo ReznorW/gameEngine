@@ -145,3 +145,15 @@ void Resources::loadAllScripts() {
         }
     }
 }
+
+void Resources::renameScript(const std::string& oldName, const std::string& newName) {
+    auto it = scripts.find(oldName);
+    if (it == scripts.end()) return;
+    
+    std::shared_ptr<Script> scriptPtr = it->second;
+    scripts.erase(it);
+
+    scriptPtr->setName(newName);
+
+    scripts[newName] = scriptPtr;
+}

@@ -31,8 +31,9 @@ public:
     static void modeChange(Context& context);
 
 private:
-    static void handleEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
+    static void handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
     static void handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt);
+    static void handleScriptEditorInput(Mode& mode);
 };
 
 // Raycasting utils

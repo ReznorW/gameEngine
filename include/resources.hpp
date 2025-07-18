@@ -38,6 +38,7 @@ public:
     std::vector<std::shared_ptr<Script>> getScripts() const;
     void addScript(const std::shared_ptr<Script>& script);
     void deleteScript(const std::string& name);
+    void renameScript(const std::string& oldName, const std::string& newName);
 
     // Scenes
     std::vector<std::string> getSceneNames() const;

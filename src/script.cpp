@@ -18,8 +18,7 @@ Script::Script(const std::string& scriptPath) {
 
     std::ifstream file(scriptPath);
     if (!file.is_open()) {
-        std::cerr << "Failed to open script file: " << scriptPath << std::endl;
-        return;
+        return; // Treat as new file
     }
 
     std::string code((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());

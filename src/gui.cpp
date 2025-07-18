@@ -1,6 +1,7 @@
 #include <imgui.h>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -80,16 +81,16 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
     if (ImGui::BeginMainMenuBar()) {
         // File Menu
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New", "Crtl + N")) {
+            if (ImGui::MenuItem("New", "Crtl+N")) {
                 scene.clear();
             }
-            if (ImGui::MenuItem("Open", "Crtl + O")) {
+            if (ImGui::MenuItem("Open", "Crtl+O")) {
                 openLoadScenePopup = true; 
             }
-            if (ImGui::MenuItem("Save As", "Crtl + Shift + S")) {
+            if (ImGui::MenuItem("Save As", "Crtl+Shift+S")) {
                 openSaveScenePopup = true;
             }
-            if (ImGui::MenuItem("Save", "Ctrl + S")) {
+            if (ImGui::MenuItem("Save", "Ctrl+S")) {
                 const std::string& sceneName = scene.getName();
                 if (!sceneName.empty()) {
                     scene.saveScene(sceneName);
@@ -97,7 +98,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     openSaveScenePopup = true;
                 }
             }
-            if (ImGui::MenuItem("Exit", "Ctrl + Q")) {
+            if (ImGui::MenuItem("Exit", "Ctrl+Q")) {
                 glfwSetWindowShouldClose(window.getGLFWwindow(), true);
             }
             ImGui::EndMenu();
@@ -133,7 +134,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     }
                 }
             }
-            if (ImGui::MenuItem("Save as Mesh", "Ctrl + M")) {
+            if (ImGui::MenuItem("Save as Mesh", "Ctrl+M")) {
                 Object* selected = scene.getSelectedObject();
                 if (selected) {
                     std::vector<Object*> objs;
@@ -146,8 +147,8 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         }
 
         // View Menu
-        if (ImGui::BeginMenu("View")) {
-            if (ImGui::MenuItem("Script Editor")) {
+        if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::MenuItem("Script Editor", "F2")) {
                 mode = Mode::ScriptEditor;
             }
             ImGui::EndMenu();
@@ -180,7 +181,9 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         }
 
         // FPS counter
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100.0f);
+        float menuWidth = ImGui::GetWindowWidth();
+        float textWidth = ImGui::CalcTextSize("FPS: 000.0").x;
+        ImGui::SetCursorPosX(menuWidth - textWidth - 20.0f);
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
         ImGui::EndMainMenuBar();
@@ -231,15 +234,14 @@ void Gui::drawPlaytestUI(Scene& scene) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 10, 10), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
     ImGui::SetNextWindowBgAlpha(0.35f);
 
-    ImGuiWindowFlags flags =
-        ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoNav;
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration |
+                                    ImGuiWindowFlags_AlwaysAutoResize |
+                                    ImGuiWindowFlags_NoMove |
+                                    ImGuiWindowFlags_NoSavedSettings |
+                                    ImGuiWindowFlags_NoFocusOnAppearing |
+                                    ImGuiWindowFlags_NoNav;
 
-    ImGui::Begin("PlaytestLabel", nullptr, flags);
+    ImGui::Begin("PlaytestLabel", nullptr, window_flags);
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
     ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
     ImGui::Text("Objects: %d", scene.getObjectCount());
@@ -331,16 +333,65 @@ void Gui::drawScriptEditor(Context& context) {
     static std::string currentScriptContent = "";
     static bool dirty = false;
 
+    // Hotkey handling
+    ImGuiIO& io = ImGui::GetIO();
+    bool ctrlHeld = io.KeyCtrl;
+
+    if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+        if (currentScript && dirty) {
+            currentScript->updateSource(currentScriptContent);
+            currentScript->saveToFile();
+
+            std::vector<Object*> matchingObjects;
+            for (auto& object : context.editorScene->getObjects()) {
+                if (object->script && object->script->getName() == currentScript->getName()) {
+                    matchingObjects.push_back(object);
+                }
+            }
+
+            for (auto& object : matchingObjects) {
+                object->script = currentScript;
+            }
+
+            dirty = false;
+        }
+    }
+    if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_N, false)) {
+        currentScript = std::make_shared<Script>("new_script.lua");
+        currentScriptContent = currentScript->getSource();
+        currentScript->saveToFile();
+        context.editorScene->getResources()->addScript(currentScript);
+    }
+    if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_R, false)) {
+        if (currentScript) {
+            currentScriptContent = currentScript->getSource();
+            dirty = false;
+        }
+    }
+    if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_H)) {
+        if (documentation.empty()) {
+            std::ifstream file("docs/Documentation.md");
+            if (file) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                documentation = buffer.str();
+            } else {
+                documentation = "Failed to load Documentation.md.";
+            }
+        }
+        openHelpPopup = true;
+    }
+
     // Menu Bar
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New Script")) {
+            if (ImGui::MenuItem("New Script", "Ctrl+N")) {
                 currentScript = std::make_shared<Script>("new_script.lua");
                 currentScriptContent = currentScript->getSource();
-                dirty = true;
-                context.editorScene->getResources()->addScript(currentScript); // If you support adding scripts at runtime
+                currentScript->saveToFile();
+                context.editorScene->getResources()->addScript(currentScript);
             }
-            if (ImGui::MenuItem("Save", nullptr, false, dirty && currentScript != nullptr)) {
+            if (ImGui::MenuItem("Save", "Ctrl+S", false, dirty && currentScript != nullptr)) {
                 currentScript->updateSource(currentScriptContent);
                 currentScript->saveToFile();
 
@@ -357,22 +408,22 @@ void Gui::drawScriptEditor(Context& context) {
 
                 dirty = false;
             }
-            if (ImGui::MenuItem("Reload", nullptr, false, currentScript != nullptr)) {
+            if (ImGui::MenuItem("Reload", "Ctrl+R", false, currentScript != nullptr)) {
                 currentScriptContent = currentScript->getSource();
                 dirty = false;
             }
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("View")) {
-            if (ImGui::MenuItem("Scene Editor")) {
+        if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::MenuItem("Scene Editor", "F1")) {
                 context.currentMode = Mode::SceneEditor;
             }
             ImGui::EndMenu();
         }
 
         if (ImGui::BeginMenu("Help")) {
-            if (ImGui::MenuItem("View Documentation")) {
+            if (ImGui::MenuItem("View Documentation", "Ctrl+H")) {
                 if (documentation.empty()) {
                     std::ifstream file("docs/Documentation.md");
                     if (file) {
@@ -414,9 +465,20 @@ void Gui::drawScriptEditor(Context& context) {
                 scriptToRename = script;
             }
             if (ImGui::MenuItem("Delete")) {
-                context.editorScene->getResources()->deleteScript(script->getName());
-                if (currentScript == script)
-                    currentScript = nullptr;
+                if (script) {
+                    const std::string& filepath = "assets/scripts/" + script->getName() + ".lua";
+                    if (!filepath.empty()) {
+                        if (std::remove(filepath.c_str()) != 0) {
+                            std::cerr << "Failed to delete script file: " << filepath << std::endl;
+                        }
+                    }
+
+                    context.editorScene->getResources()->deleteScript(script->getName());
+
+                    if (currentScript == script) {
+                        currentScript = nullptr;
+                    }
+                }
             }
             ImGui::EndPopup();
         }
@@ -509,128 +571,124 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 350, 20));
     ImGui::SetNextWindowSize(ImVec2(350, io.DisplaySize.y));
 
-    if (ImGui::Begin("Object Properties")) {
-        // Editable Name
-        char nameBuffer[128];
-        std::strncpy(nameBuffer, selected->name.c_str(), sizeof(nameBuffer));
-        nameBuffer[sizeof(nameBuffer) - 1] = '\0'; // Ensure null-termination
+    if (!ImGui::Begin("Object Properties")) {
+        ImGui::End();
+        return;
+    }
 
-        ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer));
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-            std::string newName(nameBuffer);
-            if (!newName.empty() && newName != selected->name) {
-                std::string finalName = scene.renameObject(selected->name, newName);
-                selected->name = finalName;
-            }
-        }
+    // --- Basic info ---
+    char nameBuffer[128];
+    std::strncpy(nameBuffer, selected->name.c_str(), sizeof(nameBuffer));
+    nameBuffer[sizeof(nameBuffer) - 1] = '\0';
 
-        // Transform controls
-        ImGui::DragFloat3("Position", glm::value_ptr(selected->transform.position), 0.1f);
-        ImGui::DragFloat3("Rotation", glm::value_ptr(selected->transform.rotation), 0.1f);
-        ImGui::DragFloat3("Scale",    glm::value_ptr(selected->transform.scale),    0.1f);
-        selected->transform.markDirty();
-
-        // Parent selector
-        std::string currentParentName = selected->parent ? selected->parent->name : "None";
-        if (ImGui::BeginCombo("Parent", currentParentName.c_str())) {
-            // Option to clear the parent
-            if (ImGui::Selectable("None", selected->parent == nullptr)) {
-                // Detach from current parent
-                if (selected->parent) {
-                    auto& siblings = selected->parent->children;
-                    siblings.erase(std::remove(siblings.begin(), siblings.end(), selected), siblings.end());
-                    selected->parent = nullptr;
-                }
-            }
-
-            // List all other objects as potential parents
-            for (Object* potentialParent : scene.getObjects()) {
-                if (potentialParent == selected) continue;
-
-                if (selected->isDescendant(potentialParent)) continue;
-
-                bool isSelected = (selected->parent == potentialParent);
-                if (ImGui::Selectable(potentialParent->name.c_str(), isSelected)) {
-                    selected->setParent(potentialParent);
-                }
-            }
-
-            ImGui::EndCombo();
-        }
-
-        // Mesh selector
-        std::string currentMesh = selected->mesh ? selected->mesh->getName() : "None";
-
-        if (ImGui::BeginCombo("Mesh", currentMesh.c_str())) {
-            auto meshes = scene.getResources()->getMeshes();
-            for (const std::shared_ptr<Mesh>& mesh : meshes) {
-                const std::string& meshName = mesh->getName();
-                bool isSelected = (meshName == currentMesh);
-                if (ImGui::Selectable(meshName.c_str(), isSelected)) {
-                    selected->mesh = mesh;
-                    selected->initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-
-        // Shader selector
-        std::string currentShader = selected->shader ? selected->shader->getName() : "None";
-
-        if (ImGui::BeginCombo("Shader", currentShader.c_str())) {
-            auto shaders = scene.getResources()->getShaders();
-            for (const std::shared_ptr<Shader>& shader : shaders) {
-                const std::string& shaderName = shader->getName();
-                bool isSelected = (selected->shader == shader);
-                if (ImGui::Selectable(shaderName.c_str(), isSelected)) {
-                    selected->shader = shader;
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-
-        ImGui::Text("Material Properties");
-        ImGui::SliderFloat("Ambient",  &selected->material.ambient,  0.0f, 1.0f);
-        ImGui::SliderFloat("Specular", &selected->material.specular, 0.0f, 2.0f);
-        ImGui::SliderFloat("Shininess", &selected->material.shininess, 1.0f, 128.0f);
-
-        // Texture selector
-        std::string currentTextureName = selected->texture ? selected->texture->getName() : "None";
-
-        if (ImGui::BeginCombo("Texture", currentTextureName.c_str())) {
-            auto textures = scene.getResources()->getTextures();
-            for (const std::shared_ptr<Texture>& tex : textures) {
-                const std::string& texName = tex->getName();
-                bool isSelected = (selected->texture == tex);
-                ImGui::PushID(texName.c_str());
-                ImGui::Image(tex->getID(), ImVec2(16, 16));
-                ImGui::SameLine();
-                if (ImGui::Selectable(texName.c_str(), isSelected)) {
-                    selected->texture = tex;
-                }
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-                ImGui::PopID();
-            }
-            ImGui::EndCombo();
-        }
-
-        ImGui::Text("Texture Scale");
-        float scale[2] = { selected->textureScale.x, selected->textureScale.y };
-        if (ImGui::InputFloat("Scale X", &scale[0], 0.01f, 1.0f, "%.3f")) {
-            selected->textureScale.x = scale[0];
-        }
-        if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) {
-            selected->textureScale.y = scale[1];
+    ImGui::SeparatorText("Name");
+    ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer));
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        std::string newName(nameBuffer);
+        if (!newName.empty() && newName != selected->name) {
+            std::string finalName = scene.renameObject(selected->name, newName);
+            selected->name = finalName;
         }
     }
+
+    // --- Transform ---
+    ImGui::SeparatorText("Transform");
+    ImGui::DragFloat3("Position", glm::value_ptr(selected->transform.position), 0.1f);
+    ImGui::DragFloat3("Rotation", glm::value_ptr(selected->transform.rotation), 0.1f);
+    ImGui::DragFloat3("Scale",    glm::value_ptr(selected->transform.scale),    0.1f);
+    selected->transform.markDirty();
+
+    // --- Hierarchy ---
+    ImGui::SeparatorText("Hierarchy");
+    std::string currentParentName = selected->parent ? selected->parent->name : "None";
+    if (ImGui::BeginCombo("Parent", currentParentName.c_str())) {
+        if (ImGui::Selectable("None", selected->parent == nullptr)) {
+            if (selected->parent) {
+                auto& siblings = selected->parent->children;
+                siblings.erase(std::remove(siblings.begin(), siblings.end(), selected), siblings.end());
+                selected->parent = nullptr;
+            }
+        }
+
+        for (Object* potentialParent : scene.getObjects()) {
+            if (potentialParent == selected || selected->isDescendant(potentialParent))
+                continue;
+
+            bool isSelected = (selected->parent == potentialParent);
+            if (ImGui::Selectable(potentialParent->name.c_str(), isSelected)) {
+                selected->setParent(potentialParent);
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+
+    // --- Rendering ---
+    ImGui::SeparatorText("Rendering");
+
+    // Mesh
+    std::string currentMesh = selected->mesh ? selected->mesh->getName() : "None";
+    if (ImGui::BeginCombo("Mesh", currentMesh.c_str())) {
+        for (const auto& mesh : scene.getResources()->getMeshes()) {
+            const std::string& meshName = mesh->getName();
+            bool isSelected = (meshName == currentMesh);
+            if (ImGui::Selectable(meshName.c_str(), isSelected)) {
+                selected->mesh = mesh;
+                selected->initializeOBB(mesh->getMinBounds(), mesh->getMaxBounds());
+            }
+            if (isSelected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    // Shader
+    std::string currentShader = selected->shader ? selected->shader->getName() : "None";
+    if (ImGui::BeginCombo("Shader", currentShader.c_str())) {
+        for (const auto& shader : scene.getResources()->getShaders()) {
+            const std::string& shaderName = shader->getName();
+            bool isSelected = (selected->shader == shader);
+            if (ImGui::Selectable(shaderName.c_str(), isSelected)) {
+                selected->shader = shader;
+            }
+            if (isSelected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    // --- Material ---
+    ImGui::SeparatorText("Material");
+    ImGui::SliderFloat("Ambient",   &selected->material.ambient,   0.0f, 1.0f);
+    ImGui::SliderFloat("Specular",  &selected->material.specular,  0.0f, 2.0f);
+    ImGui::SliderFloat("Shininess", &selected->material.shininess, 1.0f, 128.0f);
+
+    // --- Texture ---
+    ImGui::SeparatorText("Texture");
+    std::string currentTexture = selected->texture ? selected->texture->getName() : "None";
+    if (ImGui::BeginCombo("Texture", currentTexture.c_str())) {
+        for (const auto& tex : scene.getResources()->getTextures()) {
+            const std::string& texName = tex->getName();
+            bool isSelected = (selected->texture == tex);
+
+            ImGui::PushID(texName.c_str());
+            ImGui::Image(tex->getID(), ImVec2(16, 16));
+            ImGui::SameLine();
+
+            if (ImGui::Selectable(texName.c_str(), isSelected)) {
+                selected->texture = tex;
+            }
+
+            if (isSelected) ImGui::SetItemDefaultFocus();
+            ImGui::PopID();
+        }
+        ImGui::EndCombo();
+    }
+
+    float scale[2] = { selected->textureScale.x, selected->textureScale.y };
+    if (ImGui::InputFloat("Scale X", &scale[0], 0.01f, 1.0f, "%.3f")) selected->textureScale.x = scale[0];
+    if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) selected->textureScale.y = scale[1];
+
+    // --- Physics ---
+    ImGui::SeparatorText("Physics");
 
     if (ImGui::Checkbox("Player", &selected->isPlayer)) {
         if (selected->isPlayer) {
@@ -644,41 +702,37 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     }
 
     ImGui::Checkbox("Collisions", &selected->hasCollisions);
-    ImGui::Checkbox("Moveable", &selected->isMoveable);
-    ImGui::Checkbox("Gravity", &selected->hasGravity);
+    ImGui::Checkbox("Moveable",   &selected->isMoveable);
+    ImGui::Checkbox("Gravity",    &selected->hasGravity);
 
-    // Script selector
+    // --- Script ---
+    ImGui::SeparatorText("Script");
+
     std::string currentScript = selected->script ? selected->script->getName() : "None";
-
     if (ImGui::BeginCombo("Script", currentScript.c_str())) {
-        bool isSelected = (selected->script == nullptr);
-        if (ImGui::Selectable("None", isSelected)) {
+        bool noneSelected = (selected->script == nullptr);
+        if (ImGui::Selectable("None", noneSelected)) {
             selected->script = nullptr;
         }
-        if (isSelected) {
-            ImGui::SetItemDefaultFocus();
-        }
+        if (noneSelected) ImGui::SetItemDefaultFocus();
 
-        auto scripts = scene.getResources()->getScripts();
-        for (const std::shared_ptr<Script>& script : scripts) {
+        for (const auto& script : scene.getResources()->getScripts()) {
             const std::string& scriptName = script->getName();
-            bool isSelected = (scriptName == currentScript);
+            bool isSelected = (selected->script == script);
             if (ImGui::Selectable(scriptName.c_str(), isSelected)) {
                 selected->script = script;
                 script->setOwner(selected);
             }
-            if (isSelected) {
-                ImGui::SetItemDefaultFocus();
-            }
+            if (isSelected) ImGui::SetItemDefaultFocus();
         }
 
         ImGui::EndCombo();
     }
 
+    // --- Deletion ---
     ImGui::Spacing();
     ImGui::Separator();
 
-    // Delete object
     if (ImGui::Button("Delete Object")) {
         openDeleteConfirmationPopup = true;
     }
@@ -807,7 +861,7 @@ void Gui::drawRenameScriptPopup(Context& context) {
         if (ImGui::Button("Rename")) {
             std::string newName(nameBuffer);
             if (!newName.empty() && newName != scriptToRename->getName()) {
-                scriptToRename->setName(newName);
+                context.editorScene->getResources()->renameScript(scriptToRename->getName(), newName);
             }
             scriptToRename = nullptr;
             initialized = false;
