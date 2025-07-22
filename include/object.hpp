@@ -48,6 +48,7 @@ struct Object {
     bool hasCollisions = false;
     bool isMoveable = false;
     bool hasGravity = false;
+    bool isGrounded = false;
 
     std::shared_ptr<Mesh> mesh = nullptr;
     std::shared_ptr<Shader> shader = nullptr;

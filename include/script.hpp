@@ -24,6 +24,7 @@ public:
     void setName(const std::string& newName);
     void setOwner(Object* obj) {owner = obj;}
     void setContext(Context* contextPtr);
+    void setErrorLog(std::vector<std::string> newErrorLog) {errorLog = newErrorLog;}
 
     // Editing
     void updateSource(const std::string& newCode);
@@ -70,15 +71,30 @@ private:
     // Lua player bindings
     static int lua_getPlayer(lua_State* L);
     static int lua_getPlayerName(lua_State* L);
+    static int lua_getPlayerSpeed(lua_State* L);
+    static int lua_getPlayerJump(lua_State* L);
+    static int lua_setPlayerSpeed(lua_State* L);
+    static int lua_setPlayerJump(lua_State* L);
 
     // Lua scene bindings
     static int lua_createObject(lua_State* L);
     static int lua_destroyObject(lua_State* L);
     static int lua_getObject(lua_State* L);
+    static int lua_getSkyColor(lua_State* L);
+    static int lua_getGravity(lua_State* L);
+    static int lua_getDrag(lua_State* L);
+    static int lua_setSkyColor(lua_State* L);
+    static int lua_setGravity(lua_State* L);
+    static int lua_setDrag(lua_State* L);
 
     // Lua input bindings
     static int lua_isKeyPressed(lua_State* L);
+    static int lua_isKeyPressedOnce(lua_State* L);
+
+    // Lua misc bindings
+    static int lua_rand(lua_State* L);
 
     // Lua utils
     static Context* getContext(lua_State* L);
+    static int getKeyFromString(const char* keyStr);
 };

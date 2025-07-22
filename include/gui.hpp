@@ -37,6 +37,7 @@ public:
     void drawDeleteConfirmationPopup(Scene& scene);
     void drawRenameScriptPopup(Context& context);
     void drawDocumentationPopup();
+    void drawScenePropertiesPopup(Scene& scene);
 
 private:
     // Popup bools
@@ -45,6 +46,7 @@ private:
     bool openDeleteConfirmationPopup = false;
     bool openRenameScriptPopup = false;
     bool openHelpPopup = false;
+    bool openScenePropertiesPopup = false;
 
     // Popup vars
     std::shared_ptr<Script> scriptToRename = nullptr;

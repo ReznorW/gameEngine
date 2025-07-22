@@ -11,7 +11,7 @@ Scene::Scene(Resources* resources)
     : resources(resources) {}
 
 Scene::Scene(const Scene& other)
-    : name(other.name), resources(other.resources) {
+    : skyColor(other.skyColor), gravity(other.gravity), drag(other.drag), playerSpeed(other.playerSpeed), playerJump(other.playerJump), name(other.name), resources(other.resources){
 
     std::unordered_map<const Object*, std::shared_ptr<Object>> pointerMap;
 
@@ -93,7 +93,6 @@ bool Scene::loadScene(const std::string& scnName) {
     glm::vec2 textureScale(1);
     float ambient, specular, shininess;
     bool isPlayer, hasCollisions, isMoveable, hasGravity = false;
-    bool inObject = false;
 
     setName(scnName);
 
@@ -102,7 +101,23 @@ bool Scene::loadScene(const std::string& scnName) {
         std::string token;
         iss >> token;
 
-        if (token == "object") {
+        if (token == "scene") {
+            skyColor = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);
+            gravity = glm::vec3(0.0f, -15.0f, 0.0f);
+            drag = 0.8f;
+            playerSpeed = 1.0f;
+            playerJump = 10.0f;
+        } else if (token == "skycolor") {
+            iss >> skyColor.x >> skyColor.y >> skyColor.z >> skyColor.w;
+        } else if (token == "gravity") {
+            iss >> gravity.x >> gravity.y >> gravity.z;
+        } else if (token == "drag") {
+            iss >> drag;
+        } else if (token == "playerspeed") {
+            iss >> playerSpeed;
+        } else if (token == "playerjump") {
+            iss >> playerJump;
+        } else if (token == "object") {
             iss >> objName;
             meshName = shaderName = textureName = scriptName = "";
             position = rotation = glm::vec3(0);
@@ -110,7 +125,6 @@ bool Scene::loadScene(const std::string& scnName) {
             textureScale = glm::vec2(1);
             isPlayer = false;
             parentName = "None";
-            inObject = true;
         } else if (token == "mesh") {
             iss >> meshName;
         } else if (token == "shader") {
@@ -143,7 +157,7 @@ bool Scene::loadScene(const std::string& scnName) {
             iss >> hasGravity;
         } else if (token == "parent") {
             iss >> parentName;
-        } else if (token == "endobject" && inObject) {
+        } else if (token == "endobject") {
             auto obj = std::make_shared<Object>(objName, meshName, textureName, shaderName, scriptName, resources);
             obj->transform.position = position;
             obj->transform.rotation = rotation;
@@ -160,7 +174,6 @@ bool Scene::loadScene(const std::string& scnName) {
 
             tempObjects[objName] = obj;
             parentMap[objName] = parentName;
-            inObject = false;
         }
     }
 
@@ -181,6 +194,14 @@ bool Scene::saveScene(const std::string& scnName) {
     if (!file.is_open()) return false;
 
     setName(scnName);
+
+    file << "scene\n";
+    file << "skycolor " << skyColor.x << " " << skyColor.y << " " << skyColor.z << " " << skyColor.w << "\n";
+    file << "gravity " << gravity.x << " " << gravity.y << " " << gravity.z << "\n";
+    file << "drag " << drag << "\n";
+    file << "playerspeed " << playerSpeed << "\n";
+    file << "playerjump " << playerJump << "\n";
+    file << "endscene\n\n";
 
     for (const auto& [name, obj] : objects) {
         file << "object " << obj->name << "\n";

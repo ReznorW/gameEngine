@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ostream>
 #include <fstream>
+#include <random>
 #include <filesystem>
 #include <glm/glm.hpp>
 
@@ -154,14 +155,28 @@ void Script::registerFunctions() {
     // Player
     lua_register(L, "getPlayer", lua_getPlayer);
     lua_register(L, "getPlayerName", lua_getPlayerName);
+    lua_register(L, "getPlayerSpeed", lua_getPlayerSpeed);
+    lua_register(L, "getPlayerJump", lua_getPlayerJump);
+    lua_register(L, "setPlayerSpeed", lua_setPlayerSpeed);
+    lua_register(L, "setPlayerJump", lua_setPlayerJump);
 
     // Scene
     lua_register(L, "createObject", lua_createObject);
     lua_register(L, "destroyObject", lua_destroyObject);
     lua_register(L, "getObject", lua_getObject);
+    lua_register(L, "getSkyColor", lua_getSkyColor);
+    lua_register(L, "getGravity", lua_getGravity);
+    lua_register(L, "getDrag", lua_getDrag);
+    lua_register(L, "setSkyColor", lua_setSkyColor);
+    lua_register(L, "setGravity", lua_setGravity);
+    lua_register(L, "setDrag", lua_setDrag);
 
     // Input
     lua_register(L, "isKeyPressed", lua_isKeyPressed);
+    lua_register(L, "isKeyPressedOnce", lua_isKeyPressedOnce);
+
+    // Misc
+    lua_register(L, "rand", lua_rand);
 }
 
 // === Lua object bindings ===
@@ -199,7 +214,7 @@ int Script::lua_Object(lua_State* L) {
     const char* model = luaL_checkstring(L, 2);
     const char* texture = luaL_checkstring(L, 3);
     const char* shader = luaL_checkstring(L, 4);
-    const char* scriptName = luaL_checkstring(L, 5);
+    const char* script = luaL_checkstring(L, 5);
 
     // Get context
     Context* context = getContext(L);
@@ -218,7 +233,7 @@ int Script::lua_Object(lua_State* L) {
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->playScene->getResources());
+    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, script, context->playScene->getResources());
 
     // Apply the translation
     if (atThis) {
@@ -545,6 +560,52 @@ int Script::lua_getPlayerName(lua_State* L) {
     return 1;
 }
 
+int Script::lua_getPlayerSpeed(lua_State* L) {
+    // Get context
+    Context* context = getContext(L);
+
+    // Push results
+    lua_pushnumber(L, context->playScene->playerSpeed);
+    return 1;
+}
+
+int Script::lua_getPlayerJump(lua_State* L) {
+    // Get context
+    Context* context = getContext(L);
+
+    // Push results
+    lua_pushnumber(L, context->playScene->playerJump);
+    return 1;
+}
+
+int Script::lua_setPlayerSpeed(lua_State* L) {
+    // Get parameters
+    float speed = luaL_checknumber(L, 1);
+    
+    // Get context
+    Context* context = getContext(L);
+
+    // Perform function
+    context->playScene->playerSpeed = speed;
+    
+    // Push results
+    return 0;
+}
+
+int Script::lua_setPlayerJump(lua_State* L) {
+    // Get parameters
+    float jump = luaL_checknumber(L, 1);
+    
+    // Get context
+    Context* context = getContext(L);
+
+    // Perform function
+    context->playScene->playerJump = jump;
+    
+    // Push results
+    return 0;
+}
+
 // === Lua scene bindings ===
 int Script::lua_createObject(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
@@ -633,6 +694,85 @@ int Script::lua_getObject(lua_State* L) {
     return 1;
 }
 
+int Script::lua_getSkyColor(lua_State* L) {
+    // Get context
+    Context* context = getContext(L);
+
+    // Push results
+    lua_pushnumber(L, context->playScene->skyColor.x);
+    lua_pushnumber(L, context->playScene->skyColor.y);
+    lua_pushnumber(L, context->playScene->skyColor.z);
+    lua_pushnumber(L, context->playScene->skyColor.w);
+    return 1;
+}
+
+int Script::lua_getGravity(lua_State* L) {
+    // Get context
+    Context* context = getContext(L);
+
+    // Push results
+    lua_pushnumber(L, context->playScene->gravity.x);
+    lua_pushnumber(L, context->playScene->gravity.y);
+    lua_pushnumber(L, context->playScene->gravity.z);
+    return 1;
+}
+
+int Script::lua_getDrag(lua_State* L) {
+    // Get context
+    Context* context = getContext(L);
+
+    // Push results
+    lua_pushnumber(L, context->playScene->drag);
+    return 1;
+}
+
+int Script::lua_setSkyColor(lua_State* L) {
+    // Get parameters
+    float red = luaL_checknumber(L, 1);
+    float green = luaL_checknumber(L, 2);
+    float blue = luaL_checknumber(L, 3);
+    float alpha = luaL_checknumber(L, 4);
+    
+    // Get context
+    Context* context = getContext(L);
+
+    // Perform function
+    context->playScene->skyColor = glm::vec4(red, green, blue, alpha);
+    
+    // Push results
+    return 0;
+}
+
+int Script::lua_setGravity(lua_State* L) {
+    // Get parameters
+    float x = luaL_checknumber(L, 1);
+    float y = luaL_checknumber(L, 2);
+    float z = luaL_checknumber(L, 3);
+    
+    // Get context
+    Context* context = getContext(L);
+
+    // Perform function
+    context->playScene->gravity = glm::vec3(x, y, z);
+    
+    // Push results
+    return 0;
+}
+
+int Script::lua_setDrag(lua_State* L) {
+    // Get parameters
+    float drag = luaL_checknumber(L, 1);
+    
+    // Get context
+    Context* context = getContext(L);
+
+    // Perform function
+    context->playScene->drag = drag;
+    
+    // Push results
+    return 0;
+}
+
 // === Lua input bindings ===
 int Script::lua_isKeyPressed(lua_State* L) {
     const char* keyStr = luaL_checkstring(L, 1);
@@ -644,74 +784,7 @@ int Script::lua_isKeyPressed(lua_State* L) {
     Context* context = getContext(L);
     GLFWwindow* window = context->window->getGLFWwindow();
 
-    int key = -1;
-
-    if (strcmp(keyStr, "A") == 0) key = GLFW_KEY_A;
-    else if (strcmp(keyStr, "B") == 0) key = GLFW_KEY_B;
-    else if (strcmp(keyStr, "C") == 0) key = GLFW_KEY_C;
-    else if (strcmp(keyStr, "D") == 0) key = GLFW_KEY_D;
-    else if (strcmp(keyStr, "E") == 0) key = GLFW_KEY_E;
-    else if (strcmp(keyStr, "F") == 0) key = GLFW_KEY_F;
-    else if (strcmp(keyStr, "G") == 0) key = GLFW_KEY_G;
-    else if (strcmp(keyStr, "H") == 0) key = GLFW_KEY_H;
-    else if (strcmp(keyStr, "I") == 0) key = GLFW_KEY_I;
-    else if (strcmp(keyStr, "J") == 0) key = GLFW_KEY_J;
-    else if (strcmp(keyStr, "K") == 0) key = GLFW_KEY_K;
-    else if (strcmp(keyStr, "L") == 0) key = GLFW_KEY_L;
-    else if (strcmp(keyStr, "M") == 0) key = GLFW_KEY_M;
-    else if (strcmp(keyStr, "N") == 0) key = GLFW_KEY_N;
-    else if (strcmp(keyStr, "O") == 0) key = GLFW_KEY_O;
-    else if (strcmp(keyStr, "P") == 0) key = GLFW_KEY_P;
-    else if (strcmp(keyStr, "Q") == 0) key = GLFW_KEY_Q;
-    else if (strcmp(keyStr, "R") == 0) key = GLFW_KEY_R;
-    else if (strcmp(keyStr, "S") == 0) key = GLFW_KEY_S;
-    else if (strcmp(keyStr, "T") == 0) key = GLFW_KEY_T;
-    else if (strcmp(keyStr, "U") == 0) key = GLFW_KEY_U;
-    else if (strcmp(keyStr, "V") == 0) key = GLFW_KEY_V;
-    else if (strcmp(keyStr, "W") == 0) key = GLFW_KEY_W;
-    else if (strcmp(keyStr, "X") == 0) key = GLFW_KEY_X;
-    else if (strcmp(keyStr, "Y") == 0) key = GLFW_KEY_Y;
-    else if (strcmp(keyStr, "Z") == 0) key = GLFW_KEY_Z;
-
-    else if (strcmp(keyStr, "0") == 0) key = GLFW_KEY_0;
-    else if (strcmp(keyStr, "1") == 0) key = GLFW_KEY_1;
-    else if (strcmp(keyStr, "2") == 0) key = GLFW_KEY_2;
-    else if (strcmp(keyStr, "3") == 0) key = GLFW_KEY_3;
-    else if (strcmp(keyStr, "4") == 0) key = GLFW_KEY_4;
-    else if (strcmp(keyStr, "5") == 0) key = GLFW_KEY_5;
-    else if (strcmp(keyStr, "6") == 0) key = GLFW_KEY_6;
-    else if (strcmp(keyStr, "7") == 0) key = GLFW_KEY_7;
-    else if (strcmp(keyStr, "8") == 0) key = GLFW_KEY_8;
-    else if (strcmp(keyStr, "9") == 0) key = GLFW_KEY_9;
-
-    else if (strcmp(keyStr, "Space") == 0) key = GLFW_KEY_SPACE;
-    else if (strcmp(keyStr, "Enter") == 0) key = GLFW_KEY_ENTER;
-    else if (strcmp(keyStr, "Tab") == 0) key = GLFW_KEY_TAB;
-    else if (strcmp(keyStr, "Backspace") == 0) key = GLFW_KEY_BACKSPACE;
-    else if (strcmp(keyStr, "Left") == 0) key = GLFW_KEY_LEFT;
-    else if (strcmp(keyStr, "Right") == 0) key = GLFW_KEY_RIGHT;
-    else if (strcmp(keyStr, "Up") == 0) key = GLFW_KEY_UP;
-    else if (strcmp(keyStr, "Down") == 0) key = GLFW_KEY_DOWN;
-
-    else if (strcmp(keyStr, "LeftShift") == 0) key = GLFW_KEY_LEFT_SHIFT;
-    else if (strcmp(keyStr, "RightShift") == 0) key = GLFW_KEY_RIGHT_SHIFT;
-    else if (strcmp(keyStr, "LeftCtrl") == 0) key = GLFW_KEY_LEFT_CONTROL;
-    else if (strcmp(keyStr, "RightCtrl") == 0) key = GLFW_KEY_RIGHT_CONTROL;
-    else if (strcmp(keyStr, "LeftAlt") == 0) key = GLFW_KEY_LEFT_ALT;
-    else if (strcmp(keyStr, "RightAlt") == 0) key = GLFW_KEY_RIGHT_ALT;
-
-    else if (strcmp(keyStr, "F1") == 0) key = GLFW_KEY_F1;
-    else if (strcmp(keyStr, "F2") == 0) key = GLFW_KEY_F2;
-    else if (strcmp(keyStr, "F3") == 0) key = GLFW_KEY_F3;
-    else if (strcmp(keyStr, "F4") == 0) key = GLFW_KEY_F4;
-    else if (strcmp(keyStr, "F5") == 0) key = GLFW_KEY_F5;
-    else if (strcmp(keyStr, "F6") == 0) key = GLFW_KEY_F6;
-    else if (strcmp(keyStr, "F7") == 0) key = GLFW_KEY_F7;
-    else if (strcmp(keyStr, "F8") == 0) key = GLFW_KEY_F8;
-    else if (strcmp(keyStr, "F9") == 0) key = GLFW_KEY_F9;
-    else if (strcmp(keyStr, "F10") == 0) key = GLFW_KEY_F10;
-    else if (strcmp(keyStr, "F11") == 0) key = GLFW_KEY_F11;
-    else if (strcmp(keyStr, "F12") == 0) key = GLFW_KEY_F12;
+    int key = getKeyFromString(keyStr);
 
     if (key == -1) {
         lua_pushboolean(L, false);
@@ -723,10 +796,135 @@ int Script::lua_isKeyPressed(lua_State* L) {
     return 1;
 }
 
-//=== Lua utils ===
+int Script::lua_isKeyPressedOnce(lua_State* L) {
+    const char* keyStr = luaL_checkstring(L, 1);
+    if (!keyStr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+
+    Context* context = getContext(L);
+    GLFWwindow* window = context->window->getGLFWwindow();
+
+    int key = getKeyFromString(keyStr);
+
+    if (key == -1) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+
+    static std::unordered_map<int, bool> keyStates;
+
+    int state = glfwGetKey(window, key);
+    bool isDown = (state == GLFW_PRESS);
+    bool wasDown = keyStates[key];
+
+    keyStates[key] = isDown;
+
+    lua_pushboolean(L, isDown && !wasDown);
+    return 1;
+}
+
+// === Lua misc bindings ===
+int Script::lua_rand(lua_State* L) {
+    int args = lua_gettop(L);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    if (args == 1 && lua_isnumber(L, 1)) {
+        int max = static_cast<int>(lua_tonumber(L, 1));
+        std::uniform_int_distribution<> dist(0, max);
+        lua_pushinteger(L, dist(gen));
+        return 1;
+    } else if (args == 2 && lua_isnumber(L, 1) && lua_isnumber(L, 2)) {
+        int min = static_cast<int>(lua_tonumber(L, 1));
+        int max = static_cast<int>(lua_tonumber(L, 2));
+        std::uniform_int_distribution<> dist(min, max);
+        lua_pushinteger(L, dist(gen));
+        return 1;
+    } else {
+        return luaL_error(L, "rand() expects 1 or 2 numeric arguments");
+    }
+}
+
+// === Lua utils ===
 Context* Script::getContext(lua_State* L) {
     lua_getglobal(L, "__context");
     Context* context = static_cast<Context*>(lua_touserdata(L, -1));
     lua_pop(L, 1);
     return context;
+}
+
+int Script::getKeyFromString(const char* keyStr) {
+    if (!keyStr) return -1;
+
+    if (strcmp(keyStr, "A") == 0) return GLFW_KEY_A;
+    else if (strcmp(keyStr, "B") == 0) return GLFW_KEY_B;
+    else if (strcmp(keyStr, "C") == 0) return GLFW_KEY_C;
+    else if (strcmp(keyStr, "D") == 0) return GLFW_KEY_D;
+    else if (strcmp(keyStr, "E") == 0) return GLFW_KEY_E;
+    else if (strcmp(keyStr, "F") == 0) return GLFW_KEY_F;
+    else if (strcmp(keyStr, "G") == 0) return GLFW_KEY_G;
+    else if (strcmp(keyStr, "H") == 0) return GLFW_KEY_H;
+    else if (strcmp(keyStr, "I") == 0) return GLFW_KEY_I;
+    else if (strcmp(keyStr, "J") == 0) return GLFW_KEY_J;
+    else if (strcmp(keyStr, "K") == 0) return GLFW_KEY_K;
+    else if (strcmp(keyStr, "L") == 0) return GLFW_KEY_L;
+    else if (strcmp(keyStr, "M") == 0) return GLFW_KEY_M;
+    else if (strcmp(keyStr, "N") == 0) return GLFW_KEY_N;
+    else if (strcmp(keyStr, "O") == 0) return GLFW_KEY_O;
+    else if (strcmp(keyStr, "P") == 0) return GLFW_KEY_P;
+    else if (strcmp(keyStr, "Q") == 0) return GLFW_KEY_Q;
+    else if (strcmp(keyStr, "R") == 0) return GLFW_KEY_R;
+    else if (strcmp(keyStr, "S") == 0) return GLFW_KEY_S;
+    else if (strcmp(keyStr, "T") == 0) return GLFW_KEY_T;
+    else if (strcmp(keyStr, "U") == 0) return GLFW_KEY_U;
+    else if (strcmp(keyStr, "V") == 0) return GLFW_KEY_V;
+    else if (strcmp(keyStr, "W") == 0) return GLFW_KEY_W;
+    else if (strcmp(keyStr, "X") == 0) return GLFW_KEY_X;
+    else if (strcmp(keyStr, "Y") == 0) return GLFW_KEY_Y;
+    else if (strcmp(keyStr, "Z") == 0) return GLFW_KEY_Z;
+
+    else if (strcmp(keyStr, "0") == 0) return GLFW_KEY_0;
+    else if (strcmp(keyStr, "1") == 0) return GLFW_KEY_1;
+    else if (strcmp(keyStr, "2") == 0) return GLFW_KEY_2;
+    else if (strcmp(keyStr, "3") == 0) return GLFW_KEY_3;
+    else if (strcmp(keyStr, "4") == 0) return GLFW_KEY_4;
+    else if (strcmp(keyStr, "5") == 0) return GLFW_KEY_5;
+    else if (strcmp(keyStr, "6") == 0) return GLFW_KEY_6;
+    else if (strcmp(keyStr, "7") == 0) return GLFW_KEY_7;
+    else if (strcmp(keyStr, "8") == 0) return GLFW_KEY_8;
+    else if (strcmp(keyStr, "9") == 0) return GLFW_KEY_9;
+
+    else if (strcmp(keyStr, "Space") == 0) return GLFW_KEY_SPACE;
+    else if (strcmp(keyStr, "Enter") == 0) return GLFW_KEY_ENTER;
+    else if (strcmp(keyStr, "Tab") == 0) return GLFW_KEY_TAB;
+    else if (strcmp(keyStr, "Backspace") == 0) return GLFW_KEY_BACKSPACE;
+
+    else if (strcmp(keyStr, "Left") == 0) return GLFW_KEY_LEFT;
+    else if (strcmp(keyStr, "Right") == 0) return GLFW_KEY_RIGHT;
+    else if (strcmp(keyStr, "Up") == 0) return GLFW_KEY_UP;
+    else if (strcmp(keyStr, "Down") == 0) return GLFW_KEY_DOWN;
+
+    else if (strcmp(keyStr, "LeftShift") == 0) return GLFW_KEY_LEFT_SHIFT;
+    else if (strcmp(keyStr, "RightShift") == 0) return GLFW_KEY_RIGHT_SHIFT;
+    else if (strcmp(keyStr, "LeftCtrl") == 0) return GLFW_KEY_LEFT_CONTROL;
+    else if (strcmp(keyStr, "RightCtrl") == 0) return GLFW_KEY_RIGHT_CONTROL;
+    else if (strcmp(keyStr, "LeftAlt") == 0) return GLFW_KEY_LEFT_ALT;
+    else if (strcmp(keyStr, "RightAlt") == 0) return GLFW_KEY_RIGHT_ALT;
+
+    else if (strcmp(keyStr, "F1") == 0) return GLFW_KEY_F1;
+    else if (strcmp(keyStr, "F2") == 0) return GLFW_KEY_F2;
+    else if (strcmp(keyStr, "F3") == 0) return GLFW_KEY_F3;
+    else if (strcmp(keyStr, "F4") == 0) return GLFW_KEY_F4;
+    else if (strcmp(keyStr, "F5") == 0) return GLFW_KEY_F5;
+    else if (strcmp(keyStr, "F6") == 0) return GLFW_KEY_F6;
+    else if (strcmp(keyStr, "F7") == 0) return GLFW_KEY_F7;
+    else if (strcmp(keyStr, "F8") == 0) return GLFW_KEY_F8;
+    else if (strcmp(keyStr, "F9") == 0) return GLFW_KEY_F9;
+    else if (strcmp(keyStr, "F10") == 0) return GLFW_KEY_F10;
+    else if (strcmp(keyStr, "F11") == 0) return GLFW_KEY_F11;
+    else if (strcmp(keyStr, "F12") == 0) return GLFW_KEY_F12;
+
+    return -1;
 }

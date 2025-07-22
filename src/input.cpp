@@ -20,7 +20,6 @@ float lastX = 0.0f;
 float lastY = 0.0f;
 
 float movementSpeed = 0.1f;
-float playSpeed = 5.0f;
 float lookSpeed = 0.1f;
 
 bool Input::keys[512] = {false};
@@ -195,10 +194,10 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
 
 void Input::handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt) {
     // --- Movement controls ---
-    float currentSpeed = playSpeed;
+    float currentSpeed = playScene->playerSpeed;
 
-    // Speed boost (Left Ctrl)
-    if (keys[GLFW_KEY_LEFT_CONTROL]) {
+    // Speed boost (Left Shift)
+    if (keys[GLFW_KEY_LEFT_SHIFT]) {
         currentSpeed *= 2.0f;
     }
 
@@ -228,13 +227,10 @@ void Input::handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<
         }
 
         // Move up (Space)
-        if (keys[GLFW_KEY_SPACE]) {
-            move += glm::vec3(0, 1, 0);
-        }
-
-        // Move down (Left Shift)
-        if (keys[GLFW_KEY_LEFT_SHIFT]) {
-            move -= glm::vec3(0, 1, 0);
+        if (isKeyPressedOnce(GLFW_KEY_SPACE) && player->isGrounded) {
+            player->transform.velocity.y += playScene->playerJump;
+            player->transform.markDirty();
+            player->isGrounded = false;
         }
 
         // Apply movement
@@ -445,6 +441,7 @@ void Input::char_callback(GLFWwindow* window, unsigned int c) {
 }
 
 void Input::framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    if (height == 0) height = 1;
     glViewport(0, 0, width, height);
 
     Context* context = static_cast<Context*>(glfwGetWindowUserPointer(window));

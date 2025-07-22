@@ -73,7 +73,6 @@ int main() {
 
     // === Constants setup ===
     const float EPSILON = 1e-4f;
-    const glm::vec3 GRAVITY = glm::vec3(0.0f, -5.0f, 0.0f);
     bool drawOBBs = false;
 
     // === Main loop ===
@@ -113,7 +112,7 @@ int main() {
             Scene& scene = *context.editorScene;
 
             // Flush screen
-            glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
+            glClearColor(scene.skyColor.x, scene.skyColor.y, scene.skyColor.z, scene.skyColor.w);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -138,7 +137,7 @@ int main() {
             Scene& scene = *context.playScene;
 
             // Flush screen
-            glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
+            glClearColor(scene.skyColor.x, scene.skyColor.y, scene.skyColor.z, scene.skyColor.w);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -146,18 +145,23 @@ int main() {
                 // Run scripts
                 if (obj->script) {
                     obj->script->update(dt);
+                    if (obj->script->hasErrors()) {
+                        context.editorScene->getResources()->getScript(obj->script->getName())->setErrorLog(obj->script->getErrorLog());
+                    }
                 }
 
                 // Apply gravity
+                obj->isGrounded = false;
                 if (obj->hasGravity) {
-                    obj->transform.velocity += GRAVITY * dt;
+                    obj->transform.velocity += scene.gravity * dt;
                 }
 
                 // Apply velocity
                 if (glm::length2(obj->transform.velocity) > 0.0f) {
                     if (glm::length2(obj->transform.velocity) > EPSILON) {
                         obj->transform.position += obj->transform.velocity * dt;
-                        obj->transform.velocity *= 0.90f;
+                        obj->transform.velocity.x *= scene.drag;
+                        obj->transform.velocity.z *= scene.drag;
                     } else {
                         obj->transform.velocity = glm::vec3(0.0f);
                     }
@@ -169,7 +173,7 @@ int main() {
                     obj->updateOBB();
                     if (obj->hasCollisions) {
                         for (auto& other : scene.getObjects()) {
-                            if (other != obj && areIntersecting(*obj, *other)) {
+                            if (other != obj && other->hasCollisions && areIntersecting(*obj, *other)) {
                                 resolveCollision(*obj, *other);
                             }
                         }

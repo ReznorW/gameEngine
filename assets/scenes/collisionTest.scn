@@ -1,6 +1,9 @@
 object player
 mesh cube
 shader default
+ambient 0.412
+specular 0.777
+shininess 47.346
 texture default.png
 texturescale 1 1
 position -3.4 0 0
@@ -9,13 +12,16 @@ scale 1 1 1
 isPlayer 1
 hasCollisions 1
 isMoveable 1
-hasGravity 0
+hasGravity 1
 parent None
 endobject
 
 object static
 mesh cube
 shader default
+ambient 0.403
+specular 0.863
+shininess 55.773
 texture red.png
 texturescale 1 1
 position 0 0 2.7
@@ -31,6 +37,9 @@ endobject
 object moveable
 mesh cube
 shader default
+ambient 0.469
+specular 0.929
+shininess 55.171
 texture blue.png
 texturescale 1 1
 position -0.3 0.3 0
@@ -46,6 +55,9 @@ endobject
 object ground
 mesh cube
 shader default
+ambient 0.152
+specular 0.284
+shininess 60.588
 texture grass.png
 texturescale 100 100
 position 0 -2 0

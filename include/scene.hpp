@@ -12,6 +12,13 @@
 
 class Scene {
 public:
+    // Scene Properties
+    glm::vec4 skyColor = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);
+    glm::vec3 gravity = glm::vec3(0.0f, -15.0f, 0.0f);
+    float drag = 0.8f;
+    float playerSpeed = 1.0f;
+    float playerJump = 10.0f;
+
     // Constructors
     explicit Scene(Resources* resources);
     Scene(const Scene& other);

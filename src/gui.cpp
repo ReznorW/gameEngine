@@ -111,6 +111,9 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                 scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "default", "", scene.getResources()));
                 scene.selectObject(objName);
             }
+            if (ImGui::MenuItem("Scene Properties")) {
+                openScenePropertiesPopup = true;
+            }
             if (ImGui::MenuItem("Undo")) {
                 // TODO: Implement undo stack
             }
@@ -245,6 +248,7 @@ void Gui::drawPlaytestUI(Scene& scene) {
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.2f, 1.0f), "Playtest");
     ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
     ImGui::Text("Objects: %d", scene.getObjectCount());
+    ImGui::Text("Velocity: %f, %f, %f", scene.getPlayerObject()->transform.velocity.x, scene.getPlayerObject()->transform.velocity.y, scene.getPlayerObject()->transform.velocity.z);
     ImGui::End();
 }
 
@@ -564,6 +568,10 @@ void Gui::drawPopups(Context& context) {
     if(openHelpPopup && (context.currentMode == Mode::ScriptEditor)) {
         drawDocumentationPopup();
     }
+
+    if (openScenePropertiesPopup && (context.currentMode == Mode::SceneEditor)) {
+        drawScenePropertiesPopup(scene);
+    }
 }
 
 void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
@@ -683,9 +691,13 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
         ImGui::EndCombo();
     }
 
-    float scale[2] = { selected->textureScale.x, selected->textureScale.y };
-    if (ImGui::InputFloat("Scale X", &scale[0], 0.01f, 1.0f, "%.3f")) selected->textureScale.x = scale[0];
-    if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) selected->textureScale.y = scale[1];
+    float scale[2] = {selected->textureScale.x, selected->textureScale.y};
+    if (ImGui::InputFloat("Scale X", &scale[0], 0.01f, 1.0f, "%.3f")) {
+        selected->textureScale.x = scale[0];
+    }
+    if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) {
+        selected->textureScale.y = scale[1];
+    }
 
     // --- Physics ---
     ImGui::SeparatorText("Physics");
@@ -885,12 +897,35 @@ void Gui::drawDocumentationPopup() {
 
     if (ImGui::Begin("Documentation", &openHelpPopup)) {
         static ImGui::MarkdownConfig config;
-
         ImGui::BeginChild("DocScroll", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true, ImGuiWindowFlags_HorizontalScrollbar);
         ImGui::Markdown(documentation.c_str(), documentation.size(), config);
         ImGui::EndChild();
     }
     ImGui::End();
+}
+
+void Gui::drawScenePropertiesPopup(Scene& scene) {
+    ImGui::SetNextWindowSize(ImVec2(600, 800), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Scene Properties", &openScenePropertiesPopup)) {
+        // Sky Color
+        ImGui::Text("Environment");
+        ImGui::ColorEdit4("Sky Color", glm::value_ptr(scene.skyColor));
+
+        // Gravity
+        ImGui::Text("Physics");
+        ImGui::DragFloat3("Gravity", glm::value_ptr(scene.gravity), 0.1f);
+
+        // Drag
+        ImGui::SliderFloat("Global Drag", &scene.drag, 0.0f, 1.0f);
+
+        // Player properties
+        ImGui::Text("Player");
+        ImGui::SliderFloat("Player Speed", &scene.playerSpeed, 0.1f, 10.0f);
+        ImGui::SliderFloat("Jump Force", &scene.playerJump, 0.1f, 20.0f);
+
+        ImGui::End();
+    }
 }
 
 // === ImGui utils ===
