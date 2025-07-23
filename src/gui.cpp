@@ -137,15 +137,6 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
                     }
                 }
             }
-            if (ImGui::MenuItem("Save as Mesh", "Ctrl+M")) {
-                Object* selected = scene.getSelectedObject();
-                if (selected) {
-                    std::vector<Object*> objs;
-                    getDescendants(selected, objs);
-                    std::string filepath = "assets/models/" + selected->name + ".vert";
-                    saveMesh(selected->name, *combineMeshes(selected->name, objs), filepath, scene);
-                }
-            }
             ImGui::EndMenu();
         }
 

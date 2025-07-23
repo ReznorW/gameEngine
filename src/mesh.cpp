@@ -93,49 +93,109 @@ void Mesh::setupMesh(const std::vector<Vertex>& vertices, const std::vector<unsi
 }
 
 // === Loaders
-Mesh* loadVertFile(const std::string& filepath) {
+Mesh* loadObjFile(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
-        std::cerr << "Failed to open .vert file: " << filepath << std::endl;
+        std::cerr << "Failed to open OBJ file: " << filepath << std::endl;
         return nullptr;
     }
 
-    std::string name;
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec3> normals;
+    std::vector<glm::vec2> texCoords;
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
+
+    std::unordered_map<std::string, unsigned int> uniqueVertexMap;
 
     std::string line;
     while (std::getline(file, line)) {
         std::istringstream iss(line);
+        std::string prefix;
+        iss >> prefix;
 
-        if (line.empty() || line[0] == '#')
-            continue;
+        if (prefix == "v") {
+            glm::vec3 pos;
+            iss >> pos.x >> pos.y >> pos.z;
+            positions.push_back(pos);
+        } else if (prefix == "vt") {
+            glm::vec2 uv;
+            iss >> uv.x >> uv.y;
+            texCoords.push_back(uv);
+        } else if (prefix == "vn") {
+            glm::vec3 normal;
+            iss >> normal.x >> normal.y >> normal.z;
+            normals.push_back(normal);
+        } else if (prefix == "f") {
+            std::vector<unsigned int> faceIndices;
+            std::string vertexStr;
 
-        char type;
-        iss >> type;
+            while (iss >> vertexStr) {
+                if (uniqueVertexMap.count(vertexStr) == 0) {
+                    size_t firstSlash = vertexStr.find('/');
+                    size_t secondSlash = vertexStr.find('/', firstSlash + 1);
 
-        if (type == 'v') {
-            Vertex v;
-            iss >> v.position.x >> v.position.y >> v.position.z;
-            iss >> v.normal.x >> v.normal.y >> v.normal.z;
-            iss >> v.color.r >> v.color.g >> v.color.b;
-            iss >> v.texCoords.x >> v.texCoords.y;
-            vertices.push_back(v);
-        } else if (type == 'i') {
-            unsigned int a, b, c;
-            iss >> a >> b >> c;
-            indices.push_back(a);
-            indices.push_back(b);
-            indices.push_back(c);
-        } else if (type == 'n') {
-            iss >> name;
+                    int posIdx = std::stoi(vertexStr.substr(0, firstSlash)) - 1;
+
+                    int texIdx = -1;
+                    if (secondSlash > firstSlash + 1) {
+                        texIdx = std::stoi(vertexStr.substr(firstSlash + 1, secondSlash - firstSlash - 1)) - 1;
+                    }
+
+                    int normIdx = -1;
+                    if (secondSlash + 1 < vertexStr.size()) {
+                        normIdx = std::stoi(vertexStr.substr(secondSlash + 1)) - 1;
+                    }
+
+                    Vertex v;
+                    v.position = positions[posIdx];
+                    v.texCoords = (texIdx >= 0 && texIdx < (int)texCoords.size()) ? texCoords[texIdx] : glm::vec2(0.0f);
+                    v.normal = (normIdx >= 0 && normIdx < (int)normals.size()) ? normals[normIdx] : glm::vec3(0.0f);
+                    v.color = glm::vec3(1.0f); // Default color
+
+                    vertices.push_back(v);
+                    unsigned int index = static_cast<unsigned int>(vertices.size() - 1);
+                    uniqueVertexMap[vertexStr] = index;
+                    faceIndices.push_back(index);
+                } else {
+                    faceIndices.push_back(uniqueVertexMap[vertexStr]);
+                }
+            }
+
+            for (size_t i = 1; i + 1 < faceIndices.size(); ++i) {
+                indices.push_back(faceIndices[0]);
+                indices.push_back(faceIndices[i]);
+                indices.push_back(faceIndices[i + 1]);
+            }
         }
     }
 
+    glm::vec3 minPos(FLT_MAX);
+    glm::vec3 maxPos(-FLT_MAX);
+    for (const auto& v : vertices) {
+        minPos = glm::min(minPos, v.position);
+        maxPos = glm::max(maxPos, v.position);
+    }
+
+    glm::vec3 center = (minPos + maxPos) * 0.5f;
+    glm::vec3 size = maxPos - minPos;
+    float maxExtent = glm::max(glm::max(size.x, size.y), size.z);
+    float scale = (maxExtent > 0.0f) ? 1.0f / maxExtent : 1.0f;  // Avoid div by zero
+
+    for (auto& v : vertices) {
+        v.position = (v.position - center) * scale;
+    }
+
+    std::string name = filepath.substr(filepath.find_last_of("/\\") + 1);
+    size_t dotPos = name.find_last_of('.');
+    if (dotPos != std::string::npos) {
+        name = name.substr(0, dotPos);
+    }
     Mesh* mesh = new Mesh(name, vertices, indices);
     mesh->calculateBounds(vertices);
     return mesh;
 }
+
 
 unsigned int loadTexture(const std::string& path) {
     unsigned int textureID;
@@ -165,36 +225,4 @@ unsigned int loadTexture(const std::string& path) {
     stbi_image_free(data);
 
     return textureID;
-}
-
-bool saveMesh(const std::string& name, const Mesh& mesh, const std::string& filepath, Scene& scene) {
-    std::ofstream out(filepath);
-    if (!out.is_open()) return false;
-
-    out << std::fixed << std::setprecision(6);
-
-    const auto& vertices = mesh.getVertices();
-    const auto& indices = mesh.getIndices();
-
-    out << "n " << name << '\n';
-
-    for (const Vertex& v : vertices) {
-        out << "v "
-            << v.position.x << ' ' << v.position.y << ' ' << v.position.z << ' '
-            << v.color.r << ' ' << v.color.g << ' ' << v.color.b << ' '
-            << v.texCoords.x << ' ' << v.texCoords.y << '\n';
-    }
-
-    for (size_t i = 0; i < indices.size(); i += 3) {
-        out << "i " << indices[i] << ' ' << indices[i + 1] << ' ' << indices[i + 2] << '\n';
-    }
-    out.close();
-
-    if (scene.getResources()->getMesh(name)) {
-        scene.getResources()->deleteMesh(name);
-    }
-
-    scene.getResources()->addMesh(std::make_shared<Mesh>(*loadVertFile(filepath)));
-
-    return true;
 }

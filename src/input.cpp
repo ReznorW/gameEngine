@@ -106,16 +106,6 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
         glfwSetWindowShouldClose(window.getGLFWwindow(), true);
     }
 
-    // Make mesh (Ctrl + M)
-    if (isKeyPressedOnce(GLFW_KEY_M) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
-        if (Object* selected = scene.getSelectedObject()) {
-            std::vector<Object*> objs;
-            getDescendants(selected, objs);
-            std::string filepath = "assets/models/" + selected->name + ".vert";
-            saveMesh(selected->name, *combineMeshes(selected->name, objs), filepath, scene);
-        }
-    }
-
     // Create new object (C)
     if (isKeyPressedOnce(GLFW_KEY_C)) {
         std::string objName = "NewObj" + std::to_string(scene.getObjectCount());

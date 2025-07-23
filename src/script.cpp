@@ -592,7 +592,7 @@ int Script::obj_checkCollision(lua_State* L) {
 int Script::obj_moveToward(lua_State* L) {
     // Check number of args
     int args = lua_gettop(L);
-    if (args != 2) {
+    if (args != 3) {
         return luaL_error(L, "moveToward expects 2 arguments");
     }
 

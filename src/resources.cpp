@@ -102,7 +102,7 @@ void Resources::loadAllMeshes() {
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().stem().string();
-            meshes[name] = std::make_shared<Mesh>(*loadVertFile(entry.path().string()));
+            meshes[name] = std::make_shared<Mesh>(*loadObjFile(entry.path().string()));
             std::cout << "  - " << name << " loaded\n";
         }
     }

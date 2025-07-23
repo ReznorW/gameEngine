@@ -57,6 +57,5 @@ private:
 };
 
 // Loaders
-Mesh* loadVertFile(const std::string& filepath);
+Mesh* loadObjFile(const std::string& filepath);
 unsigned int loadTexture(const std::string& path);
-bool saveMesh(const std::string& name, const Mesh& mesh, const std::string& filepath, Scene& scene);
