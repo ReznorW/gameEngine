@@ -229,32 +229,32 @@ int Script::lua_Object(lua_State* L) {
     if (!context || !context->playScene) {return 0;}
 
     // Get args
-    const char* name, model, texture, shader, script, atThis;
-    name = lua_tostring(L, 1);
-    model = lua_tostring(L, 2);
-    texture = lua_tostring(L, 3);
-    shader = lua_tostring(L, 4);
-    script = lua_tostring(L, 5);
+    const char* name = lua_tostring(L, 1);
+    const char* model = lua_tostring(L, 2);
+    const char* texture = lua_tostring(L, 3);
+    const char* shader = lua_tostring(L, 4);
+    const char* script = lua_tostring(L, 5);
+    const char* atThis = nullptr;
     if (args == 6) {atThis = lua_tostring(L, 6);}
 
     // Avoid duplicates
     if (context->playScene->getObject(name)) {
-        std::string error = "Object: Object with name '" + name + "' already exists";
-        return luaL_error(L, error);
+        std::string error = std::string("Object: Object with name '") + name + "' already exists";
+        return luaL_error(L, "%s", error.c_str());
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, script, context->playScene->getResources());
+    std::shared_ptr<Object> obj = std::make_shared<Object>(std::string(name), std::string(model), std::string(texture), std::string(shader), std::string(script), context->playScene->getResources());
 
     // Apply the translation
     if (atThis) {
-        Object* base = context->playScene->getObject(atThis);
+        Object* base = context->playScene->getObject(std::string(atThis));
         if (base) {
             obj->transform.position = base->transform.position;
             obj->transform.markDirty();
         } else {
-            std::string error = "Object: Base object '" + atThis + "' not found";
-            return luaL_error(L, error);
+            std::string error = std::string("Object: Base object '") + atThis + "' not found";
+            return luaL_error(L, "%s", error.c_str());
         }
     }
 
@@ -287,7 +287,7 @@ int Script::obj_destroy(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling destroy");
+        return luaL_error(L, "Invalid Object calling destroy");
     }
 
     // Get context
@@ -312,7 +312,7 @@ int Script::obj_getPosition(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling getPosition");
+        return luaL_error(L, "Invalid Object calling getPosition");
     }
 
     // Perform function
@@ -335,7 +335,7 @@ int Script::obj_getRotation(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling getRotation");
+        return luaL_error(L, "Invalid Object calling getRotation");
     }
 
     // Perform function
@@ -358,7 +358,7 @@ int Script::obj_getScale(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling getScale");
+        return luaL_error(L, "Invalid Object calling getScale");
     }
 
     // Perform function
@@ -381,7 +381,7 @@ int Script::obj_getName(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling getName");
+        return luaL_error(L, "Invalid Object calling getName");
     }
 
     // Push results
@@ -400,7 +400,7 @@ int Script::obj_setPosition(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling setPosition");
+        return luaL_error(L, "Invalid Object calling setPosition");
     }
 
     if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
@@ -431,7 +431,7 @@ int Script::obj_setRotation(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling setRotation");
+        return luaL_error(L, "Invalid Object calling setRotation");
     }
 
     if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
@@ -462,7 +462,7 @@ int Script::obj_setScale(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling setScale");
+        return luaL_error(L, "Invalid Object calling setScale");
     }
 
     if (!lua_isnumber(L, 2)) {
@@ -499,7 +499,7 @@ int Script::obj_move(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling move");
+        return luaL_error(L, "Invalid Object calling move");
     }
 
     if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
@@ -530,7 +530,7 @@ int Script::obj_rotate(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling rotate");
+        return luaL_error(L, "Invalid Object calling rotate");
     }
 
     if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
@@ -544,7 +544,7 @@ int Script::obj_rotate(lua_State* L) {
     roll = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
-    obj->transform.rotation = obj->transform.rotation + glm::vec3(x, y, z);
+    obj->transform.rotation = obj->transform.rotation + glm::vec3(pitch, yaw, roll);
     obj->transform.markDirty();
 
     // Push results
@@ -561,10 +561,10 @@ int Script::obj_checkCollision(lua_State* L) {
     // Check args
     Object* objA = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!objA) {
-        return lua_Lerror(L, "Invalid Object calling checkCollision");
+        return luaL_error(L, "Invalid Object calling checkCollision");
     }
 
-    if (!lua_isstring(L, 2) && !lua_testudata(L, 2, "Object")) {
+    if (!lua_isstring(L, 2) && !luaL_testudata(L, 2, "Object")) {
         return luaL_error(L, "checkCollision expects (String) or (Object)"); 
     }
 
@@ -599,10 +599,10 @@ int Script::obj_moveToward(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling moveToward");
+        return luaL_error(L, "Invalid Object calling moveToward");
     }
 
-    if ((!lua_isstring(L, 2) && !lua_testudata(L, 2, "Object")) || !lua_isnumber(L, 3)) {
+    if ((!lua_isstring(L, 2) && !luaL_testudata(L, 2, "Object")) || !lua_isnumber(L, 3)) {
         return luaL_error(L, "moveToward expects (String, Number) or (Object, Number)"); 
     }
     
@@ -648,10 +648,10 @@ int Script::obj_lookAt(lua_State* L) {
     // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
     if (!obj) {
-        return lua_Lerror(L, "Invalid Object calling lookAt");
+        return luaL_error(L, "Invalid Object calling lookAt");
     }
 
-    if (!lua_isstring(L, 2) && !lua_testudata(L, 2, "Object")) {
+    if (!lua_isstring(L, 2) && !luaL_testudata(L, 2, "Object")) {
         return luaL_error(L, "lookAt expects (String) or (Object)"); 
     }
 
@@ -832,31 +832,31 @@ int Script::lua_createObject(lua_State* L) {
     if (!context || !context->playScene) {return 0;}
 
     // Get args
-    const char* name, model, texture, shader, script, atThis;
-    name = lua_tostring(L, 1);
-    model = lua_tostring(L, 2);
-    texture = lua_tostring(L, 3);
-    shader = lua_tostring(L, 4);
-    script = lua_tostring(L, 5);
+    const char* name = lua_tostring(L, 1);
+    const char* model = lua_tostring(L, 2);
+    const char* texture = lua_tostring(L, 3);
+    const char* shader = lua_tostring(L, 4);
+    const char* script = lua_tostring(L, 5);
+    const char* atThis = nullptr;
     if (args == 6) {atThis = lua_tostring(L, 6);}
 
     // Avoid duplicates
     if (context->playScene->getObject(name)) {
-        std::string error = "createObject: Object with name '" + name + "' already exists";
-        return luaL_error(L, error);
+        std::string error = std::string("createObject: Object with name '") + name + "' already exists";
+        return luaL_error(L, "%s", error.c_str());
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, script, context->playScene->getResources());
+    std::shared_ptr<Object> obj = std::make_shared<Object>(std::string(name), std::string(model), std::string(texture), std::string(shader), std::string(script), context->playScene->getResources());
 
     if (atThis) {
-        Object* base = context->playScene->getObject(atThis);
+        Object* base = context->playScene->getObject(std::string(atThis));
         if (base) {
             obj->transform.position = base->transform.position;
             obj->transform.markDirty();
         } else {
-            std::string error = "Object: Base object '" + atThis + "' not found";
-            return luaL_error(L, error);
+            std::string error = std::string("Object: Base object '") + atThis + "' not found";
+            return luaL_error(L, "%s", error.c_str());
         }
     }
 
@@ -881,7 +881,7 @@ int Script::lua_destroyObject(lua_State* L) {
     }
 
     // Check args
-    if (!lua_isstring(L, 1) && !lua_testudata(L, 1, "Object")) {
+    if (!lua_isstring(L, 1) && !luaL_testudata(L, 1, "Object")) {
         return luaL_error(L, "destroyObject expects (String) or (Object)"); 
     }
 
@@ -921,13 +921,13 @@ int Script::lua_getObject(lua_State* L) {
     if (!context || !context->playScene) {return 0;}
 
     // Get args
-    const char* name = luaL_tostring(L, 1);
+    const char* name = lua_tostring(L, 1);
 
     // Perform function
     Object* obj = context->playScene->getObject(name);
     if (!obj) {
-        std::string error = "getObject: Object '" + name + "' not found";
-        return luaL_error(L, error);
+        std::string error = std::string("getObject: Object '") + name + "' not found";
+        return luaL_error(L, "%s", error.c_str());
     }
 
     // Push results
@@ -1014,11 +1014,11 @@ int Script::lua_setSkyColor(lua_State* L) {
         return luaL_error(L, "setSkyColor: Number out of range"); 
     }
     green = static_cast<float>(lua_tonumber(L, 2));
-    if (blue < 0 || blue > 255) {
+    if (green < 0 || green > 255) {
         return luaL_error(L, "setSkyColor: Number out of range"); 
     }
     blue = static_cast<float>(lua_tonumber(L, 3));
-    if (green < 0 || green > 255) {
+    if (blue < 0 || blue > 255) {
         return luaL_error(L, "setSkyColor: Number out of range"); 
     }
     alpha = static_cast<float>(lua_tonumber(L, 4));
@@ -1120,8 +1120,8 @@ int Script::lua_isKeyPressed(lua_State* L) {
     // Perform function
     int key = getKeyFromString(keyStr);
     if (key == -1) {
-        std::string error = "isKeyPressed: key '" + keyStr + "' does not exist";
-        return luaL_error(L, error);
+        std::string error = std::string("isKeyPressed: key '") + keyStr + "' does not exist";
+        return luaL_error(L, "%s", error.c_str());
     }
     int state = glfwGetKey(window, key);
 
@@ -1153,8 +1153,8 @@ int Script::lua_isKeyPressedOnce(lua_State* L) {
     // Perform function
     int key = getKeyFromString(keyStr);
     if (key == -1) {
-        std::string error = "isKeyPressedOnce: key '" + keyStr + "' does not exist";
-        return luaL_error(L, error);
+        std::string error = std::string("isKeyPressedOnce: key '") + keyStr + "' does not exist";
+        return luaL_error(L, "%s", error.c_str());
     }
     static std::unordered_map<int, bool> keyStates;
     int state = glfwGetKey(window, key);
@@ -1198,6 +1198,7 @@ int Script::lua_rand(lua_State* L) {
         int max = static_cast<int>(lua_tonumber(L, 2));
         std::uniform_int_distribution<> dist(min, max);
         lua_pushinteger(L, dist(gen));
+        return 1;
     }
 }
 
