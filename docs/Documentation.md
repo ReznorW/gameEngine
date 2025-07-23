@@ -8,8 +8,8 @@
 
 - #### Contructors
 
-    - [`Object Object(String objName, String modelName, String textureName, String shaderName)`](#object-objectstring-objname-string-modelname-string-texturename-string-shadername)
-    - [`Object Object(String objName, String modelName, String textureName, String shaderName, string scriptName)`](#object-objectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname)
+    - [`Object Object(String objName, String modelName, String textureName, String shaderName, String scriptName)`](#object-objectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname)
+    - [`Object Object(String objName, String modelName, String textureName, String shaderName, String scriptName, String targetName)`](#object-objectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname-string-targetobject)
 
 - #### Destructors
 
@@ -49,22 +49,41 @@
 
 - [`Object getPlayer()`](#object-getplayer)
 - [`String getPlayerName()`](#string-getplayername)
+- [`Number getPlayerSpeed()`](#number-getplayerspeed)
+- [`Number getPlayerJump()`](#number-getplayerjump)
+- [`void setPlayerSpeed(Number speed)`](#void-setplayerspeednumber-speed)
+- [`void setPlayerJump(Number jump)`](#void-setplayerjumpnumber-jump)
 
 ### **Scene**
 
 ---
 
-- [`void createObject(String objName, String modelName, String textureName, String shaderName)`](#void-createobjectstring-objname-string-modelname-string-texturename-string-shadername)
 - [`void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName)`](#void-createobjectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname)
+- [`void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName, String targetName)`](#void-createobjectstring-objname-string-modelname-string-texturename-string-shadername-string-scriptname-string-targetName)
 - [`void destroyObject(String objName)`](#void-destroyobjectstring-objname)
 - [`void destroyObject(Object obj)`](#void-destroyobjectobject-obj)
 - [`Object getObject(String objName)`](#object-getobjectstring-objname)
+- [`Number[4] getSkyColor()`](#number4-getskycolor)
+- [`Number[3] getGravity()`](#number3-getgravity)
+- [`Number getDrag()`](#number-getdrag)
+- [`void setSkyColor(Number red, Number green, Number blue, Number alpha)`](#void-setskycolornumber-red-number-green-number-blue-number-alpha)
+- [`void setGravity(Number y)`](#void-setgravitynumber-y)
+- [`void setGravity(Number x, Number y, Number z)`](#void-setgravitynumber-x-number-y-number-z)
+- [`void setDrag(Number drag)`](#void-setdragnumber-drag)
 
 ### **Input**
 
 ---
 
-- [`Bool isKeyPressed(String key)`](#bool-iskeypressesstring-key)
+- [`Bool isKeyPressed(String key)`](#bool-iskeypressedstring-key)
+- [`Bool isKeyPressedOnce(String key)`](#bool-iskeypressedoncestring-key)
+
+### **Misc**
+
+---
+
+- [`Number rand(Number max)`](#number-randnumber-max)
+- [`Number rand(Number min, Number max)`](#number-randnumber-min-number-max)
 
 ## **Function Definitions**
 
@@ -76,25 +95,9 @@
 
 ---
 
-#### `Object Object(String objName, String modelName, String textureName, String shaderName)`
+#### `Object Object(String objName, String modelName, String textureName, String shaderName, String scriptName)`
 
-Creates and returns a new Object with a specified name, model, texture, and shader.
-
-*Parameters:*
-- `String` objName - name of new object
-- `String` modelName - name of mesh
-- `String` textureName - name of texture
-- `String` shaderName - name of shader
-
-*Returns:* An `Object` instance.
-
-*Example:*
-
-    local obj = Object("crate", "cube", "wood.png", "default")
-
-#### `Object Object(String objName, String modelName, String textureName, String shaderName, string scriptName)`
-
- Creates and returns a new Object with a specified name, model, texture, shader, and script.
+Creates and returns a new Object with a specified name, model, texture, shader, and script.
 
 *Parameters:*
 - `String` objName
@@ -103,13 +106,31 @@ Creates and returns a new Object with a specified name, model, texture, and shad
 - `String` shaderName
 - `String` scriptName
 
+*Returns:* An `Object` instance.
+
+*Example:*
+
+    local obj = Object("enemy", "pyramid", "red.png", "default", "follow")
+
+#### `Object Object(String objName, String modelName, String textureName, String shaderName, string scriptName, string targetObject)`
+
+ Creates and returns a new Object with a specified name, model, texture, shader, and script at the targeted object's position.
+
+*Parameters:*
+- `String` objName
+- `String` modelName
+- `String` textureName
+- `String` shaderName
+- `String` scriptName
+- `String` targetName
+
 *Returns:*
 
 - `Object` obj
 
 *Example:*
 
-    local obj = Object("enemy", "pyramid", "red.png", "default", "follow")
+    local obj = Object("enemy", "pyramid", "red.png", "default", "follow", "spawnObject")
 
 **Destructors**
 
@@ -385,25 +406,59 @@ Returns the player object's name.
 
     local playerName = getPlayerName()
 
+#### `Number getPlayerSpeed()`  
+
+Returns the player object's speed.
+
+*Returns:*
+
+- `Number` playerObjSpeed
+
+*Example:*
+
+    local playerSpeed = getPlayerSpeed()
+
+#### `Number getPlayerJump()`  
+
+Returns the player object's jump strength.
+
+*Returns:*
+
+- `Number` playerObjJump
+
+*Example:*
+
+    local playerJump = getPlayerJump()
+
+#### `void setPlayerSpeed(Number speed)`  
+
+Sets the player object's speed.
+
+*Parameters:*
+
+- `Number` speed
+
+*Example:*
+
+    setPlayerSpeed(1)
+
+#### `void setPlayerJump(Number jump)`  
+
+Sets the player object's jump strength.
+
+*Parameters:*
+
+- `Number` jump
+
+*Example:*
+
+    setPlayerJump(10)
+
 ### **Scene**
 
 ---
 
-#### `void createObject(String objName, String modelName, String textureName, String shaderName)`  
-
-Creates a new Object with a specified name, model, texture, and shader.
-
-*Parameters:*
-- `String` objName
-- `String` modelName
-- `String` textureName
-- `String` shaderName
-
-*Example:*
-
-    createObject("crate", "cube", "wood.png", "default")
-
-#### `void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName)`  
+#### `void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName)` 
 
 Creates a new Object with a specified name, model, texture, shader, and script.
 
@@ -416,7 +471,23 @@ Creates a new Object with a specified name, model, texture, shader, and script.
 
 *Example:*
 
-    createObject("enemy", "pyramid", "red.png", "default", "follow")
+    createObject("crate", "cube", "wood.png", "default")
+
+#### `void createObject(String objName, String modelName, String textureName, String shaderName, String scriptName, String targetName)`  
+
+Creates a new Object with a specified name, model, texture, shader, and script at the targeted object's position.
+
+*Parameters:*
+- `String` objName
+- `String` modelName
+- `String` textureName
+- `String` shaderName
+- `String` scriptName
+- `String` targetName
+
+*Example:*
+
+    createObject("enemy", "pyramid", "red.png", "default", "follow", "spawnObject")
 
 #### `void destroyObject(String objName)`  
 
@@ -458,6 +529,100 @@ Returns the specified object.
 
     local obj = getObject("enemy")
 
+#### `Number[4] getSkyColor()`  
+
+Returns the scene's sky color.
+
+*Returns:*
+
+- `Number` red
+- `Number` green
+- `Number` blue
+- `Number` alpha
+
+*Example:*
+
+    local r, g, b, a = getSkyColor()
+
+#### `Number[3] getGravity()`  
+
+Returns the scene's gravity.
+
+*Returns:*
+
+- `Number` x
+- `Number` y
+- `Number` z
+
+*Example:*
+
+    local x, y, z = getGravity()
+
+#### `Number getDrag()`  
+
+Returns the scene's drag.
+
+*Returns:*
+
+- `Number` drag
+
+*Example:*
+
+    local drag = getDrag()
+
+#### `void setSkyColor(Number red, Number green, Number blue, Number alpha)`  
+
+Sets the scene's sky color. All parameters must be between 0 and 255.
+
+*Parameters:*
+
+- `Number` red
+- `Number` green
+- `Number` blue
+- `Number` alpha
+
+*Example:*
+
+    setSkyColor(255, 0, 255, 255)
+
+#### `void setGravity(Number y)`  
+
+Sets the scene's y component of gravity.
+
+*Parameters:*
+
+- `Number` y
+
+*Example:*
+
+    setGravity(-9.8)
+
+#### `void setGravity(Number x, Number y, Number z)`  
+
+Sets the scene's gravity.
+
+*Parameters:*
+
+- `Number` x
+- `Number` y
+- `Number` z
+
+*Example:*
+
+    setGravity(0, -9.8, 0)
+
+#### `void setDrag(Number drag)`  
+
+Sets the scene's drag. Parameter must be between 0 and 1.
+
+*Parameters:*
+
+- `Number` drag
+
+*Example:*
+
+    setDrag(0.8)
+
 ### **Input**
 
 ---
@@ -479,3 +644,58 @@ Return whether or not the specified key is pressed down.
     if (isKeyPressed("W")) then
         obj:move(1, 0, 0)
     end
+
+#### `Bool isKeyPressedOnce(String key)`  
+
+Return whether or not the specified key is pressed once.
+
+*Parameters:*
+
+- `String` key
+
+*Returns:*
+
+- `Bool` isPressedOnce
+
+*Example:*
+
+    if (isKeyPressedOnce("X")) then
+        createObject("enemy", "pyramid", "red.png", "default", "follow", "spawnObject")
+    end
+
+### **Misc**
+
+---
+
+#### `Number rand(Number max)`
+
+Returns a random number between 0 and max.
+
+*Parameters:*
+
+- `Number` max
+
+*Returns:*
+
+- `Number` random
+
+*Example:*
+
+    local random = rand(10)
+
+#### `Number rand(Number min, Number max)`
+
+Returns a random number between min and max.
+
+*Parameters:*
+
+- `Number` min
+- `Number` max
+
+*Returns:*
+
+- `Number` random
+
+*Example:*
+
+    local random = rand(5, 10)

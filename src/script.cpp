@@ -209,27 +209,38 @@ void Script::registerObject(lua_State* L) {
 
 // --- Constructors ---
 int Script::lua_Object(lua_State* L) {
-    // Get parameters
-    const char* name = luaL_checkstring(L, 1);
-    const char* model = luaL_checkstring(L, 2);
-    const char* texture = luaL_checkstring(L, 3);
-    const char* shader = luaL_checkstring(L, 4);
-    const char* script = luaL_checkstring(L, 5);
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 5 || args != 6) {
+        return luaL_error(L, "Object expects 5 or 6 arguments");
+    }
+
+    // Check args
+    if (!lua_isstring(L, 1) || !lua_isstring(L, 2) || !lua_isstring(L, 3) || !lua_isstring(L, 4) || !lua_isstring(L, 5)) {
+        return luaL_error(L, "Object expects (String, String, String, String, String) or (String, String, String, String, String, String)");
+    }
+
+    if (args == 6 && !lua_isstring(L, 6)) {
+        return luaL_error(L, "Object expects (String, String, String, String, String) or (String, String, String, String, String, String)");
+    }
 
     // Get context
     Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
+    if (!context || !context->playScene) {return 0;}
 
-    // Check for translation
-    const char* atThis = nullptr;
-    if (lua_gettop(L) >= 6 && lua_isstring(L, 6)) {
-        atThis = lua_tostring(L, 6);
-    }
+    // Get args
+    const char* name, model, texture, shader, script, atThis;
+    name = lua_tostring(L, 1);
+    model = lua_tostring(L, 2);
+    texture = lua_tostring(L, 3);
+    shader = lua_tostring(L, 4);
+    script = lua_tostring(L, 5);
+    if (args == 6) {atThis = lua_tostring(L, 6);}
 
     // Avoid duplicates
     if (context->playScene->getObject(name)) {
-        std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
-        return 0;
+        std::string error = "Object: Object with name '" + name + "' already exists";
+        return luaL_error(L, error);
     }
 
     // Create and add the object
@@ -242,7 +253,8 @@ int Script::lua_Object(lua_State* L) {
             obj->transform.position = base->transform.position;
             obj->transform.markDirty();
         } else {
-            std::cerr << "createObject: Base object '" << atThis << "' not found.\n";
+            std::string error = "Object: Base object '" + atThis + "' not found";
+            return luaL_error(L, error);
         }
     }
 
@@ -266,8 +278,17 @@ int Script::lua_Object(lua_State* L) {
 
 // --- Destructors ---
 int Script::obj_destroy(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "destroy expects 0 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling destroy");
+    }
 
     // Get context
     Context* context = getContext(L);
@@ -282,8 +303,17 @@ int Script::obj_destroy(lua_State* L) {
 
 // --- Getters ---
 int Script::obj_getPosition(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "getPosition expects 0 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling getPosition");
+    }
 
     // Perform function
     glm::vec3 pos = obj->transform.position;
@@ -296,8 +326,17 @@ int Script::obj_getPosition(lua_State* L) {
 }
 
 int Script::obj_getRotation(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "getRotation expects 0 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling getRotation");
+    }
 
     // Perform function
     glm::vec3 rot = obj->transform.rotation;
@@ -310,8 +349,17 @@ int Script::obj_getRotation(lua_State* L) {
 }
 
 int Script::obj_getScale(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "getScale expects 0 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling getScale");
+    }
 
     // Perform function
     glm::vec3 scale = obj->transform.scale;
@@ -324,8 +372,17 @@ int Script::obj_getScale(lua_State* L) {
 }
 
 int Script::obj_getName(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "getName expects 0 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling getName");
+    }
 
     // Push results
     lua_pushstring(L, obj->name.c_str());
@@ -334,11 +391,27 @@ int Script::obj_getName(lua_State* L) {
 
 // --- Setters ---
 int Script::obj_setPosition(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 4) {
+        return luaL_error(L, "setPosition expects 3 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling setPosition");
+    }
+
+    if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
+        return luaL_error(L, "setPosition expects (Number, Number, Number)"); 
+    }
+
+    // Get args
+    float x, y, z;
+    x = static_cast<float>(lua_tonumber(L, 2));
+    y = static_cast<float>(lua_tonumber(L, 3));
+    z = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
     obj->transform.position = glm::vec3(x, y, z);
@@ -349,14 +422,30 @@ int Script::obj_setPosition(lua_State* L) {
 }
 
 int Script::obj_setRotation(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 4) {
+        return luaL_error(L, "setRotation expects 3 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling setRotation");
+    }
+
+    if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
+        return luaL_error(L, "setRotation expects (Number, Number, Number)"); 
+    }
+
+    // Get args
+    float pitch, yaw, roll;
+    pitch = static_cast<float>(lua_tonumber(L, 2));
+    yaw = static_cast<float>(lua_tonumber(L, 3));
+    roll = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
-    obj->transform.rotation = glm::vec3(x, y, z);
+    obj->transform.rotation = glm::vec3(pitch, yaw, roll);
     obj->transform.markDirty();
 
     // Push results
@@ -364,14 +453,31 @@ int Script::obj_setRotation(lua_State* L) {
 }
 
 int Script::obj_setScale(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 2 || args != 4) {
+        return luaL_error(L, "setScale expects 1 or 3 arguments");
+    }
 
-    // Perform function
-    if (lua_gettop(L) == 4) {
-        float y = luaL_checknumber(L, 3);
-        float z = luaL_checknumber(L, 4);
+    // Check args
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling setScale");
+    }
+
+    if (!lua_isnumber(L, 2)) {
+        return luaL_error(L, "setScale expects (Number) or (Number, Number, Number)"); 
+    }
+
+    if (args == 4 && (!lua_isnumber(L, 3) || !lua_isnumber(L, 4))) {
+        return luaL_error(L, "setScale expects (Number) or (Number, Number, Number)");
+    }
+
+    // Get args and perform function
+    float x = static_cast<float>(lua_tonumber(L, 2));
+    if (args == 4) {
+        float y = static_cast<float>(lua_tonumber(L, 3));
+        float z = static_cast<float>(lua_tonumber(L, 4));
         obj->transform.scale = glm::vec3(x, y, z);
     } else {
         obj->transform.scale = glm::vec3(x, x, x);
@@ -384,11 +490,27 @@ int Script::obj_setScale(lua_State* L) {
 
 // --- Physics ---
 int Script::obj_move(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 4) {
+        return luaL_error(L, "move expects 3 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling move");
+    }
+
+    if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
+        return luaL_error(L, "move expects (Number, Number, Number)"); 
+    }
+
+    // Get args
+    float x, y, z;
+    x = static_cast<float>(lua_tonumber(L, 2));
+    y = static_cast<float>(lua_tonumber(L, 3));
+    z = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
     obj->transform.velocity += glm::vec3(x, y, z);
@@ -399,11 +521,27 @@ int Script::obj_move(lua_State* L) {
 }
 
 int Script::obj_rotate(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 4) {
+        return luaL_error(L, "rotate expects 3 arguments");
+    }
+
+    // Check args
     Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-    float x = luaL_checknumber(L, 2);
-    float y = luaL_checknumber(L, 3);
-    float z = luaL_checknumber(L, 4);
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling rotate");
+    }
+
+    if (!lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
+        return luaL_error(L, "rotate expects (Number, Number, Number)"); 
+    }
+
+    // Get args
+    float pitch, yaw, roll;
+    pitch = static_cast<float>(lua_tonumber(L, 2));
+    yaw = static_cast<float>(lua_tonumber(L, 3));
+    roll = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
     obj->transform.rotation = obj->transform.rotation + glm::vec3(x, y, z);
@@ -414,28 +552,32 @@ int Script::obj_rotate(lua_State* L) {
 }
 
 int Script::obj_checkCollision(lua_State* L) {
-    // Get parameters
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 2) {
+        return luaL_error(L, "checkCollision expects 1 argument");
+    }
+
+    // Check args
     Object* objA = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!objA) {
+        return lua_Lerror(L, "Invalid Object calling checkCollision");
+    }
+
+    if (!lua_isstring(L, 2) && !lua_testudata(L, 2, "Object")) {
+        return luaL_error(L, "checkCollision expects (String) or (Object)"); 
+    }
 
     // Get context
     Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
+    if (!context || !context->playScene) {return 0;}
 
+    // Get args
     Object* objB = nullptr;
-
     if (lua_isstring(L, 2)) {
-        const char* nameB = lua_tostring(L, 2);
-        objB = context->playScene->getObject(nameB);
-        if (!objB) {
-            std::string msg = std::string("Object '") + nameB + "' not found";
-            lua_pushstring(L, msg.c_str());
-            lua_error(L);
-            return 0;
-        }
-    } else if (luaL_testudata(L, 2, "Object")) {
-        objB = *(Object**)luaL_checkudata(L, 2, "Object");
+        objB = context->playScene->getObject(lua_tostring(L, 2));
     } else {
-        return luaL_error(L, "checkCollision expects (String) or (Object)");
+        objB = *(Object**)luaL_checkudata(L, 2, "Object");
     }
 
     // Perform function
@@ -448,32 +590,34 @@ int Script::obj_checkCollision(lua_State* L) {
 
 // --- Trackers ---
 int Script::obj_moveToward(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-
-    // Get context
-    Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
-
-    Object* target = nullptr;
-    float speed = 0.0f;
-
-    if (lua_gettop(L) == 3) {
-        if (lua_isstring(L, 2)) {
-            const char* targetName = lua_tostring(L, 2);
-            target = context->playScene->getObject(targetName);
-        } else if (luaL_testudata(L, 2, "Object")) {
-            target = *(Object**)luaL_checkudata(L, 2, "Object");
-        } else {
-            return luaL_error(L, "moveToward expects (String, Number) or (Object, Number)");
-        }
-
-        speed = luaL_checknumber(L, 3);
-    } else {
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 2) {
         return luaL_error(L, "moveToward expects 2 arguments");
     }
 
-    if (!target) return 0;
+    // Check args
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling moveToward");
+    }
+
+    if ((!lua_isstring(L, 2) && !lua_testudata(L, 2, "Object")) || !lua_isnumber(L, 3)) {
+        return luaL_error(L, "moveToward expects (String, Number) or (Object, Number)"); 
+    }
+    
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    Object* target = nullptr;
+    if (lua_isstring(L, 2)) {
+        target = context->playScene->getObject(lua_tostring(L, 2));
+    } else {
+        target = *(Object**)luaL_checkudata(L, 2, "Object");
+    }
+    float speed = static_cast<float>(lua_tonumber(L, 3));
 
     // Perform function
     glm::vec3 objPos = obj->transform.position;
@@ -488,7 +632,6 @@ int Script::obj_moveToward(lua_State* L) {
         glm::vec3 velocity = direction * speed;
         obj->transform.velocity = velocity;
     }
-
     obj->transform.markDirty();
 
     // Push results
@@ -496,25 +639,33 @@ int Script::obj_moveToward(lua_State* L) {
 }
 
 int Script::obj_lookAt(lua_State* L) {
-    // Get parameters
-    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
-
-    // Get the context
-    Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
-
-    Object* target = nullptr;
-
-    if (lua_isstring(L, 2)) {
-        const char* targetName = lua_tostring(L, 2);
-        target = context->playScene->getObject(targetName);
-    } else if (luaL_testudata(L, 2, "Object")) {
-        target = *(Object**)luaL_checkudata(L, 2, "Object");
-    } else {
-        return luaL_error(L, "lookAt expects (String) or (Object)");
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 2) {
+        return luaL_error(L, "lookAt expects 1 argument");
     }
 
-    if (!target) return 0;
+    // Check args
+    Object* obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (!obj) {
+        return lua_Lerror(L, "Invalid Object calling lookAt");
+    }
+
+    if (!lua_isstring(L, 2) && !lua_testudata(L, 2, "Object")) {
+        return luaL_error(L, "lookAt expects (String) or (Object)"); 
+    }
+
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    Object* target = nullptr;
+    if (lua_isstring(L, 2)) {
+        target = context->playScene->getObject(lua_tostring(L, 2));
+    } else {
+        target = *(Object**)luaL_checkudata(L, 2, "Object");
+    }
 
     // Perform function
     glm::vec3 dir = glm::normalize(target->transform.position - obj->transform.position);
@@ -529,8 +680,17 @@ int Script::obj_lookAt(lua_State* L) {
 
 // === Lua player bindings ===
 int Script::lua_getPlayer(lua_State* L) {
-    Context* context = getContext(L);
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getPlayer expects 0 arguments");
+    }
 
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Perform function
     for (const auto& obj : context->playScene->getObjects()) {
         if (obj && obj->isPlayer) {
             // Push results
@@ -541,28 +701,41 @@ int Script::lua_getPlayer(lua_State* L) {
             return 1;
         }
     }
-
-    lua_pushnil(L); // Player not found
-    return 1;
+    return luaL_error(L, "getPlayer could not find player object");
 }
 
 int Script::lua_getPlayerName(lua_State* L) {
-    Context* context = getContext(L);
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getPlayerName expects 0 arguments");
+    }
 
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Perform function
     for (const auto& obj : context->playScene->getObjects()) {
         if (obj && obj->isPlayer) {
+            // Push results
             lua_pushstring(L, obj->name.c_str());
             return 1;
         }
     }
-
-    lua_pushnil(L); // Player not found
-    return 1;
+    return luaL_error(L, "getPlayerName could not find player object");
 }
 
 int Script::lua_getPlayerSpeed(lua_State* L) {
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getPlayerSpeed expects 0 arguments");
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
 
     // Push results
     lua_pushnumber(L, context->playScene->playerSpeed);
@@ -570,8 +743,15 @@ int Script::lua_getPlayerSpeed(lua_State* L) {
 }
 
 int Script::lua_getPlayerJump(lua_State* L) {
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getPlayerJump expects 0 arguments");
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
 
     // Push results
     lua_pushnumber(L, context->playScene->playerJump);
@@ -579,11 +759,23 @@ int Script::lua_getPlayerJump(lua_State* L) {
 }
 
 int Script::lua_setPlayerSpeed(lua_State* L) {
-    // Get parameters
-    float speed = luaL_checknumber(L, 1);
-    
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "setPlayerSpeed expects 1 argument");
+    }
+
+    // Check args
+    if (!lua_isnumber(L, 1)) {
+        return luaL_error(L, "setPlayerSpeed expects (Number)"); 
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    float speed = static_cast<float>(lua_tonumber(L, 1));
 
     // Perform function
     context->playScene->playerSpeed = speed;
@@ -593,11 +785,23 @@ int Script::lua_setPlayerSpeed(lua_State* L) {
 }
 
 int Script::lua_setPlayerJump(lua_State* L) {
-    // Get parameters
-    float jump = luaL_checknumber(L, 1);
-    
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "setPlayerJump expects 1 argument");
+    }
+
+    // Check args
+    if (!lua_isnumber(L, 1)) {
+        return luaL_error(L, "setPlayerJump expects (Number)"); 
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    float jump = static_cast<float>(lua_tonumber(L, 1));
 
     // Perform function
     context->playScene->playerJump = jump;
@@ -608,28 +812,42 @@ int Script::lua_setPlayerJump(lua_State* L) {
 
 // === Lua scene bindings ===
 int Script::lua_createObject(lua_State* L) {
-    const char* name = luaL_checkstring(L, 1);
-    const char* model = luaL_checkstring(L, 2);
-    const char* texture = luaL_checkstring(L, 3);
-    const char* shader = luaL_checkstring(L, 4);
-    const char* scriptName = luaL_checkstring(L, 5);
-
-    Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
-
-    const char* atThis = nullptr;
-    if (lua_gettop(L) >= 6 && lua_isstring(L, 6)) {
-        atThis = lua_tostring(L, 6);
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 5 || args != 6) {
+        return luaL_error(L, "createObject expects 5 or 6 arguments");
     }
+
+    // Check args
+    if (!lua_isstring(L, 1) || !lua_isstring(L, 2) || !lua_isstring(L, 3) || !lua_isstring(L, 4) || !lua_isstring(L, 5)) {
+        return luaL_error(L, "createObject expects (String, String, String, String, String) or (String, String, String, String, String, String)");
+    }
+
+    if (args == 6 && !lua_isstring(L, 6)) {
+        return luaL_error(L, "createObject expects (String, String, String, String, String) or (String, String, String, String, String, String)");
+    }
+
+    // Get context
+    Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    const char* name, model, texture, shader, script, atThis;
+    name = lua_tostring(L, 1);
+    model = lua_tostring(L, 2);
+    texture = lua_tostring(L, 3);
+    shader = lua_tostring(L, 4);
+    script = lua_tostring(L, 5);
+    if (args == 6) {atThis = lua_tostring(L, 6);}
 
     // Avoid duplicates
     if (context->playScene->getObject(name)) {
-        std::cerr << "createObject: Object with name '" << name << "' already exists.\n";
-        return 0;
+        std::string error = "createObject: Object with name '" + name + "' already exists";
+        return luaL_error(L, error);
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, scriptName, context->playScene->getResources());
+    std::shared_ptr<Object> obj = std::make_shared<Object>(name, model, texture, shader, script, context->playScene->getResources());
 
     if (atThis) {
         Object* base = context->playScene->getObject(atThis);
@@ -637,7 +855,8 @@ int Script::lua_createObject(lua_State* L) {
             obj->transform.position = base->transform.position;
             obj->transform.markDirty();
         } else {
-            std::cerr << "createObject: Base object '" << atThis << "' not found.\n";
+            std::string error = "Object: Base object '" + atThis + "' not found";
+            return luaL_error(L, error);
         }
     }
 
@@ -655,48 +874,80 @@ int Script::lua_createObject(lua_State* L) {
 }
 
 int Script::lua_destroyObject(lua_State* L) {
-    // Get the context
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "destroyObject expects 1 argument");
+    }
+
+    // Check args
+    if (!lua_isstring(L, 1) && !lua_testudata(L, 1, "Object")) {
+        return luaL_error(L, "destroyObject expects (String) or (Object)"); 
+    }
+
+    // Get context
     Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
+    if (!context || !context->playScene) {return 0;}
 
-    // Get parameters
+    // Get args
     Object* obj = nullptr;
-
-    if (lua_isstring(L, 1)) {
-        const char* name = lua_tostring(L, 1);
-        obj = context->playScene->getObject(name);
-    } else if (luaL_testudata(L, 1, "Object")) {
-        obj = *(Object**)luaL_checkudata(L, 1, "Object");
+    if (lua_isstring(L, 2)) {
+        obj = context->playScene->getObject(lua_tostring(L, 2));
     } else {
-        return luaL_error(L, "destroyObject expects (String) or (Object)");
+        obj = *(Object**)luaL_checkudata(L, 2, "Object");
     }
 
-    if (obj) {
-        context->playScene->markForDeletion(obj->name);
-    }
+    // Perform function
+    context->playScene->markForDeletion(obj->name);
 
+    // Push results
     return 0;
 }
 
 int Script::lua_getObject(lua_State* L) {
-    const char* name = luaL_checkstring(L, 1);
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "getObject expects 1 argument");
+    }
+
+    // Check args
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "getObject expects (String)"); 
+    }
+
+    // Get context
     Context* context = getContext(L);
-    if (!context || !context->playScene) return 0;
+    if (!context || !context->playScene) {return 0;}
 
+    // Get args
+    const char* name = luaL_tostring(L, 1);
+
+    // Perform function
     Object* obj = context->playScene->getObject(name);
-    if (!obj) return 0;
+    if (!obj) {
+        std::string error = "getObject: Object '" + name + "' not found";
+        return luaL_error(L, error);
+    }
 
+    // Push results
     Object** udata = (Object**)lua_newuserdata(L, sizeof(Object*));
     *udata = obj;
-
     luaL_getmetatable(L, "Object");
     lua_setmetatable(L, -2);
     return 1;
 }
 
 int Script::lua_getSkyColor(lua_State* L) {
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getSkyColor expects 0 arguments");
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
 
     // Push results
     lua_pushnumber(L, context->playScene->skyColor.x);
@@ -707,8 +958,15 @@ int Script::lua_getSkyColor(lua_State* L) {
 }
 
 int Script::lua_getGravity(lua_State* L) {
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getGravity expects 0 arguments");
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
 
     // Push results
     lua_pushnumber(L, context->playScene->gravity.x);
@@ -718,8 +976,15 @@ int Script::lua_getGravity(lua_State* L) {
 }
 
 int Script::lua_getDrag(lua_State* L) {
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 0) {
+        return luaL_error(L, "getDrag expects 0 arguments");
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
 
     // Push results
     lua_pushnumber(L, context->playScene->drag);
@@ -727,14 +992,39 @@ int Script::lua_getDrag(lua_State* L) {
 }
 
 int Script::lua_setSkyColor(lua_State* L) {
-    // Get parameters
-    float red = luaL_checknumber(L, 1);
-    float green = luaL_checknumber(L, 2);
-    float blue = luaL_checknumber(L, 3);
-    float alpha = luaL_checknumber(L, 4);
-    
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 4) {
+        return luaL_error(L, "setSkyColor expects 4 arguments");
+    }
+
+    // Check args
+    if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2) || !lua_isnumber(L, 3) || !lua_isnumber(L, 4)) {
+        return luaL_error(L, "setSkyColor expects (Number, Number, Number, Number)"); 
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    float red, green, blue, alpha;
+    red = static_cast<float>(lua_tonumber(L, 1));
+    if (red < 0 || red > 255) {
+        return luaL_error(L, "setSkyColor: Number out of range"); 
+    }
+    green = static_cast<float>(lua_tonumber(L, 2));
+    if (blue < 0 || blue > 255) {
+        return luaL_error(L, "setSkyColor: Number out of range"); 
+    }
+    blue = static_cast<float>(lua_tonumber(L, 3));
+    if (green < 0 || green > 255) {
+        return luaL_error(L, "setSkyColor: Number out of range"); 
+    }
+    alpha = static_cast<float>(lua_tonumber(L, 4));
+    if (alpha < 0 || alpha > 255) {
+        return luaL_error(L, "setSkyColor: Number out of range"); 
+    }
 
     // Perform function
     context->playScene->skyColor = glm::vec4(red, green, blue, alpha);
@@ -744,27 +1034,60 @@ int Script::lua_setSkyColor(lua_State* L) {
 }
 
 int Script::lua_setGravity(lua_State* L) {
-    // Get parameters
-    float x = luaL_checknumber(L, 1);
-    float y = luaL_checknumber(L, 2);
-    float z = luaL_checknumber(L, 3);
-    
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1 || args != 3) {
+        return luaL_error(L, "setGravity expects 1 or 3 arguments");
+    }
+
+    // Check args
+    if (!lua_isnumber(L, 1)) {
+        return luaL_error(L, "setGravity expects (Number) or (Number, Number, Number)"); 
+    }
+
+    if (args == 3 && (!lua_isnumber(L, 2) || !lua_isnumber(L, 3))) {
+        return luaL_error(L, "setGravity expects (Number) or (Number, Number, Number)"); 
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
 
-    // Perform function
-    context->playScene->gravity = glm::vec3(x, y, z);
+    // Get args and perform function
+    float x = static_cast<float>(lua_tonumber(L, 1));
+    if (args == 4) {
+        float y = static_cast<float>(lua_tonumber(L, 2));
+        float z = static_cast<float>(lua_tonumber(L, 3));
+        context->playScene->gravity = glm::vec3(x, y, z);
+    } else {
+        context->playScene->gravity = glm::vec3(0, x, 0);
+    }
     
     // Push results
     return 0;
 }
 
 int Script::lua_setDrag(lua_State* L) {
-    // Get parameters
-    float drag = luaL_checknumber(L, 1);
-    
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "setDrag expects 1 argument");
+    }
+
+    // Check args
+    if (!lua_isnumber(L, 1)) {
+        return luaL_error(L, "setDrag expects (Number)"); 
+    }
+
     // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
+
+    // Get args
+    float drag = static_cast<float>(lua_tonumber(L, 1));
+    if (drag < 0.0f || drag > 1.0f) {
+        return luaL_error(L, "setDrag: Number out of range"); 
+    }
 
     // Perform function
     context->playScene->drag = drag;
@@ -775,75 +1098,106 @@ int Script::lua_setDrag(lua_State* L) {
 
 // === Lua input bindings ===
 int Script::lua_isKeyPressed(lua_State* L) {
-    const char* keyStr = luaL_checkstring(L, 1);
-    if (!keyStr) {
-        lua_pushboolean(L, false);
-        return 1;
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "isKeyPressed expects 1 argument");
     }
 
+    // Check args
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "isKeyPressed expects (String)");
+    }
+
+    // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
     GLFWwindow* window = context->window->getGLFWwindow();
 
+    // Get args
+    const char* keyStr = lua_tostring(L, 1);
+
+    // Perform function
     int key = getKeyFromString(keyStr);
-
     if (key == -1) {
-        lua_pushboolean(L, false);
-        return 1;
+        std::string error = "isKeyPressed: key '" + keyStr + "' does not exist";
+        return luaL_error(L, error);
     }
-
     int state = glfwGetKey(window, key);
+
+    // Push results
     lua_pushboolean(L, state == GLFW_PRESS);
     return 1;
 }
 
 int Script::lua_isKeyPressedOnce(lua_State* L) {
-    const char* keyStr = luaL_checkstring(L, 1);
-    if (!keyStr) {
-        lua_pushboolean(L, false);
-        return 1;
+    // Check number of args
+    int args = lua_gettop(L);
+    if (args != 1) {
+        return luaL_error(L, "isKeyPressed expects 1 argument");
     }
 
+    // Check args
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "isKeyPressed expects (String)");
+    }
+
+    // Get context
     Context* context = getContext(L);
+    if (!context || !context->playScene) {return 0;}
     GLFWwindow* window = context->window->getGLFWwindow();
 
+    // Get args
+    const char* keyStr = lua_tostring(L, 1);
+
+    // Perform function
     int key = getKeyFromString(keyStr);
-
     if (key == -1) {
-        lua_pushboolean(L, false);
-        return 1;
+        std::string error = "isKeyPressedOnce: key '" + keyStr + "' does not exist";
+        return luaL_error(L, error);
     }
-
     static std::unordered_map<int, bool> keyStates;
-
     int state = glfwGetKey(window, key);
     bool isDown = (state == GLFW_PRESS);
     bool wasDown = keyStates[key];
-
     keyStates[key] = isDown;
 
+    // Push results
     lua_pushboolean(L, isDown && !wasDown);
     return 1;
 }
 
 // === Lua misc bindings ===
 int Script::lua_rand(lua_State* L) {
+    // Check number of args
     int args = lua_gettop(L);
+    if (args != 1 || args != 2) {
+        return luaL_error(L, "rand expects 1 or 2 arguments");
+    }
+
+    // Check args
+    if (!lua_isnumber(L, 1)) {
+        return luaL_error(L, "rand expects (Number) or (Number, Number)"); 
+    }
+
+    if (args == 2 && !lua_isnumber(L, 2)) {
+        return luaL_error(L, "rand expects (Number) or (Number, Number)"); 
+    }
+
+    // Get args and perform function
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    if (args == 1 && lua_isnumber(L, 1)) {
+    if (args == 1) {
         int max = static_cast<int>(lua_tonumber(L, 1));
         std::uniform_int_distribution<> dist(0, max);
         lua_pushinteger(L, dist(gen));
         return 1;
-    } else if (args == 2 && lua_isnumber(L, 1) && lua_isnumber(L, 2)) {
+    } else {
         int min = static_cast<int>(lua_tonumber(L, 1));
         int max = static_cast<int>(lua_tonumber(L, 2));
         std::uniform_int_distribution<> dist(min, max);
         lua_pushinteger(L, dist(gen));
-        return 1;
-    } else {
-        return luaL_error(L, "rand() expects 1 or 2 numeric arguments");
     }
 }
 
