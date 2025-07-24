@@ -28,6 +28,7 @@ public:
     void drawPlaytestUI(Scene& scene);
     void drawWelcomeScreen(Context& context);
     void drawScriptEditor(Context& context);
+    void drawGizmos(Context& context);
 
     // Popup Rendering
     void drawPopups(Context& context);
@@ -38,6 +39,12 @@ public:
     void drawRenameScriptPopup(Context& context);
     void drawDocumentationPopup();
     void drawScenePropertiesPopup(Scene& scene);
+
+    // Gizmo Handling
+    bool isGizmoVisible() {return gizmoVisible;}
+    ImGuizmo::OPERATION getGizmoMode() {return currentGizmoOperation;}
+    void setGizmoVisible(bool visible) {gizmoVisible = visible;}
+    void setGizmoMode(ImGuizmo::OPERATION newOperation) {currentGizmoOperation = newOperation;}
 
 private:
     // Popup bools
@@ -51,6 +58,10 @@ private:
     // Popup vars
     std::shared_ptr<Script> scriptToRename = nullptr;
     std::string documentation;
+
+    // Gizmo vars
+    ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
+    bool gizmoVisible = true;
 };
 
 // ImGui utils

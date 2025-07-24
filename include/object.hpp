@@ -19,6 +19,7 @@ struct Transform {
     // Transform vectors
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
+    glm::quat rotationQuat = glm::quat();
     glm::vec3 scale = glm::vec3(1.0f);
     glm::vec3 velocity = glm::vec3(0.0f);
 
@@ -31,6 +32,7 @@ struct Transform {
     // Get transformed model
     glm::mat4 getModelMatrix() const;
     void setFromModelMatrix(const glm::mat4& model);
+    void setRotation(const glm::vec3& degrees);
 };
 
 // Material definition

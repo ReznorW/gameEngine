@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "ImGuizmo.h"
 
 #include "input.hpp"
 #include "camera.hpp"
@@ -27,14 +28,14 @@ bool Input::previousKeys[512] = {false};
 bool Input::mouseButtons[5] = {false};
 
 // === Input processing ===
-void Input::processInput(Context& context, float dt) {
+void Input::processInput(Context& context, Gui& gui, float dt) {
     ImGuiIO& io = ImGui::GetIO();
 
     if (io.WantCaptureKeyboard) {return;}
 
     switch (context.currentMode) {
         case Mode::SceneEditor:
-            handleSceneEditorInput(*context.window, *context.sceneCamera, *context.editorScene, context.playScene, context.currentMode);
+            handleSceneEditorInput(*context.window, *context.sceneCamera, *context.editorScene, context.playScene, context.currentMode, gui);
             break;
 
         case Mode::Playtest:
@@ -56,7 +57,7 @@ void Input::processInput(Context& context, float dt) {
     std::memcpy(previousKeys, keys, sizeof(keys));
 }
 
-void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode) {
+void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode, Gui& gui) {
     // --- Movement controls ---
     float currentSpeed = movementSpeed;
 
@@ -111,6 +112,27 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
         std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
         scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", "", scene.getResources()));
         scene.selectObject(objName);
+    }
+
+    // Cycle gizmo modes (Tab)
+    if (isKeyPressedOnce(GLFW_KEY_TAB) && scene.getSelectedObject()) {
+        switch (gui.getGizmoMode()) {
+            case ImGuizmo::TRANSLATE:
+                gui.setGizmoMode(ImGuizmo::ROTATE);
+                break;
+            case ImGuizmo::ROTATE:
+                gui.setGizmoMode(ImGuizmo::SCALE);
+                break;
+            case ImGuizmo::SCALE:
+            default:
+                gui.setGizmoMode(ImGuizmo::TRANSLATE);
+                break;
+        }
+    }
+
+    // Toggle gizmo visibility (Q)
+    if (isKeyPressedOnce(GLFW_KEY_Q) && scene.getSelectedObject()) {
+        gui.setGizmoVisible(!gui.isGizmoVisible());
     }
 
     // Delete selected object (Delete)
@@ -282,9 +304,7 @@ void Input::mouse_button_callback(GLFWwindow* glfwWindow, int button, int action
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    if (io.WantCaptureMouse) {
-        return;
-    }
+    if (io.WantCaptureMouse || ImGuizmo::IsUsing()) {return;}
     
     // Pass in context
     Context* context = static_cast<Context*>(glfwGetWindowUserPointer(glfwWindow));

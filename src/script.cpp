@@ -814,8 +814,9 @@ int Script::lua_setPlayerJump(lua_State* L) {
 int Script::lua_createObject(lua_State* L) {
     // Check number of args
     int args = lua_gettop(L);
-    if (args != 5 || args != 6) {
-        return luaL_error(L, "createObject expects 5 or 6 arguments");
+    if (args != 5 && args != 6) {
+        std::string error = std::string("createObject expects 5 or 6 arguments not " + std::to_string(args));
+        return luaL_error(L, "%s", error.c_str());
     }
 
     // Check args

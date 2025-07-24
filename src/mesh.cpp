@@ -92,7 +92,7 @@ void Mesh::setupMesh(const std::vector<Vertex>& vertices, const std::vector<unsi
     glBindVertexArray(0);
 }
 
-// === Loaders
+// === Loaders ===
 Mesh* loadObjFile(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
@@ -107,6 +107,8 @@ Mesh* loadObjFile(const std::string& filepath) {
     std::vector<unsigned int> indices;
 
     std::unordered_map<std::string, unsigned int> uniqueVertexMap;
+
+    bool hasNormals = false;
 
     std::string line;
     while (std::getline(file, line)) {
@@ -126,6 +128,7 @@ Mesh* loadObjFile(const std::string& filepath) {
             glm::vec3 normal;
             iss >> normal.x >> normal.y >> normal.z;
             normals.push_back(normal);
+            hasNormals = true;
         } else if (prefix == "f") {
             std::vector<unsigned int> faceIndices;
             std::string vertexStr;
@@ -170,6 +173,22 @@ Mesh* loadObjFile(const std::string& filepath) {
         }
     }
 
+    if (!hasNormals) {
+        for (size_t i = 0; i < indices.size(); i += 3) {
+            Vertex& v0 = vertices[indices[i]];
+            Vertex& v1 = vertices[indices[i + 1]];
+            Vertex& v2 = vertices[indices[i + 2]];
+
+            glm::vec3 edge1 = v1.position - v0.position;
+            glm::vec3 edge2 = v2.position - v0.position;
+            glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+            v0.normal = faceNormal;
+            v1.normal = faceNormal;
+            v2.normal = faceNormal;
+        }
+    }
+
     glm::vec3 minPos(FLT_MAX);
     glm::vec3 maxPos(-FLT_MAX);
     for (const auto& v : vertices) {
@@ -180,7 +199,7 @@ Mesh* loadObjFile(const std::string& filepath) {
     glm::vec3 center = (minPos + maxPos) * 0.5f;
     glm::vec3 size = maxPos - minPos;
     float maxExtent = glm::max(glm::max(size.x, size.y), size.z);
-    float scale = (maxExtent > 0.0f) ? 1.0f / maxExtent : 1.0f;  // Avoid div by zero
+    float scale = (maxExtent > 0.0f) ? 1.0f / maxExtent : 1.0f;
 
     for (auto& v : vertices) {
         v.position = (v.position - center) * scale;
@@ -191,6 +210,7 @@ Mesh* loadObjFile(const std::string& filepath) {
     if (dotPos != std::string::npos) {
         name = name.substr(0, dotPos);
     }
+
     Mesh* mesh = new Mesh(name, vertices, indices);
     mesh->calculateBounds(vertices);
     return mesh;

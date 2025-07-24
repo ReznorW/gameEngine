@@ -7,6 +7,7 @@
 #include "scene.hpp"
 #include "shader.hpp"
 #include "mode.hpp"
+#include "gui.hpp"
 
 class Input {
 public:
@@ -16,7 +17,7 @@ public:
     static bool mouseButtons[5];
 
     // Input processing
-    static void processInput(Context& context, float dt);
+    static void processInput(Context& context, Gui& gui, float dt);
     static void processMouseMovement(Camera& camera, float& xoffset, float& yoffset, bool constrainPitch = true);
     static bool isKeyPressedOnce(int key);
 
@@ -31,7 +32,7 @@ public:
     static void modeChange(Context& context);
 
 private:
-    static void handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode);
+    static void handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode, Gui& gui);
     static void handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt);
     static void handleScriptEditorInput(Mode& mode);
 };

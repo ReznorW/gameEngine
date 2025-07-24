@@ -9,6 +9,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "ImGuizmo.h"
 
 #include "window.hpp"
 #include "shader.hpp"
@@ -99,10 +100,11 @@ int main() {
 
         // === GUI begin ===
         gui.beginFrame();
+        ImGuizmo::BeginFrame();
 
         // === Process input ===
         while (accumulator >= timestep) {
-            Input::processInput(context, dt);
+            Input::processInput(context, gui, dt);
             accumulator -= timestep;
         }
 
@@ -128,6 +130,7 @@ int main() {
             // === Draw editor GUI ===
             gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs);
             gui.drawSidebar(scene);
+            gui.drawGizmos(context);
             gui.drawPopups(context);
         }
 

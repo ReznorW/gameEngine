@@ -27,7 +27,8 @@ TARGET_WINDOWS := $(BIN_DIR)/gameEngine.exe
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 IMGUI_SRC := $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp \
              $(IMGUI_DIR)/imgui_widgets.cpp $(IMGUI_DIR)/imgui_demo.cpp \
-             $(IMGUI_BACKENDS)/imgui_impl_glfw.cpp $(IMGUI_BACKENDS)/imgui_impl_opengl3.cpp
+             $(IMGUI_BACKENDS)/imgui_impl_glfw.cpp $(IMGUI_BACKENDS)/imgui_impl_opengl3.cpp \
+			 $(IMGUI_DIR)/ImGuizmo.cpp
 LUA_SRCS := \
     $(LUA_DIR)/lapi.c $(LUA_DIR)/lauxlib.c $(LUA_DIR)/lbaselib.c \
     $(LUA_DIR)/lcode.c $(LUA_DIR)/lcorolib.c $(LUA_DIR)/lctype.c \

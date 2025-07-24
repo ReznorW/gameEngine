@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "imgui_markdown.h"
+#include "ImGuizmo.h"
 
 #include "gui.hpp"
 #include "mode.hpp"
@@ -523,6 +524,40 @@ void Gui::drawScriptEditor(Context& context) {
     ImGui::End();
 }
 
+void Gui::drawGizmos(Context& context) {
+    Scene& scene = *context.editorScene;
+    Camera& camera = *context.sceneCamera;
+
+    ImGuizmo::SetRect(0, 0, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y);
+
+    if (gizmoVisible && scene.getSelectedObject()) {
+        Object* selected = scene.getSelectedObject();
+
+        glm::mat4 view = camera.getViewMatrix();
+        glm::mat4 projection = camera.getProjectionMatrix();
+        glm::mat4 model = selected->transform.getModelMatrix();
+
+        glm::vec3 cameraPos = camera.getPosition();
+        glm::vec3 objectPos = glm::vec3(model[3]);
+        float distance = glm::distance(cameraPos, objectPos);
+        float gizmoSize = glm::clamp(0.05f + 0.02f * std::log2(distance + 1.0f), 0.1f, 0.15f);
+        ImGuizmo::SetGizmoSizeClipSpace(gizmoSize);
+
+        ImGuizmo::Manipulate(
+            glm::value_ptr(view),
+            glm::value_ptr(projection),
+            currentGizmoOperation,
+            ImGuizmo::WORLD,
+            glm::value_ptr(model)
+        );
+
+        if (ImGuizmo::IsUsing()) {
+            selected->transform.setFromModelMatrix(model);
+            selected->transform.markDirty();
+        }
+    }
+}
+
 // === Popup rendering ===
 void Gui::drawPopups(Context& context) {
     Scene& scene = *context.editorScene;
@@ -570,7 +605,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 350, 20));
     ImGui::SetNextWindowSize(ImVec2(350, io.DisplaySize.y));
 
-    if (!ImGui::Begin("Object Properties")) {
+    if (!ImGui::Begin("Object Properties", nullptr, ImGuiWindowFlags_NoNav)) {
         ImGui::End();
         return;
     }
@@ -593,7 +628,9 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     // --- Transform ---
     ImGui::SeparatorText("Transform");
     ImGui::DragFloat3("Position", glm::value_ptr(selected->transform.position), 0.1f);
-    ImGui::DragFloat3("Rotation", glm::value_ptr(selected->transform.rotation), 0.1f);
+    if (ImGui::DragFloat3("Rotation", glm::value_ptr(selected->transform.rotation), 0.1f)) {
+        selected->transform.setRotation(selected->transform.rotation);
+    }
     ImGui::DragFloat3("Scale",    glm::value_ptr(selected->transform.scale),    0.1f);
     selected->transform.markDirty();
 
