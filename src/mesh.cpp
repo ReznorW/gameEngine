@@ -240,7 +240,7 @@ unsigned int loadTexture(const std::string& path) {
         std::cerr << "Failed to load texture: " << path << "\n" << "Loading in default texture..." << "\n";
         
         // Load in default texture otherwise
-        textureID = loadTexture("assets/textures/default.jpg");
+        textureID = loadTexture("assets/textures/default.png");
     }
     stbi_image_free(data);
 

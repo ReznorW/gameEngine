@@ -22,7 +22,7 @@ public:
     void syncKeyboardFromGLFW(GLFWwindow* window);
 
     // Gui Rendering
-    void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB);
+    void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB, Project& project);
     void drawSidebar(Scene& scene);
     void drawObjectTree(Object& obj, Scene& scene);
     void drawPlaytestUI(Scene& scene);
@@ -32,13 +32,15 @@ public:
 
     // Popup Rendering
     void drawPopups(Context& context);
-    void drawObjectPropertiesPopup(Scene& scene, Object* selected);
-    void drawLoadScenePopup(Scene& scene, Mode& mode);
-    void drawSaveScenePopup(Scene& scene);
+    void drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& project);
+    void drawLoadScenePopup(Scene& scene, Mode& mode, Project& project);
+    void drawSaveScenePopup(Scene& scene, const std::string& projectName);
     void drawDeleteConfirmationPopup(Scene& scene);
     void drawRenameScriptPopup(Context& context);
     void drawDocumentationPopup();
     void drawScenePropertiesPopup(Scene& scene);
+    void drawLoadProjectPopup(Context& context);
+    void drawNewProjectNamePopup(Context& context);
 
     // Gizmo Handling
     bool isGizmoVisible() {return gizmoVisible;}
@@ -54,6 +56,8 @@ private:
     bool openRenameScriptPopup = false;
     bool openHelpPopup = false;
     bool openScenePropertiesPopup = false;
+    bool openLoadProjectPopup = false;
+    bool openNewProjectNamePopup = false;
 
     // Popup vars
     std::shared_ptr<Script> scriptToRename = nullptr;

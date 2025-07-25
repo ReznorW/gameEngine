@@ -19,6 +19,7 @@ A lightweight C++ and OpenGL-based game engine with Lua scripting and an ImGui i
 - [glm](https://github.com/g-truc/glm/tree/master/glm)
 - [imgui](https://github.com/ocornut/imgui)
 - [imgui_markdown](https://github.com/enkisoftware/imgui_markdown)
+- [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
 - [lua](https://github.com/lua/lua)
 
 ## Installation

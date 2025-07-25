@@ -3,11 +3,11 @@
 
 #include "resources.hpp"
 
-Resources::Resources() {
-    loadAllMeshes();
-    loadAllShaders();
-    loadAllTextures();
-    loadAllScripts();
+Resources::Resources(std::string projectName) {
+    loadAllMeshes(projectName);
+    loadAllShaders(projectName);
+    loadAllTextures(projectName);
+    loadAllScripts(projectName);
 }
 
 std::shared_ptr<Mesh> Resources::getMesh(const std::string& name) const {
@@ -54,9 +54,9 @@ std::vector<std::shared_ptr<Script>> Resources::getScripts() const {
     return result;
 }
 
-std::vector<std::string> Resources::getSceneNames() const {
+std::vector<std::string> Resources::getSceneNames(std::string projectName) const {
     std::vector<std::string> names;
-    for (const auto& entry : std::filesystem::directory_iterator("assets/scenes")) {
+    for (const auto& entry : std::filesystem::directory_iterator("projects/" + projectName + "/scenes")) {
         if (entry.path().extension() == ".scn") {
             names.push_back(entry.path().stem().string());
         }
@@ -96,9 +96,9 @@ void Resources::deleteScript(const std::string& name) {
     scripts.erase(name);
 }
 
-void Resources::loadAllMeshes() {
+void Resources::loadAllMeshes(std::string projectName) {
     std::cout << "===Loading in all meshes===" << std::endl;
-    const std::string root = "assets/models/";
+    const std::string root = "projects/" + projectName + "/assets/models/";
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().stem().string();
@@ -108,9 +108,9 @@ void Resources::loadAllMeshes() {
     }
 }
 
-void Resources::loadAllShaders() {
+void Resources::loadAllShaders(std::string projectName) {
     std::cout << "===Loading in all shaders===" << std::endl;
-    const std::string root = "assets/shaders/";
+    const std::string root = "projects/" + projectName + "/assets/shaders/";
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_directory()) {
             std::string name = entry.path().filename().string();
@@ -122,9 +122,9 @@ void Resources::loadAllShaders() {
     }
 }
 
-void Resources::loadAllTextures() {
+void Resources::loadAllTextures(std::string projectName) {
     std::cout << "===Loading in all textures===" << std::endl;
-    const std::string root = "assets/textures/";
+    const std::string root = "projects/" + projectName + "/assets/textures/";
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().filename().string();
@@ -134,9 +134,9 @@ void Resources::loadAllTextures() {
     }
 }
 
-void Resources::loadAllScripts() {
+void Resources::loadAllScripts(std::string projectName) {
     std::cout << "===Loading in all scripts===" << std::endl;
-    const std::string root = "assets/scripts/";
+    const std::string root = "projects/" + projectName + "/scripts/";
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().stem().string();

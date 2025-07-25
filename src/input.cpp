@@ -35,7 +35,7 @@ void Input::processInput(Context& context, Gui& gui, float dt) {
 
     switch (context.currentMode) {
         case Mode::SceneEditor:
-            handleSceneEditorInput(*context.window, *context.sceneCamera, *context.editorScene, context.playScene, context.currentMode, gui);
+            handleSceneEditorInput(*context.window, *context.sceneCamera, *context.editorScene, context.playScene, context.currentMode, gui, *context.project);
             break;
 
         case Mode::Playtest:
@@ -57,7 +57,7 @@ void Input::processInput(Context& context, Gui& gui, float dt) {
     std::memcpy(previousKeys, keys, sizeof(keys));
 }
 
-void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode, Gui& gui) {
+void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode, Gui& gui, Project& project) {
     // --- Movement controls ---
     float currentSpeed = movementSpeed;
 
@@ -110,7 +110,7 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
     // Create new object (C)
     if (isKeyPressedOnce(GLFW_KEY_C)) {
         std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-        scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", "", scene.getResources()));
+        scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "default", "", project.resources));
         scene.selectObject(objName);
     }
 
@@ -167,7 +167,7 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
     if (isKeyPressedOnce(GLFW_KEY_S) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
         const std::string& sceneName = scene.getName();
         if (!sceneName.empty()) {
-            scene.saveScene(sceneName);
+            scene.saveScene(sceneName, project.name);
         } else {
             ImGui::OpenPopup("Save Scene Popup");
         }

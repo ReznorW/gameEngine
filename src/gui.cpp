@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <filesystem>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,6 +15,7 @@
 #include "object.hpp"
 #include "mesh.hpp"
 #include "script.hpp"
+#include "project.hpp"
 
 // === Constructor ===
 Gui::Gui(Window& window) {
@@ -78,7 +80,7 @@ void Gui::syncKeyboardFromGLFW(GLFWwindow* window) {
 }
 
 // === Rendering ===
-void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB) {
+void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB, Project& project) {
     if (ImGui::BeginMainMenuBar()) {
         // File Menu
         if (ImGui::BeginMenu("File")) {
@@ -94,7 +96,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
             if (ImGui::MenuItem("Save", "Ctrl+S")) {
                 const std::string& sceneName = scene.getName();
                 if (!sceneName.empty()) {
-                    scene.saveScene(sceneName);
+                    scene.saveScene(sceneName, project.name);
                 } else {
                     openSaveScenePopup = true;
                 }
@@ -109,7 +111,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "default", "", scene.getResources()));
+                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "default", "", project.resources));
                 scene.selectObject(objName);
             }
             if (ImGui::MenuItem("Scene Properties")) {
@@ -293,16 +295,14 @@ void Gui::drawWelcomeScreen(Context& context) {
 
     ImGui::SetCursorPosX(buttonX);
     if (ImGui::Button("Create New Project", ImVec2(buttonWidth, buttonHeight))) {
-        // TODO: Make projects
-
-        context.currentMode = Mode::SceneEditor;
+        openNewProjectNamePopup = true;
     }
 
     ImGui::Spacing();
 
     ImGui::SetCursorPosX(buttonX);
     if (ImGui::Button("Load Project", ImVec2(buttonWidth, buttonHeight))) {
-        openLoadScenePopup = true;
+        openLoadProjectPopup = true;
     }
 
     ImGui::EndChild();
@@ -356,7 +356,7 @@ void Gui::drawScriptEditor(Context& context) {
         currentScript = std::make_shared<Script>("new_script.lua");
         currentScriptContent = currentScript->getSource();
         currentScript->saveToFile();
-        context.editorScene->getResources()->addScript(currentScript);
+        context.project->resources->addScript(currentScript);
     }
     if (ctrlHeld && ImGui::IsKeyPressed(ImGuiKey_R, false)) {
         if (currentScript) {
@@ -385,7 +385,7 @@ void Gui::drawScriptEditor(Context& context) {
                 currentScript = std::make_shared<Script>("new_script.lua");
                 currentScriptContent = currentScript->getSource();
                 currentScript->saveToFile();
-                context.editorScene->getResources()->addScript(currentScript);
+                context.project->resources->addScript(currentScript);
             }
             if (ImGui::MenuItem("Save", "Ctrl+S", false, dirty && currentScript != nullptr)) {
                 currentScript->updateSource(currentScriptContent);
@@ -444,7 +444,7 @@ void Gui::drawScriptEditor(Context& context) {
 
     // Script list
     ImGui::BeginChild("Scripts", ImVec2(0, 0), true);
-    auto scripts = context.editorScene->getResources()->getScripts();
+    auto scripts = context.project->resources->getScripts();
     for (const std::shared_ptr<Script>& script : scripts) {
         ImGui::PushID(script->getName().c_str());
 
@@ -462,14 +462,14 @@ void Gui::drawScriptEditor(Context& context) {
             }
             if (ImGui::MenuItem("Delete")) {
                 if (script) {
-                    const std::string& filepath = "assets/scripts/" + script->getName() + ".lua";
+                    const std::string& filepath = "projects/" + context.project->name + "/scripts/" + script->getName() + ".lua";
                     if (!filepath.empty()) {
                         if (std::remove(filepath.c_str()) != 0) {
                             std::cerr << "Failed to delete script file: " << filepath << std::endl;
                         }
                     }
 
-                    context.editorScene->getResources()->deleteScript(script->getName());
+                    context.project->resources->deleteScript(script->getName());
 
                     if (currentScript == script) {
                         currentScript = nullptr;
@@ -562,22 +562,28 @@ void Gui::drawGizmos(Context& context) {
 void Gui::drawPopups(Context& context) {
     Scene& scene = *context.editorScene;
 
-    Object* selected = scene.getSelectedObject();
+    Object* selected = nullptr;
+    if (context.editorScene) {
+        selected = scene.getSelectedObject();
+    }
+
     if (selected && context.currentMode == Mode::SceneEditor) {
-        drawObjectPropertiesPopup(scene, selected);
+        drawObjectPropertiesPopup(scene, scene.getSelectedObject(), *context.project);
     }
 
     if (openLoadScenePopup) {
         ImGui::OpenPopup("Load Scene Popup");
         openLoadScenePopup = false;
     }
-    drawLoadScenePopup(scene, context.currentMode);
+    if (context.project) {
+        drawLoadScenePopup(scene, context.currentMode, *context.project);
+    }
 
     if (openSaveScenePopup) {
         ImGui::OpenPopup("Save Scene Popup");
         openSaveScenePopup = false;
     }
-    drawSaveScenePopup(scene);
+    drawSaveScenePopup(scene, context.project->name);
 
     if (openDeleteConfirmationPopup) {
         ImGui::OpenPopup("Confirm Delete");
@@ -598,9 +604,21 @@ void Gui::drawPopups(Context& context) {
     if (openScenePropertiesPopup && (context.currentMode == Mode::SceneEditor)) {
         drawScenePropertiesPopup(scene);
     }
+
+    if (openLoadProjectPopup && (context.currentMode == Mode::WelcomeScreen)) {
+        ImGui::OpenPopup("Load Project Popup");
+        openLoadProjectPopup = false;
+    }
+    drawLoadProjectPopup(context);
+
+    if (openNewProjectNamePopup && (context.currentMode == Mode::WelcomeScreen)) {
+        ImGui::OpenPopup("New Project Name Popup");
+        openNewProjectNamePopup = false;
+    }
+    drawNewProjectNamePopup(context);
 }
 
-void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
+void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& project) {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 350, 20));
     ImGui::SetNextWindowSize(ImVec2(350, io.DisplaySize.y));
@@ -665,7 +683,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     // Mesh
     std::string currentMesh = selected->mesh ? selected->mesh->getName() : "None";
     if (ImGui::BeginCombo("Mesh", currentMesh.c_str())) {
-        for (const auto& mesh : scene.getResources()->getMeshes()) {
+        for (const auto& mesh : project.resources->getMeshes()) {
             const std::string& meshName = mesh->getName();
             bool isSelected = (meshName == currentMesh);
             if (ImGui::Selectable(meshName.c_str(), isSelected)) {
@@ -680,7 +698,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     // Shader
     std::string currentShader = selected->shader ? selected->shader->getName() : "None";
     if (ImGui::BeginCombo("Shader", currentShader.c_str())) {
-        for (const auto& shader : scene.getResources()->getShaders()) {
+        for (const auto& shader : project.resources->getShaders()) {
             const std::string& shaderName = shader->getName();
             bool isSelected = (selected->shader == shader);
             if (ImGui::Selectable(shaderName.c_str(), isSelected)) {
@@ -701,7 +719,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     ImGui::SeparatorText("Texture");
     std::string currentTexture = selected->texture ? selected->texture->getName() : "None";
     if (ImGui::BeginCombo("Texture", currentTexture.c_str())) {
-        for (const auto& tex : scene.getResources()->getTextures()) {
+        for (const auto& tex : project.resources->getTextures()) {
             const std::string& texName = tex->getName();
             bool isSelected = (selected->texture == tex);
 
@@ -756,7 +774,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
         }
         if (noneSelected) ImGui::SetItemDefaultFocus();
 
-        for (const auto& script : scene.getResources()->getScripts()) {
+        for (const auto& script : project.resources->getScripts()) {
             const std::string& scriptName = script->getName();
             bool isSelected = (selected->script == script);
             if (ImGui::Selectable(scriptName.c_str(), isSelected)) {
@@ -780,10 +798,10 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected) {
     ImGui::End();
 }
 
-void Gui::drawLoadScenePopup(Scene& scene, Mode& mode) {
+void Gui::drawLoadScenePopup(Scene& scene, Mode& mode, Project& project) {
     static size_t selectedSceneIndex = 0;
     static bool initialized = false;
-    std::vector<std::string> scenes = scene.getResources()->getSceneNames();
+    std::vector<std::string> scenes = project.resources->getSceneNames(project.name);
 
     if (ImGui::BeginPopupModal("Load Scene Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("Select a scene to load:");
@@ -822,7 +840,7 @@ void Gui::drawLoadScenePopup(Scene& scene, Mode& mode) {
                     mode = Mode::SceneEditor;
                 }
                 scene.clear();
-                scene.loadScene(scenes[selectedSceneIndex]);
+                scene.loadScene(scenes[selectedSceneIndex], project);
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
@@ -840,7 +858,7 @@ void Gui::drawLoadScenePopup(Scene& scene, Mode& mode) {
     }
 }
 
-void Gui::drawSaveScenePopup(Scene& scene) {
+void Gui::drawSaveScenePopup(Scene& scene, const std::string& projectName) {
     static char saveFileName[128] = "";
     static bool popupJustClosed = false;
 
@@ -849,7 +867,7 @@ void Gui::drawSaveScenePopup(Scene& scene) {
         ImGui::InputText("Filename", saveFileName, IM_ARRAYSIZE(saveFileName));
 
         if (ImGui::Button("Save")) {
-            if (scene.saveScene(saveFileName)) {
+            if (scene.saveScene(saveFileName, projectName)) {
                 ImGui::CloseCurrentPopup();
                 popupJustClosed = true;
             } else {
@@ -901,7 +919,7 @@ void Gui::drawRenameScriptPopup(Context& context) {
         if (ImGui::Button("Rename")) {
             std::string newName(nameBuffer);
             if (!newName.empty() && newName != scriptToRename->getName()) {
-                context.editorScene->getResources()->renameScript(scriptToRename->getName(), newName);
+                context.project->resources->renameScript(scriptToRename->getName(), newName);
             }
             scriptToRename = nullptr;
             initialized = false;
@@ -953,6 +971,181 @@ void Gui::drawScenePropertiesPopup(Scene& scene) {
         ImGui::SliderFloat("Jump Force", &scene.playerJump, 0.1f, 20.0f);
 
         ImGui::End();
+    }
+}
+
+void Gui::drawLoadProjectPopup(Context& context) {
+    enum class PopupStep {SelectProject, SelectScene};
+    static PopupStep step = PopupStep::SelectProject;
+
+    static std::vector<std::string> projectNames;
+    static int selectedProjectIndex = -1;
+
+    static std::vector<std::string> sceneFiles;
+    static int selectedSceneIndex = -1;
+
+    static std::string currentProjectName;
+    static std::filesystem::path currentProjectPath;
+
+    if (ImGui::BeginPopupModal("Load Project Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (step == PopupStep::SelectProject) {
+            if (projectNames.empty()) {
+                for (const auto& entry : std::filesystem::directory_iterator("projects")) {
+                    if (entry.is_directory()) {
+                        projectNames.push_back(entry.path().filename().string());
+                    }
+                }
+            }
+
+            ImGui::Text("Select a project to load:");
+            ImGui::Spacing();
+
+            if (ImGui::BeginListBox("##ProjectList", ImVec2(300, 200))) {
+                for (size_t i = 0; i < projectNames.size(); ++i) {
+                    bool isSelected = (static_cast<int>(i) == selectedProjectIndex);
+                    if (ImGui::Selectable(projectNames[i].c_str(), isSelected)) {
+                        selectedProjectIndex = i;
+                    }
+                }
+                ImGui::EndListBox();
+            }
+
+            ImGui::Spacing();
+
+            float buttonWidth = 120;
+            if (ImGui::Button("Next", ImVec2(buttonWidth, 0)) && selectedProjectIndex >= 0) {
+                currentProjectName = projectNames[selectedProjectIndex];
+                currentProjectPath = "projects/" + currentProjectName + "/scenes";
+
+                sceneFiles.clear();
+                for (const auto& entry : std::filesystem::directory_iterator(currentProjectPath)) {
+                    if (entry.path().extension() == ".scn") {
+                        sceneFiles.push_back(entry.path().filename().stem().string());
+                    }
+                }
+
+                step = PopupStep::SelectScene;
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0))) {
+                selectedProjectIndex = -1;
+                projectNames.clear();
+                ImGui::CloseCurrentPopup();
+            }
+
+        } else if (step == PopupStep::SelectScene) {
+            ImGui::Text("Select a scene to load:");
+            ImGui::Spacing();
+
+            if (ImGui::BeginListBox("##SceneList", ImVec2(300, 200))) {
+                for (size_t i = 0; i < sceneFiles.size(); ++i) {
+                    bool isSelected = (static_cast<int>(i) == selectedSceneIndex);
+                    if (ImGui::Selectable(sceneFiles[i].c_str(), isSelected)) {
+                        selectedSceneIndex = i;
+                    }
+                }
+                ImGui::EndListBox();
+            }
+
+            ImGui::Spacing();
+            float buttonWidth = 120;
+
+            if (ImGui::Button("Load Scene", ImVec2(buttonWidth, 0)) && selectedSceneIndex >= 0) {
+                std::string selectedScene = sceneFiles[selectedSceneIndex];
+                std::filesystem::path fullScenePath = currentProjectPath / selectedScene;
+
+                // Resource and project setup
+                auto* resources = new Resources(currentProjectName);
+                context.project = std::make_unique<Project>(currentProjectName, resources);
+
+                // Camera setup
+                int w = context.window->getWidth();
+                int h = context.window->getHeight();
+                float aspect = static_cast<float>(w) / h;
+                context.sceneCamera = std::make_unique<Camera>(aspect);
+                context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
+
+                // Load scene
+                context.editorScene = std::make_unique<Scene>();
+                context.editorScene->loadScene(selectedScene, *context.project);
+                context.playScene = std::make_unique<Scene>(*context.editorScene);
+
+                // Set mode
+                context.currentMode = Mode::SceneEditor;
+
+                // Cleanup
+                selectedProjectIndex = -1;
+                selectedSceneIndex = -1;
+                projectNames.clear();
+                sceneFiles.clear();
+                step = PopupStep::SelectProject;
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Back", ImVec2(buttonWidth, 0))) {
+                sceneFiles.clear();
+                selectedSceneIndex = -1;
+                step = PopupStep::SelectProject;
+            }
+        }
+
+        ImGui::EndPopup();
+    } else {
+        step = PopupStep::SelectProject;
+        projectNames.clear();
+        sceneFiles.clear();
+        selectedProjectIndex = -1;
+        selectedSceneIndex = -1;
+    }
+}
+
+void Gui::drawNewProjectNamePopup(Context& context) {
+    static char projectNameBuffer[128] = "UntitledProject";
+    if (ImGui::BeginPopupModal("New Project Name Popup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Enter a name for your new project:");
+        ImGui::InputText("##ProjectName", projectNameBuffer, IM_ARRAYSIZE(projectNameBuffer));
+
+        ImGui::Spacing();
+
+        if (ImGui::Button("Create", ImVec2(120, 0))) {
+            std::string projectName = projectNameBuffer;
+
+            std::filesystem::path projectPath = std::filesystem::path("projects") / projectName;
+
+            std::error_code ec;
+            if (!std::filesystem::exists(projectPath)) {
+                if (!std::filesystem::create_directories(projectPath, ec)) {
+                    std::cerr << "Failed to create project directories: " << ec.message() << std::endl;
+                }
+            }
+
+            std::filesystem::create_directories(projectPath / "scenes", ec);
+            std::filesystem::create_directories(projectPath / "scripts", ec);
+            std::filesystem::create_directories(projectPath / "assets", ec);
+            std::filesystem::create_directories(projectPath / "assets/models", ec);
+            std::filesystem::create_directories(projectPath / "assets/shaders", ec);
+            std::filesystem::create_directories(projectPath / "assets/textures", ec);
+
+            Resources* newResources = new Resources(projectName);
+            context.project = std::make_unique<Project>(projectName, newResources);
+            context.editorScene = std::make_unique<Scene>();
+            context.playScene = std::make_unique<Scene>(*context.editorScene);
+
+            context.currentMode = Mode::SceneEditor;
+
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
     }
 }
 

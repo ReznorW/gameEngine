@@ -13,7 +13,7 @@
 class Resources {
 public:
     // Constructor
-    Resources();
+    Resources(std::string projectName);
 
     // Meshes
     std::shared_ptr<Mesh> getMesh(const std::string& name) const;
@@ -41,7 +41,7 @@ public:
     void renameScript(const std::string& oldName, const std::string& newName);
 
     // Scenes
-    std::vector<std::string> getSceneNames() const;
+    std::vector<std::string> getSceneNames(std::string projectName) const;
 
 private:
     // Resource containers
@@ -51,8 +51,8 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
 
     // Loaders
-    void loadAllMeshes();
-    void loadAllShaders();
-    void loadAllTextures();
-    void loadAllScripts();
+    void loadAllMeshes(std::string projectName);
+    void loadAllShaders(std::string projectName);
+    void loadAllTextures(std::string projectName);
+    void loadAllScripts(std::string projectName);
 };

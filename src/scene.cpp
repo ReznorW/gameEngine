@@ -7,11 +7,10 @@
 #include "obb.hpp"
 
 // === Constructors ===
-Scene::Scene(Resources* resources)
-    : resources(resources) {}
+Scene::Scene() {}
 
 Scene::Scene(const Scene& other)
-    : skyColor(other.skyColor), gravity(other.gravity), drag(other.drag), playerSpeed(other.playerSpeed), playerJump(other.playerJump), name(other.name), resources(other.resources){
+    : skyColor(other.skyColor), gravity(other.gravity), drag(other.drag), playerSpeed(other.playerSpeed), playerJump(other.playerJump), name(other.name) {
 
     std::unordered_map<const Object*, std::shared_ptr<Object>> pointerMap;
 
@@ -75,11 +74,11 @@ Object* Scene::getSelectedObject() const {
 }
 
 // === Scene management ===
-bool Scene::loadScene(const std::string& scnName) {
+bool Scene::loadScene(const std::string& scnName, Project& project) {
     clearSelection();
     clear();
 
-    std::ifstream file("assets/scenes/" + scnName + ".scn");
+    std::ifstream file("projects/" + project.name + "/scenes/" + scnName + ".scn");
     if (!file) {
         std::cerr << "Failed to open scene file: " << scnName << "\n";
         return false;
@@ -158,9 +157,9 @@ bool Scene::loadScene(const std::string& scnName) {
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject") {
-            auto obj = std::make_shared<Object>(objName, meshName, textureName, shaderName, scriptName, resources);
+            auto obj = std::make_shared<Object>(objName, meshName, textureName, shaderName, scriptName, project.resources);
             obj->transform.position = position;
-            obj->transform.rotation = rotation;
+            obj->transform.setRotation(rotation);
             obj->transform.scale = scale;
             obj->transform.velocity = glm::vec3(0.0f);
             obj->material.ambient = ambient;
@@ -189,8 +188,8 @@ bool Scene::loadScene(const std::string& scnName) {
     return true;
 }
 
-bool Scene::saveScene(const std::string& scnName) {
-    std::ofstream file("assets/scenes/" + scnName + ".scn");
+bool Scene::saveScene(const std::string& scnName, const std::string& projectName) {
+    std::ofstream file("projects/" + projectName + "/scenes/" + scnName + ".scn");
     if (!file.is_open()) return false;
 
     setName(scnName);
@@ -303,14 +302,14 @@ void Scene::clearSelection() {
 }
 
 // === Draw ===
-void Scene::draw(const Camera& camera, bool inPlaytest, bool drawOBBs) {
+void Scene::draw(const Camera& camera, bool inPlaytest, bool drawOBBs, Resources& resources) {
     for (const auto& [_, obj] : objects) {
         if (obj->parent) continue;
         obj->draw(camera, selectedObject, inPlaytest); 
     }
 
     if (drawOBBs) {
-        auto debugShader = resources->getShader("debug");
+        auto debugShader = resources.getShader("debug");
         for (const auto& [_, obj] : objects) {
             drawOBB(obj->obb, camera, debugShader.get(), glm::vec3(1.0f, 0.0f, 0.0f));
         }

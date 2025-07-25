@@ -32,7 +32,7 @@ public:
     static void modeChange(Context& context);
 
 private:
-    static void handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode, Gui& gui);
+    static void handleSceneEditorInput(Window& window, Camera& camera, Scene& scene, std::unique_ptr<Scene>& playScene, Mode& mode, Gui& gui, Project& project);
     static void handlePlaytestInput(Window& window, Camera& camera, std::unique_ptr<Scene>& playScene, Mode& mode, float dt);
     static void handleScriptEditorInput(Mode& mode);
 };

@@ -6,6 +6,7 @@
 #include "scene.hpp"
 #include "camera.hpp"
 #include "mode.hpp"
+#include "project.hpp"
 
 // Window definition
 class Window {
@@ -39,11 +40,14 @@ private:
 
 // Context defintion
 struct Context {
+    std::unique_ptr<Project> project;
     std::unique_ptr<Window> window;
     std::unique_ptr<Camera> sceneCamera;
     std::unique_ptr<Camera> playCamera;
     std::unique_ptr<Scene> editorScene;
     std::unique_ptr<Scene> playScene;
-    Mode currentMode = Mode::SceneEditor;
-    Mode previousMode = Mode::SceneEditor;
+    Mode currentMode;
+    Mode previousMode;
+
+    Context() = default;
 };

@@ -34,25 +34,9 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glfwSwapInterval(1); // VSync
 
-    // === Camera setup ===
-    int lastWidth = window.getWidth();
-    int lastHeight = window.getHeight();
-    float aspect = static_cast<float>(lastWidth) / lastHeight;
-    context.sceneCamera = std::make_unique<Camera>(aspect);
-    context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
-
     // === Gui setup ===
     std::cout << "===Setting up GUI===" << std::endl;
     Gui gui(window);
-
-    // === Resource setup ===
-    std::cout << "===Loading resources===" << std::endl;
-    auto resources = std::make_shared<Resources>();
-
-    // === Scene and objects ===
-    std::cout << "===Initializing scene===" << std::endl;
-    context.editorScene = std::make_unique<Scene>(resources.get());
-    context.playScene = std::make_unique<Scene>(*context.editorScene);
 
     // === Initialize mode ===
     context.currentMode = Mode::WelcomeScreen;
@@ -125,10 +109,10 @@ int main() {
                 }
             }
 
-            scene.draw(camera, false, drawOBBs);
+            scene.draw(camera, false, drawOBBs, *context.project->resources);
 
             // === Draw editor GUI ===
-            gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs);
+            gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs, *context.project);
             gui.drawSidebar(scene);
             gui.drawGizmos(context);
             gui.drawPopups(context);
@@ -149,7 +133,7 @@ int main() {
                 if (obj->script) {
                     obj->script->update(dt);
                     if (obj->script->hasErrors()) {
-                        context.editorScene->getResources()->getScript(obj->script->getName())->setErrorLog(obj->script->getErrorLog());
+                        context.project->resources->getScript(obj->script->getName())->setErrorLog(obj->script->getErrorLog());
                     }
                 }
 
@@ -191,7 +175,7 @@ int main() {
                 }
             }
 
-            scene.draw(camera, true, drawOBBs);
+            scene.draw(camera, true, drawOBBs, *context.project->resources);
             scene.processPendingDeletes();
             gui.drawPlaytestUI(scene);
         }

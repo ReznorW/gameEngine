@@ -9,6 +9,7 @@
 #include "camera.hpp"
 #include "object.hpp"
 #include "resources.hpp"
+#include "project.hpp"
 
 class Scene {
 public:
@@ -20,11 +21,10 @@ public:
     float playerJump = 10.0f;
 
     // Constructors
-    explicit Scene(Resources* resources);
+    Scene();
     Scene(const Scene& other);
 
     // Getters
-    Resources* getResources() const {return resources;}
     std::string getName() const {return name;}
     Object* getObject(const std::string& name);
     std::vector<Object*> getObjects();
@@ -37,8 +37,8 @@ public:
     void setName(const std::string& newName) {name = newName;}
 
     // Scene management
-    bool loadScene(const std::string& name);
-    bool saveScene(const std::string& name);
+    bool loadScene(const std::string& name, Project& project);
+    bool saveScene(const std::string& name, const std::string& projectName);
 
     // Object management
     void addObject(const std::string& name, std::shared_ptr<Object> obj);
@@ -54,11 +54,10 @@ public:
     void clearSelection();
 
     // Drawing
-    void draw(const Camera& camera, bool inPlaytest, bool drawOBBs);
+    void draw(const Camera& camera, bool inPlaytest, bool drawOBBs, Resources& resources);
 
 private:
     std::string name;
-    Resources* resources = nullptr;
 
     std::unordered_map<std::string, std::shared_ptr<Object>> objects;
     Object* selectedObject = nullptr;

@@ -1,3 +1,11 @@
+scene
+skycolor 0.5 0.7 1 1
+gravity 0 -15 0
+drag 0.8
+playerspeed 1
+playerjump 10
+endscene
+
 object player
 mesh cube
 shader default
