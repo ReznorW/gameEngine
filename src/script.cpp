@@ -445,7 +445,7 @@ int Script::obj_setRotation(lua_State* L) {
     roll = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
-    obj->transform.rotation = glm::vec3(pitch, yaw, roll);
+    obj->transform.setRotation(glm::vec3(pitch, yaw, roll));
     obj->transform.markDirty();
 
     // Push results
@@ -544,7 +544,7 @@ int Script::obj_rotate(lua_State* L) {
     roll = static_cast<float>(lua_tonumber(L, 4));
 
     // Perform function
-    obj->transform.rotation = obj->transform.rotation + glm::vec3(pitch, yaw, roll);
+    obj->transform.setRotation(obj->transform.rotation + glm::vec3(pitch, yaw, roll));
     obj->transform.markDirty();
 
     // Push results
@@ -671,7 +671,7 @@ int Script::obj_lookAt(lua_State* L) {
     glm::vec3 dir = glm::normalize(target->transform.position - obj->transform.position);
     float yaw = glm::degrees(atan2(dir.x, dir.z));
 
-    obj->transform.rotation.y = yaw;
+    obj->transform.setRotation(glm::vec3(obj->transform.rotation.x, yaw, obj->transform.rotation.z));
     obj->transform.markDirty();
 
     // Push results

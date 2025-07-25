@@ -36,7 +36,8 @@ int main() {
 
     // === Gui setup ===
     std::cout << "===Setting up GUI===" << std::endl;
-    Gui gui(window);
+    context.gui = new Gui(window);
+    Gui& gui = *context.gui;
 
     // === Initialize mode ===
     context.currentMode = Mode::WelcomeScreen;
@@ -50,6 +51,7 @@ int main() {
     glfwSetKeyCallback(window.getGLFWwindow(), Input::key_callback);
     glfwSetCharCallback(window.getGLFWwindow(), Input::char_callback);
     glfwSetFramebufferSizeCallback(window.getGLFWwindow(), Input::framebuffer_size_callback);
+    glfwSetDropCallback(window.getGLFWwindow(), Input::drop_callback);
 
     // === Timing setup ===
     const double timestep = 1.0 / 60.0;
@@ -113,7 +115,7 @@ int main() {
 
             // === Draw editor GUI ===
             gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs, *context.project);
-            gui.drawSidebar(scene);
+            gui.drawSidebar(scene, *context.project);
             gui.drawGizmos(context);
             gui.drawPopups(context);
         }
@@ -170,7 +172,7 @@ int main() {
                 // Move camera with player
                 if (obj->isPlayer) {
                     camera.position = obj->transform.position;
-                    obj->transform.rotation.y = -camera.yaw;
+                    obj->transform.setRotation(glm::vec3(obj->transform.rotation.x, -camera.yaw, obj->transform.rotation.z));
                     obj->transform.markDirty();
                 }
             }

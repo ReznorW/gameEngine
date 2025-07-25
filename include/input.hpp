@@ -27,6 +27,7 @@ public:
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void char_callback(GLFWwindow* window, unsigned int c);
     static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+    static void drop_callback(GLFWwindow* window, int count, const char** paths);
 
     // Mode changing
     static void modeChange(Context& context);

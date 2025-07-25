@@ -187,16 +187,37 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
     }
 }
 
-void Gui::drawSidebar(Scene& scene) {
+void Gui::drawSidebar(Scene& scene, Project& project) {
     ImGui::SetNextWindowPos(ImVec2(0, 20));
     ImGui::SetNextWindowSize(ImVec2(200, ImGui::GetIO().DisplaySize.y - 20));
-    ImGui::Begin("Objects", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize 
+                           | ImGuiWindowFlags_NoMove 
+                           | ImGuiWindowFlags_NoCollapse 
+                           | ImGuiWindowFlags_NoTitleBar;
+
+    ImGui::Begin("Objects", nullptr, flags);
+
+    // Scene object hierarchy
+    ImGui::Text("Scene Objects:");
+    ImGui::BeginChild("SceneObjects", ImVec2(0, ImGui::GetContentRegionAvail().y * 0.45f), true);
     for (auto& obj : scene.getObjects()) {
         if (obj->parent == nullptr) {
             drawObjectTree(*obj, scene);
         }
     }
+    ImGui::EndChild();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    // Project file browser
+    ImGui::Text("Project Files:");
+    static std::filesystem::path root = "projects/" + project.name;
+    ImGui::BeginChild("ProjectFiles", ImVec2(0, 0), true);
+    drawFileBrowser(root, project);
+    ImGui::EndChild();
 
     ImGui::End();
 }
@@ -224,6 +245,112 @@ void Gui::drawObjectTree(Object& obj, Scene& scene) {
             drawObjectTree(*child, scene);
         }
         ImGui::TreePop();
+    }
+}
+
+void Gui::cacheDirectory(const std::filesystem::path& dirPath, CachedEntry& outEntry) {
+    namespace fs = std::filesystem;
+    outEntry.name = dirPath.filename().string();
+    if (outEntry.name.empty()) outEntry.name = dirPath.string();
+    outEntry.isDirectory = true;
+    outEntry.fullPath = dirPath.string();
+
+    try {
+        for (const auto& entry : fs::directory_iterator(dirPath)) {
+            CachedEntry child;
+            child.name = entry.path().filename().string();
+            child.isDirectory = entry.is_directory();
+            child.fullPath = entry.path().string();
+
+            if (child.isDirectory) {
+                cacheDirectory(entry.path(), child);
+            }
+            outEntry.children.push_back(std::move(child));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error caching directory " << dirPath << ": " << e.what() << std::endl;
+    }
+}
+
+void Gui::drawCachedDirectory(const CachedEntry& entry) {
+    ImGuiTreeNodeFlags flags = entry.isDirectory ? ImGuiTreeNodeFlags_OpenOnArrow : ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+    if (entry.isDirectory) {
+        bool open = ImGui::TreeNodeEx(entry.name.c_str(), flags);
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup)) {
+            dropTargetPath = entry.fullPath;
+        }
+
+        if (open) {
+            for (const auto& child : entry.children) {
+                drawCachedDirectory(child);
+            }
+            ImGui::TreePop();
+        }
+    } else {
+        ImGui::BulletText("%s", entry.name.c_str());
+    }
+}
+
+void Gui::drawFileBrowser(const std::filesystem::path& rootPath, Project& project) {
+    if (directoryDirty) {
+        directoryCacheRoot.clear();
+        CachedEntry rootEntry;
+        cacheDirectory(rootPath, rootEntry);
+        directoryCacheRoot[rootPath.string()] = std::move(rootEntry);
+        directoryDirty = false;
+    }
+
+    auto it = directoryCacheRoot.find(rootPath.string());
+    if (it != directoryCacheRoot.end()) {
+        drawCachedDirectory(it->second);
+    }
+
+    if (!droppedFiles.empty()) {
+        std::filesystem::path target = dropTargetPath.empty() ? rootPath : dropTargetPath;
+        std::string destDirectory = target.filename().string();
+
+        for (const std::string& file : droppedFiles) {
+            std::filesystem::path srcPath = file;
+            std::filesystem::path destPath = target / srcPath.filename();
+
+            std::string ext = srcPath.extension().string();
+
+            if (destDirectory == "models" && ext == ".obj") {
+                try {
+                    std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
+                    project.resources->addMesh(std::make_shared<Mesh>(*loadObjFile(destPath.string())));
+                } catch (const std::exception& e) {
+                    std::cerr << "Failed to copy file: " << e.what() << "\n";
+                }
+            } else if (destDirectory == "shaders") {
+                // TODO: Implement dynamic shader importing
+            } else if (destDirectory == "textures" && (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")) {
+                try {
+                    std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
+                    project.resources->addTexture(std::make_shared<Texture>(srcPath.string()));
+                } catch (const std::exception& e) {
+                    std::cerr << "Failed to copy file: " << e.what() << "\n";
+                }
+            } else if (destDirectory == "scenes" && ext == ".scn") {
+                try {
+                    std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
+                } catch (const std::exception& e) {
+                    std::cerr << "Failed to copy file: " << e.what() << "\n";
+                }
+            } else if (destDirectory == "scripts" && ext == ".lua") {
+                try {
+                    std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
+                    project.resources->addScript(std::make_shared<Script>(srcPath.string()));
+                } catch (const std::exception& e) {
+                    std::cerr << "Failed to copy file: " << e.what() << "\n";
+                }
+            }
+        }
+
+        droppedFiles.clear();
+        directoryDirty = true;
     }
 }
 

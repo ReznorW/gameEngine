@@ -1,9 +1,19 @@
 #pragma once
 
+#include <filesystem>
+#include <map>
+
 #include "window.hpp"
 #include "camera.hpp"
 #include "scene.hpp"
 #include "mode.hpp"
+
+struct CachedEntry {
+    std::string name;
+    bool isDirectory;
+    std::string fullPath;
+    std::vector<CachedEntry> children;
+};
 
 class Gui {
 public:
@@ -23,8 +33,10 @@ public:
 
     // Gui Rendering
     void drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& playScene, Camera& camera, Camera& playCamera, Mode& mode, bool& drawOBB, Project& project);
-    void drawSidebar(Scene& scene);
+    void drawSidebar(Scene& scene, Project& project);
     void drawObjectTree(Object& obj, Scene& scene);
+    void drawFileBrowser(const std::filesystem::path& path, Project& project);
+    void drawCachedDirectory(const CachedEntry& entry);
     void drawPlaytestUI(Scene& scene);
     void drawWelcomeScreen(Context& context);
     void drawScriptEditor(Context& context);
@@ -48,6 +60,11 @@ public:
     void setGizmoVisible(bool visible) {gizmoVisible = visible;}
     void setGizmoMode(ImGuizmo::OPERATION newOperation) {currentGizmoOperation = newOperation;}
 
+    // File Browser
+    void addDroppedFile(const std::string& path) {droppedFiles.push_back(path);}
+    void clearDroppedFiles() {droppedFiles.clear();}
+    std::vector<std::string> getDroppedFiles() const {return droppedFiles;}
+
 private:
     // Popup bools
     bool openLoadScenePopup = false;
@@ -66,6 +83,13 @@ private:
     // Gizmo vars
     ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
     bool gizmoVisible = true;
+
+    // File browser
+    std::vector<std::string> droppedFiles;
+    std::unordered_map<std::string, CachedEntry> directoryCacheRoot;
+    std::filesystem::path dropTargetPath;
+    bool directoryDirty = true;
+    void cacheDirectory(const std::filesystem::path& dirPath, CachedEntry& outEntry);
 };
 
 // ImGui utils

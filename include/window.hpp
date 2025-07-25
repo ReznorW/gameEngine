@@ -8,6 +8,8 @@
 #include "mode.hpp"
 #include "project.hpp"
 
+class Gui;
+
 // Window definition
 class Window {
 public:
@@ -42,6 +44,7 @@ private:
 struct Context {
     std::unique_ptr<Project> project;
     std::unique_ptr<Window> window;
+    Gui* gui;
     std::unique_ptr<Camera> sceneCamera;
     std::unique_ptr<Camera> playCamera;
     std::unique_ptr<Scene> editorScene;

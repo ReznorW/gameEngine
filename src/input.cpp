@@ -465,6 +465,17 @@ void Input::framebuffer_size_callback(GLFWwindow* window, int width, int height)
         context->playCamera->setAspectRatio(static_cast<float>(width) / height);
 }
 
+void Input::drop_callback(GLFWwindow* window, int count, const char** paths) {
+    // Pass in context
+    Context* context = static_cast<Context*>(glfwGetWindowUserPointer(window));
+    if (!context) {return;}
+
+    context->gui->clearDroppedFiles();
+    for (int i = 0; i < count; ++i) {
+        context->gui->addDroppedFile(paths[i]);
+    }
+}
+
 // === Raycasting utils ===
 glm::vec3 calculateRayFromMouse(double mouseX, double mouseY, int screenWidth, int screenHeight, const glm::mat4& projectionMatrix, const glm::mat4& viewMatrix) {
     // Convert mouse position to Normalized Device Coordinates (NDC)
