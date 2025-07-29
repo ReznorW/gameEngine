@@ -5,7 +5,6 @@
 #include "camera.hpp"
 #include "window.hpp"
 #include "scene.hpp"
-#include "shader.hpp"
 #include "mode.hpp"
 #include "gui.hpp"
 

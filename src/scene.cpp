@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include <fstream>
 #include <sstream>
 #include <filesystem>
@@ -10,7 +11,7 @@
 Scene::Scene() {}
 
 Scene::Scene(const Scene& other)
-    : skyColor(other.skyColor), gravity(other.gravity), drag(other.drag), playerSpeed(other.playerSpeed), playerJump(other.playerJump), name(other.name) {
+    : skyColor(other.skyColor), gravity(other.gravity), drag(other.drag), playerSpeed(other.playerSpeed), playerJump(other.playerJump), name(other.name), shader(other.shader), depthShader(other.depthShader), depthMap(other.depthMap), depthMapFBO(other.depthMapFBO), matricesUBO(other.matricesUBO) {
 
     std::unordered_map<const Object*, std::shared_ptr<Object>> pointerMap;
 
@@ -74,7 +75,7 @@ Object* Scene::getSelectedObject() const {
 }
 
 // === Scene management ===
-bool Scene::loadScene(const std::string& scnName, Project& project) {
+bool Scene::loadScene(const std::string& scnName, const Project& project, const Camera& camera) {
     clearSelection();
     clear();
 
@@ -118,7 +119,7 @@ bool Scene::loadScene(const std::string& scnName, Project& project) {
             iss >> playerJump;
         } else if (token == "object") {
             iss >> objName;
-            meshName = shaderName = textureName = scriptName = "";
+            meshName = textureName = scriptName = "";
             position = rotation = glm::vec3(0);
             scale = glm::vec3(1);
             textureScale = glm::vec2(1);
@@ -126,8 +127,6 @@ bool Scene::loadScene(const std::string& scnName, Project& project) {
             parentName = "None";
         } else if (token == "mesh") {
             iss >> meshName;
-        } else if (token == "shader") {
-            iss >> shaderName;
         } else if (token == "ambient") {
             iss >> ambient;
         } else if (token == "specular") {
@@ -157,7 +156,7 @@ bool Scene::loadScene(const std::string& scnName, Project& project) {
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject") {
-            auto obj = std::make_shared<Object>(objName, meshName, textureName, shaderName, scriptName, project.resources);
+            auto obj = std::make_shared<Object>(objName, meshName, textureName, scriptName, project.resources);
             obj->transform.position = position;
             obj->transform.setRotation(rotation);
             obj->transform.scale = scale;
@@ -185,6 +184,31 @@ bool Scene::loadScene(const std::string& scnName, Project& project) {
         addObject(name, obj);
     }
 
+    // Initialize lighting
+    glGenFramebuffers(1, &depthMapFBO);
+
+    depthMap = std::make_shared<Texture>(depthMapFBO, shadowSize, camera.shadowCascadeLevels);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap->getID(), 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    shader = std::make_shared<Shader>("shaders/default/vertex.glsl", "shaders/default/fragment.glsl", "default");
+    depthShader = std::make_shared<Shader>("shaders/depth/vertex.glsl", "shaders/depth/fragment.glsl", "shaders/depth/geometry.glsl", "depth");
+    debugShader = std::make_shared<Shader>("shaders/debug/vertex.glsl", "shaders/debug/fragment.glsl", "debug");
+
+    glGenBuffers(1, &matricesUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, matricesUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    shader->use();
+    shader->setInt("texture1", 0);
+    shader->setInt("shadowMap", 1);
+
     return true;
 }
 
@@ -205,7 +229,6 @@ bool Scene::saveScene(const std::string& scnName, const std::string& projectName
     for (const auto& [name, obj] : objects) {
         file << "object " << obj->name << "\n";
         file << "mesh " << obj->mesh->getName() << "\n";
-        file << "shader " << obj->shader->getName() << "\n";
         file << "ambient " << obj->material.ambient << "\n";
         file << "specular " << obj->material.specular << "\n";
         file << "shininess " << obj->material.shininess << "\n";
@@ -290,6 +313,11 @@ std::string Scene::renameObject(const std::string& oldName, const std::string& n
 void Scene::clear() {
     objects.clear();
     selectedObject = nullptr;
+    skyColor = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);
+    gravity = glm::vec3(0.0f, -15.0f, 0.0f);
+    drag = 0.8f;
+    playerSpeed = 1.0f;
+    playerJump = 10.0f;
 }
 
 // === Selection ===
@@ -302,14 +330,60 @@ void Scene::clearSelection() {
 }
 
 // === Draw ===
-void Scene::draw(const Camera& camera, bool inPlaytest, bool drawOBBs, Resources& resources) {
+void Scene::draw(const Context& context, Camera& camera, bool inPlaytest, bool drawOBBs) {
+    float ambient = 0.15;
+
+    // UBO setup
+    const auto lightMatrices = camera.getLightSpaceMatrices(lightDir);
+    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    for (size_t i = 0; i < lightMatrices.size(); ++i) {
+        glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // First pass
+    depthShader->use();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glViewport(0, 0, shadowSize, shadowSize);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glCullFace(GL_FRONT);
     for (const auto& [_, obj] : objects) {
-        if (obj->parent) continue;
-        obj->draw(camera, selectedObject, inPlaytest); 
+        obj->texture->bind(0);
+        depthShader->setMat4("model", obj->getWorldMatrix());
+        obj->mesh->draw();
+    }
+    glCullFace(GL_BACK);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Reset viewport
+    glViewport(0, 0, context.window->getWidth(), context.window->getHeight());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Second Pass
+    shader->use();
+    // Camera uniforms
+    shader->setMat4("projection", camera.getProjectionMatrix());
+    shader->setMat4("view", camera.getViewMatrix());
+    // Lighting uniforms
+    shader->setVec3("viewPos", camera.getPosition());
+    shader->setVec3("lightDir", lightDir);
+    shader->setFloat("far", camera.far);
+    shader->setInt("cascadeCount", camera.shadowCascadeLevels.size());
+    for (size_t i = 0; i < camera.shadowCascadeLevels.size(); ++i) {
+        shader->setFloat("cascadePlaneDistances[" + std::to_string(i) + "]", camera.shadowCascadeLevels[i]);
+    }
+    shader->setFloat("ambient", ambient);
+    // Fog uniforms
+    shader->setVec3("fogColor", glm::vec3(0.5f, 0.6f, 0.7f));
+    shader->setFloat("fogStart", 50.0f);
+    shader->setFloat("fogEnd", 100.0f);
+    // Object uniforms
+    for (const auto& [_, obj] : objects) {
+        obj->draw(*this, inPlaytest);
     }
 
     if (drawOBBs) {
-        auto debugShader = resources.getShader("debug");
         for (const auto& [_, obj] : objects) {
             drawOBB(obj->obb, camera, debugShader.get(), glm::vec3(1.0f, 0.0f, 0.0f));
         }

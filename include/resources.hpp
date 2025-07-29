@@ -21,12 +21,6 @@ public:
     void addMesh(const std::shared_ptr<Mesh>& mesh);
     void deleteMesh(const std::string& name);
 
-    // Shaders
-    std::shared_ptr<Shader> getShader(const std::string& name) const;
-    std::vector<std::shared_ptr<Shader>> getShaders() const;
-    void addShader(const std::shared_ptr<Shader>& shader);
-    void deleteShader(const std::string& name);
-
     // Textures
     std::shared_ptr<Texture> getTexture(const std::string& name) const;
     std::vector<std::shared_ptr<Texture>> getTextures() const;
@@ -46,13 +40,11 @@ public:
 private:
     // Resource containers
     std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes;
-    std::unordered_map<std::string, std::shared_ptr<Shader>> shaders;
     std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
     std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
 
     // Loaders
     void loadAllMeshes(std::string projectName);
-    void loadAllShaders(std::string projectName);
     void loadAllTextures(std::string projectName);
     void loadAllScripts(std::string projectName);
 };

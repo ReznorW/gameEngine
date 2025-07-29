@@ -18,6 +18,7 @@ struct Camera {
     float yaw;
     float pitch;
     float roll;
+    std::vector<float> shadowCascadeLevels{far / 50.0f, far / 25.0f, far / 10.0f, far / 2.0f};
 
     // Constructor
     Camera(float aspect);
@@ -53,6 +54,10 @@ struct Camera {
     // Projection handling
     glm::mat4 getViewMatrix() const;
     glm::mat4 getProjectionMatrix() const;
+    glm::mat4 getProjectionMatrix(const float nearPlane, const float farPlane) const;
+    std::vector<glm::vec4> getFrustumCornersWorldSpace(const float nearPlane, const float farPlane);
+    glm::mat4 getLightSpaceMatrix(const float nearPlane, const float farPlane, const glm::vec3 lightDir);
+    std::vector<glm::mat4> getLightSpaceMatrices(const glm::vec3 lightDir);
 
     // Camera controllers
     void move(const glm::vec3& direction, const float& speed);

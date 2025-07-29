@@ -12,7 +12,6 @@
 #include "ImGuizmo.h"
 
 #include "window.hpp"
-#include "shader.hpp"
 #include "input.hpp"
 #include "camera.hpp"
 #include "mesh.hpp"
@@ -79,7 +78,6 @@ int main() {
             context.previousMode = context.currentMode;
         }
 
-
         // Synchronize mouse before ImGui frame
         gui.syncMouseFromGLFW(window.getGLFWwindow());
         gui.syncKeyboardFromGLFW(window.getGLFWwindow());
@@ -103,7 +101,6 @@ int main() {
             glClearColor(scene.skyColor.x, scene.skyColor.y, scene.skyColor.z, scene.skyColor.w);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
             // === OBB updating ===
             for (auto& obj : scene.getObjects()) {
                 if (obj->transform.needsUpdate()) {
@@ -111,7 +108,7 @@ int main() {
                 }
             }
 
-            scene.draw(camera, false, drawOBBs, *context.project->resources);
+            scene.draw(context, camera, false, drawOBBs);
 
             // === Draw editor GUI ===
             gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs, *context.project);
@@ -177,7 +174,7 @@ int main() {
                 }
             }
 
-            scene.draw(camera, true, drawOBBs, *context.project->resources);
+            scene.draw(context, camera, true, drawOBBs);
             scene.processPendingDeletes();
             gui.drawPlaytestUI(scene);
         }

@@ -12,6 +12,7 @@
 #include "camera.hpp"
 #include "script.hpp"
 #include "resources.hpp"
+#include "scene.hpp"
 
 // ### Transform functions ###
 // === Update handling ===
@@ -48,11 +49,10 @@ void Transform::setRotation(const glm::vec3& degrees) {
 
 // ### Object functions ###
 // === Constructor ===
-Object::Object(const std::string& name, const std::string& meshName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName, Resources* resources)
+Object::Object(const std::string& name, const std::string& meshName, const std::string& textureName, const std::string& scriptName, Resources* resources)
     : name(name) {
     mesh = resources->getMesh(meshName);
     texture = resources->getTexture(textureName);
-    shader = resources->getShader(shaderName);
     if (!scriptName.empty()) {
         auto baseScript = resources->getScript(scriptName);
         if (baseScript) {
@@ -63,7 +63,7 @@ Object::Object(const std::string& name, const std::string& meshName, const std::
 }
 
 Object::Object(const Object& other)
-    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), mesh(other.mesh), shader(other.shader), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), mesh(other.mesh), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
 
 // === Deconstructor ===
 Object::~Object() {}
@@ -149,41 +149,27 @@ void getDescendants(Object* obj, std::vector<Object*>& out) {
 }
 
 // === Rendering ===
-void Object::draw(const Camera& camera, const Object* selectedObject, const bool inPlaytest) const {
-    bool isHighlighted = (this == selectedObject) || (selectedObject && selectedObject->isDescendant(this));
+void Object::draw(Scene& scene, const bool inPlaytest) const {
+    Object* selected = scene.getSelectedObject();
+    bool isHighlighted = (this == selected) || (selected && selected->isDescendant(this));
+
+    Shader& shader = *scene.getShader();
+    Texture& depthMap = *scene.getDepthMap();
 
     if (!(inPlaytest && isPlayer)) {
-        shader->use();
-        
-        // Set 3D model
-        shader->setMat4("model", getWorldMatrix());
-        shader->setMat4("view", camera.getViewMatrix());
-        shader->setMat4("projection", camera.getProjectionMatrix());
-
-        // Set lighting params
-        shader->setVec3("viewPos", camera.getPosition());
-        shader->setVec3("lightDir", glm::normalize(glm::vec3(-0.2f, -1.0f, -0.3f))); // Sunlight from above
-        shader->setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f)); // White sunlight
-        shader->setVec3("fogColor", glm::vec3(0.5f, 0.6f, 0.7f)); // Adjust to your desired fog color
-        shader->setFloat("fogStart", 50.0f);  // Distance where fog starts
-        shader->setFloat("fogEnd", 100.0f);   // Distance where fog fully saturates
-        shader->setBool("isSelected", isHighlighted);    // Whether or not object is selected
-        shader->setFloat("ambientStrength", material.ambient);
-        shader->setFloat("specularStrength", material.specular);
-        shader->setFloat("shininess", material.shininess);
-
-        // Set texture
-        if (texture) {
-            texture->bind(0);
-            shader->setInt("texture1", 0);
-            shader->setVec2("textureScale", textureScale);
-        }
-
-        mesh->draw();
+        texture->bind(0);
+        depthMap.bindArray(1);
+        shader.setMat4("model", getWorldMatrix());
+        shader.setBool("isSelected", isHighlighted);
+        shader.setFloat("specular", material.specular);
+        shader.setFloat("shininess", material.shininess);
+        shader.setVec2("textureScale", textureScale);
     }
 
+    mesh->draw();
+
     for (const Object* child : children) {
-        child->draw(camera, selectedObject, inPlaytest);
+        child->draw(scene, inPlaytest);
     }
 }
 

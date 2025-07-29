@@ -45,7 +45,7 @@ public:
     // Popup Rendering
     void drawPopups(Context& context);
     void drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& project);
-    void drawLoadScenePopup(Scene& scene, Mode& mode, Project& project);
+    void drawLoadScenePopup(Scene& scene, Mode& mode, Project& project, Camera& camera);
     void drawSaveScenePopup(Scene& scene, const std::string& projectName);
     void drawDeleteConfirmationPopup(Scene& scene);
     void drawRenameScriptPopup(Context& context);

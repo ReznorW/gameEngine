@@ -36,7 +36,42 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, c
         std::cerr << "Shader Linking Error: " << infoLog << "\n";
     }
 
-    // Delete shaders (already loaded, no need for them anymore)
+    // Delete shaders
+    glDeleteShader(vertex);
+    glDeleteShader(fragment);
+}
+
+Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath, const std::string& name) 
+        : name(name) {
+    // Load in shaders from file path
+    std::string vertexSrc = loadShaderSource(vertexPath);
+    std::string fragmentSrc = loadShaderSource(fragmentPath);
+    std::string geometrySrc = loadShaderSource(geometryPath);
+    
+    // Compile the shaders
+    GLuint vertex = compile(GL_VERTEX_SHADER, vertexSrc.c_str());
+    GLuint fragment = compile(GL_FRAGMENT_SHADER, fragmentSrc.c_str());
+    GLuint geometry = compile(GL_GEOMETRY_SHADER, geometrySrc.c_str());
+
+    // Initialize new shader program
+    ID = glCreateProgram();
+
+    // Attach and link compiled shaders to program
+    glAttachShader(ID, vertex);
+    glAttachShader(ID, fragment);
+    glAttachShader(ID, geometry);
+    glLinkProgram(ID);
+
+    // Check if linking was successful
+    int success;
+    glGetProgramiv(ID, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(ID, 512, nullptr, infoLog);
+        std::cerr << "Shader Linking Error: " << infoLog << "\n";
+    }
+
+    // Delete shaders
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 }
@@ -67,43 +102,26 @@ void Shader::setName(std::string& newName) {
 
 // === Uniform setters ===
 void Shader::setMat4(const std::string& name, const glm::mat4& mat) const {
-    GLint location = glGetUniformLocation(ID, name.c_str());
-    if (location == -1) {
-        std::cerr << "Warning: Uniform '" << name << "' doesn't exist in shader.\n";
-    }
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
 void Shader::setVec3(const std::string& name, const glm::vec3& value) const {
-    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); 
 }
 
 void Shader::setVec2(const std::string& name, const glm::vec2& value) const {
-    int location = glGetUniformLocation(ID, name.c_str());
-    if (location == -1) {
-        std::cerr << "Warning: uniform '" << name << "' not found or optimized out.\n";
-    } else {
-        glUniform2fv(location, 1, &value[0]);
-    }
+    glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); 
 }
 
 void Shader::setFloat(const std::string& name, float value) const {
-    GLint location = glGetUniformLocation(ID, name.c_str());
-    if (location == -1) {
-        std::cerr << "Warning: Uniform '" << name << "' doesn't exist in shader.\n";
-    }
-    glUniform1f(location, value);
+    glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
 }
 
 void Shader::setInt(const std::string& name, int value) const {
-    GLint location = glGetUniformLocation(ID, name.c_str());
-    if (location == -1) {
-        std::cerr << "Warning: Uniform '" << name << "' doesn't exist in shader.\n";
-    }
-    glUniform1i(location, value);
+    glUniform1i(glGetUniformLocation(ID, name.c_str()), value); 
 }
 
-void Shader::setBool(const std::string &name, bool value) const {
+void Shader::setBool(const std::string& name, bool value) const {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
 }
 

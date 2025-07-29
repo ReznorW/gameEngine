@@ -2,10 +2,10 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <glm/gtc/quaternion.hpp>
 
 #include "mesh.hpp"
 #include "camera.hpp"
-#include "shader.hpp"
 #include "mesh.hpp"
 #include "texture.hpp"
 #include "obb.hpp"
@@ -53,7 +53,6 @@ struct Object {
     bool isGrounded = false;
 
     std::shared_ptr<Mesh> mesh = nullptr;
-    std::shared_ptr<Shader> shader = nullptr;
     std::shared_ptr<Texture> texture = nullptr;
     std::shared_ptr<Script> script = nullptr;
 
@@ -68,7 +67,7 @@ struct Object {
 
     // Constructors
     Object() = default;
-    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& shaderName, const std::string& scriptName, Resources* resources);
+    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& scriptName, Resources* resources);
     Object(const Object& other);
 
     // Deconstructor
@@ -84,7 +83,7 @@ struct Object {
     bool isDescendant(const Object* target) const;
     
     // Rendering
-    void draw(const Camera& camera, const Object* selectedObject, const bool inPlaytest) const;
+    void draw(Scene& scene, const bool inPlaytest) const;
 };
 
 void getDescendants(Object* obj, std::vector<Object*>& out);

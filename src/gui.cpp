@@ -111,7 +111,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "default", "", project.resources));
+                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "", project.resources));
                 scene.selectObject(objName);
             }
             if (ImGui::MenuItem("Scene Properties")) {
@@ -289,7 +289,7 @@ void Gui::drawCachedDirectory(const CachedEntry& entry) {
             ImGui::TreePop();
         }
     } else {
-        ImGui::BulletText("%s", entry.name.c_str());
+        ImGui::Text("%s", entry.name.c_str());
     }
 }
 
@@ -324,8 +324,6 @@ void Gui::drawFileBrowser(const std::filesystem::path& rootPath, Project& projec
                 } catch (const std::exception& e) {
                     std::cerr << "Failed to copy file: " << e.what() << "\n";
                 }
-            } else if (destDirectory == "shaders") {
-                // TODO: Implement dynamic shader importing
             } else if (destDirectory == "textures" && (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")) {
                 try {
                     std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
@@ -702,8 +700,9 @@ void Gui::drawPopups(Context& context) {
         ImGui::OpenPopup("Load Scene Popup");
         openLoadScenePopup = false;
     }
+    
     if (context.project) {
-        drawLoadScenePopup(scene, context.currentMode, *context.project);
+        drawLoadScenePopup(scene, context.currentMode, *context.project, *context.sceneCamera);
     }
 
     if (openSaveScenePopup) {
@@ -822,20 +821,6 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
         ImGui::EndCombo();
     }
 
-    // Shader
-    std::string currentShader = selected->shader ? selected->shader->getName() : "None";
-    if (ImGui::BeginCombo("Shader", currentShader.c_str())) {
-        for (const auto& shader : project.resources->getShaders()) {
-            const std::string& shaderName = shader->getName();
-            bool isSelected = (selected->shader == shader);
-            if (ImGui::Selectable(shaderName.c_str(), isSelected)) {
-                selected->shader = shader;
-            }
-            if (isSelected) ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
-    }
-
     // --- Material ---
     ImGui::SeparatorText("Material");
     ImGui::SliderFloat("Ambient",   &selected->material.ambient,   0.0f, 1.0f);
@@ -925,7 +910,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
     ImGui::End();
 }
 
-void Gui::drawLoadScenePopup(Scene& scene, Mode& mode, Project& project) {
+void Gui::drawLoadScenePopup(Scene& scene, Mode& mode, Project& project, Camera& camera) {
     static size_t selectedSceneIndex = 0;
     static bool initialized = false;
     std::vector<std::string> scenes = project.resources->getSceneNames(project.name);
@@ -967,7 +952,7 @@ void Gui::drawLoadScenePopup(Scene& scene, Mode& mode, Project& project) {
                     mode = Mode::SceneEditor;
                 }
                 scene.clear();
-                scene.loadScene(scenes[selectedSceneIndex], project);
+                scene.loadScene(scenes[selectedSceneIndex], project, camera);
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
@@ -1140,18 +1125,24 @@ void Gui::drawLoadProjectPopup(Context& context) {
             ImGui::Spacing();
 
             float buttonWidth = 120;
-            if (ImGui::Button("Next", ImVec2(buttonWidth, 0)) && selectedProjectIndex >= 0) {
-                currentProjectName = projectNames[selectedProjectIndex];
-                currentProjectPath = "projects/" + currentProjectName + "/scenes";
+            if (selectedProjectIndex >= 0) {
+                if (ImGui::Button("Next", ImVec2(buttonWidth, 0))) {
+                    currentProjectName = projectNames[selectedProjectIndex];
+                    currentProjectPath = "projects/" + currentProjectName + "/scenes";
 
-                sceneFiles.clear();
-                for (const auto& entry : std::filesystem::directory_iterator(currentProjectPath)) {
-                    if (entry.path().extension() == ".scn") {
-                        sceneFiles.push_back(entry.path().filename().stem().string());
+                    sceneFiles.clear();
+                    for (const auto& entry : std::filesystem::directory_iterator(currentProjectPath)) {
+                        if (entry.path().extension() == ".scn") {
+                            sceneFiles.push_back(entry.path().filename().stem().string());
+                        }
                     }
-                }
 
-                step = PopupStep::SelectScene;
+                    step = PopupStep::SelectScene;
+                }
+            } else {
+                ImGui::BeginDisabled();
+                if (ImGui::Button("Next", ImVec2(buttonWidth, 0))) {}
+                ImGui::EndDisabled();
             }
 
             ImGui::SameLine();
@@ -1178,36 +1169,42 @@ void Gui::drawLoadProjectPopup(Context& context) {
             ImGui::Spacing();
             float buttonWidth = 120;
 
-            if (ImGui::Button("Load Scene", ImVec2(buttonWidth, 0)) && selectedSceneIndex >= 0) {
-                std::string selectedScene = sceneFiles[selectedSceneIndex];
-                std::filesystem::path fullScenePath = currentProjectPath / selectedScene;
+            if (selectedSceneIndex >= 0) {
+                if (ImGui::Button("Load Scene", ImVec2(buttonWidth, 0))) {
+                    std::string selectedScene = sceneFiles[selectedSceneIndex];
+                    std::filesystem::path fullScenePath = currentProjectPath / selectedScene;
 
-                // Resource and project setup
-                auto* resources = new Resources(currentProjectName);
-                context.project = std::make_unique<Project>(currentProjectName, resources);
+                    // Resource and project setup
+                    auto* resources = new Resources(currentProjectName);
+                    context.project = std::make_unique<Project>(currentProjectName, resources);
 
-                // Camera setup
-                int w = context.window->getWidth();
-                int h = context.window->getHeight();
-                float aspect = static_cast<float>(w) / h;
-                context.sceneCamera = std::make_unique<Camera>(aspect);
-                context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
+                    // Camera setup
+                    int w = context.window->getWidth();
+                    int h = context.window->getHeight();
+                    float aspect = static_cast<float>(w) / h;
+                    context.sceneCamera = std::make_unique<Camera>(aspect);
+                    context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
 
-                // Load scene
-                context.editorScene = std::make_unique<Scene>();
-                context.editorScene->loadScene(selectedScene, *context.project);
-                context.playScene = std::make_unique<Scene>(*context.editorScene);
+                    // Load scene
+                    context.editorScene = std::make_unique<Scene>();
+                    context.editorScene->loadScene(selectedScene, *context.project, *context.sceneCamera);
+                    context.playScene = std::make_unique<Scene>(*context.editorScene);
 
-                // Set mode
-                context.currentMode = Mode::SceneEditor;
+                    // Set mode
+                    context.currentMode = Mode::SceneEditor;
 
-                // Cleanup
-                selectedProjectIndex = -1;
-                selectedSceneIndex = -1;
-                projectNames.clear();
-                sceneFiles.clear();
-                step = PopupStep::SelectProject;
-                ImGui::CloseCurrentPopup();
+                    // Cleanup
+                    selectedProjectIndex = -1;
+                    selectedSceneIndex = -1;
+                    projectNames.clear();
+                    sceneFiles.clear();
+                    step = PopupStep::SelectProject;
+                    ImGui::CloseCurrentPopup();
+                }
+            } else {
+                ImGui::BeginDisabled();
+                if (ImGui::Button("Load Scene", ImVec2(buttonWidth, 0))) {}
+                ImGui::EndDisabled();
             }
 
             ImGui::SameLine();
@@ -1253,7 +1250,6 @@ void Gui::drawNewProjectNamePopup(Context& context) {
             std::filesystem::create_directories(projectPath / "scripts", ec);
             std::filesystem::create_directories(projectPath / "assets", ec);
             std::filesystem::create_directories(projectPath / "assets/models", ec);
-            std::filesystem::create_directories(projectPath / "assets/shaders", ec);
             std::filesystem::create_directories(projectPath / "assets/textures", ec);
 
             Resources* newResources = new Resources(projectName);

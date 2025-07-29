@@ -10,6 +10,7 @@
 #include "object.hpp"
 #include "resources.hpp"
 #include "project.hpp"
+#include "window.hpp"
 
 class Scene {
 public:
@@ -37,7 +38,7 @@ public:
     void setName(const std::string& newName) {name = newName;}
 
     // Scene management
-    bool loadScene(const std::string& name, Project& project);
+    bool loadScene(const std::string& name, const Project& project, const Camera& camera);
     bool saveScene(const std::string& name, const std::string& projectName);
 
     // Object management
@@ -54,13 +55,23 @@ public:
     void clearSelection();
 
     // Drawing
-    void draw(const Camera& camera, bool inPlaytest, bool drawOBBs, Resources& resources);
+    void draw(const Context& context, Camera& camera, bool inPlaytest, bool drawOBBs);
+    Shader* getShader() {return shader.get();}
+    Texture* getDepthMap() {return depthMap.get();}
 
 private:
     std::string name;
 
     std::unordered_map<std::string, std::shared_ptr<Object>> objects;
     Object* selectedObject = nullptr;
-
     std::unordered_set<std::string> pendingDeletes;
+
+    const unsigned int shadowSize = 4096;
+    const glm::vec3 lightDir = glm::normalize(glm::vec3(20.0f, 50, 20.0f));
+    std::shared_ptr<Shader> shader;
+    std::shared_ptr<Shader> depthShader;
+    std::shared_ptr<Shader> debugShader;
+    std::shared_ptr<Texture> depthMap;
+    unsigned int depthMapFBO;
+    unsigned int matricesUBO;
 };

@@ -5,7 +5,6 @@
 
 Resources::Resources(std::string projectName) {
     loadAllMeshes(projectName);
-    loadAllShaders(projectName);
     loadAllTextures(projectName);
     loadAllScripts(projectName);
 }
@@ -13,11 +12,6 @@ Resources::Resources(std::string projectName) {
 std::shared_ptr<Mesh> Resources::getMesh(const std::string& name) const {
     auto it = meshes.find(name);
     return it != meshes.end() ? it->second : nullptr;
-}
-
-std::shared_ptr<Shader> Resources::getShader(const std::string& name) const {
-    auto it = shaders.find(name);
-    return it != shaders.end() ? it->second : nullptr;
 }
 
 std::shared_ptr<Texture> Resources::getTexture(const std::string& name) const {
@@ -33,12 +27,6 @@ std::shared_ptr<Script> Resources::getScript(const std::string& name) const {
 std::vector<std::shared_ptr<Mesh>> Resources::getMeshes() const {
     std::vector<std::shared_ptr<Mesh>> result;
     for (const auto& [_, mesh] : meshes) result.push_back(mesh);
-    return result;
-}
-
-std::vector<std::shared_ptr<Shader>> Resources::getShaders() const {
-    std::vector<std::shared_ptr<Shader>> result;
-    for (const auto& [_, shader] : shaders) result.push_back(shader);
     return result;
 }
 
@@ -68,10 +56,6 @@ void Resources::addMesh(const std::shared_ptr<Mesh>& mesh) {
     if (mesh) meshes[mesh->getName()] = mesh;
 }
 
-void Resources::addShader(const std::shared_ptr<Shader>& shader) {
-    if (shader) shaders[shader->getName()] = shader;
-}
-
 void Resources::addTexture(const std::shared_ptr<Texture>& texture) {
     if (texture) textures[texture->getName()] = texture;
 }
@@ -82,10 +66,6 @@ void Resources::addScript(const std::shared_ptr<Script>& script) {
 
 void Resources::deleteMesh(const std::string& name) {
     meshes.erase(name);
-}
-
-void Resources::deleteShader(const std::string& name) {
-    shaders.erase(name);
 }
 
 void Resources::deleteTexture(const std::string& name) {
@@ -103,20 +83,6 @@ void Resources::loadAllMeshes(std::string projectName) {
         if (entry.is_regular_file()) {
             std::string name = entry.path().stem().string();
             meshes[name] = std::make_shared<Mesh>(*loadObjFile(entry.path().string()));
-            std::cout << "  - " << name << " loaded\n";
-        }
-    }
-}
-
-void Resources::loadAllShaders(std::string projectName) {
-    std::cout << "===Loading in all shaders===" << std::endl;
-    const std::string root = "projects/" + projectName + "/assets/shaders/";
-    for (const auto& entry : std::filesystem::directory_iterator(root)) {
-        if (entry.is_directory()) {
-            std::string name = entry.path().filename().string();
-            std::string vert = entry.path().string() + "/vertex.glsl";
-            std::string frag = entry.path().string() + "/fragment.glsl";
-            shaders[name] = std::make_shared<Shader>(vert, frag, name);
             std::cout << "  - " << name << " loaded\n";
         }
     }

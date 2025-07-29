@@ -232,7 +232,7 @@ int Script::lua_Object(lua_State* L) {
     const char* name = lua_tostring(L, 1);
     const char* model = lua_tostring(L, 2);
     const char* texture = lua_tostring(L, 3);
-    const char* shader = lua_tostring(L, 4);
+    // const char* shader = lua_tostring(L, 4);
     const char* script = lua_tostring(L, 5);
     const char* atThis = nullptr;
     if (args == 6) {atThis = lua_tostring(L, 6);}
@@ -244,7 +244,7 @@ int Script::lua_Object(lua_State* L) {
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(std::string(name), std::string(model), std::string(texture), std::string(shader), std::string(script), context->project->resources);
+    std::shared_ptr<Object> obj = std::make_shared<Object>(std::string(name), std::string(model), std::string(texture), std::string(script), context->project->resources);
 
     // Apply the translation
     if (atThis) {
@@ -836,7 +836,7 @@ int Script::lua_createObject(lua_State* L) {
     const char* name = lua_tostring(L, 1);
     const char* model = lua_tostring(L, 2);
     const char* texture = lua_tostring(L, 3);
-    const char* shader = lua_tostring(L, 4);
+    // const char* shader = lua_tostring(L, 4);
     const char* script = lua_tostring(L, 5);
     const char* atThis = nullptr;
     if (args == 6) {atThis = lua_tostring(L, 6);}
@@ -848,7 +848,7 @@ int Script::lua_createObject(lua_State* L) {
     }
 
     // Create and add the object
-    std::shared_ptr<Object> obj = std::make_shared<Object>(std::string(name), std::string(model), std::string(texture), std::string(shader), std::string(script), context->project->resources);
+    std::shared_ptr<Object> obj = std::make_shared<Object>(std::string(name), std::string(model), std::string(texture), std::string(script), context->project->resources);
 
     if (atThis) {
         Object* base = context->playScene->getObject(std::string(atThis));
