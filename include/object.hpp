@@ -51,6 +51,7 @@ struct Object {
     bool isMoveable = false;
     bool hasGravity = false;
     bool isGrounded = false;
+    bool pointLight = false;
 
     std::shared_ptr<Mesh> mesh = nullptr;
     std::shared_ptr<Texture> texture = nullptr;

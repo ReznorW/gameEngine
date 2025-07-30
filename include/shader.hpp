@@ -8,8 +8,7 @@
 class Shader {
 public:
     // Constructor
-    Shader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& name);
-    Shader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath, const std::string& name);
+    Shader(const std::string& name, const bool& hasGeometry);
 
     // Deconstructor
     ~Shader();

@@ -9,22 +9,20 @@
 #include "shader.hpp"
 
 // === Constructor ===
-Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& name) 
+Shader::Shader(const std::string& name, const bool& hasGeometry) 
         : name(name) {
-    // Load in shaders from file path
-    std::string vertexSrc = loadShaderSource(vertexPath);
-    std::string fragmentSrc = loadShaderSource(fragmentPath);
-    
-    // Compile the shaders
-    GLuint vertex = compile(GL_VERTEX_SHADER, vertexSrc.c_str());
-    GLuint fragment = compile(GL_FRAGMENT_SHADER, fragmentSrc.c_str());
-
-    // Initialize new shader program
+    // Initialize shader
     ID = glCreateProgram();
 
-    // Attach and link compiled shaders to program
-    glAttachShader(ID, vertex);
-    glAttachShader(ID, fragment);
+    // Compile shader
+    GLuint vShader = compile(GL_VERTEX_SHADER, loadShaderSource("shaders/" + name + "/vertex.glsl").c_str());
+    GLuint fShader = compile(GL_FRAGMENT_SHADER, loadShaderSource("shaders/" + name + "/fragment.glsl").c_str());
+    GLuint gShader = (hasGeometry) ? compile(GL_GEOMETRY_SHADER, loadShaderSource("shaders/" + name + "/geometry.glsl").c_str()) : 0;
+
+    // Link shader
+    glAttachShader(ID, vShader);
+    glAttachShader(ID, fShader);
+    if (hasGeometry) {glAttachShader(ID, gShader);}
     glLinkProgram(ID);
 
     // Check if linking was successful
@@ -36,44 +34,10 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, c
         std::cerr << "Shader Linking Error: " << infoLog << "\n";
     }
 
-    // Delete shaders
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
-}
-
-Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath, const std::string& geometryPath, const std::string& name) 
-        : name(name) {
-    // Load in shaders from file path
-    std::string vertexSrc = loadShaderSource(vertexPath);
-    std::string fragmentSrc = loadShaderSource(fragmentPath);
-    std::string geometrySrc = loadShaderSource(geometryPath);
-    
-    // Compile the shaders
-    GLuint vertex = compile(GL_VERTEX_SHADER, vertexSrc.c_str());
-    GLuint fragment = compile(GL_FRAGMENT_SHADER, fragmentSrc.c_str());
-    GLuint geometry = compile(GL_GEOMETRY_SHADER, geometrySrc.c_str());
-
-    // Initialize new shader program
-    ID = glCreateProgram();
-
-    // Attach and link compiled shaders to program
-    glAttachShader(ID, vertex);
-    glAttachShader(ID, fragment);
-    glAttachShader(ID, geometry);
-    glLinkProgram(ID);
-
-    // Check if linking was successful
-    int success;
-    glGetProgramiv(ID, GL_LINK_STATUS, &success);
-    if (!success) {
-        char infoLog[512];
-        glGetProgramInfoLog(ID, 512, nullptr, infoLog);
-        std::cerr << "Shader Linking Error: " << infoLog << "\n";
-    }
-
-    // Delete shaders
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
+    // Clean up
+    glDeleteShader(vShader);
+    glDeleteShader(fShader);
+    if (hasGeometry) {glDeleteShader(gShader);}
 }
 
 // === Deconstructor ===

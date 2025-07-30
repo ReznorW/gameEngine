@@ -872,8 +872,9 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
     }
 
     ImGui::Checkbox("Collisions", &selected->hasCollisions);
-    ImGui::Checkbox("Moveable",   &selected->isMoveable);
-    ImGui::Checkbox("Gravity",    &selected->hasGravity);
+    ImGui::Checkbox("Moveable", &selected->isMoveable);
+    ImGui::Checkbox("Gravity", &selected->hasGravity);
+    ImGui::Checkbox("Light", &selected->pointLight);
 
     // --- Script ---
     ImGui::SeparatorText("Script");
@@ -1069,6 +1070,8 @@ void Gui::drawScenePropertiesPopup(Scene& scene) {
         // Sky Color
         ImGui::Text("Environment");
         ImGui::ColorEdit4("Sky Color", glm::value_ptr(scene.skyColor));
+        ImGui::DragFloat3("Sun Direction", glm::value_ptr(scene.lightDir), 0.1f);
+        ImGui::DragFloat3("Light Position", glm::value_ptr(scene.lightPos), 0.1f);
 
         // Gravity
         ImGui::Text("Physics");

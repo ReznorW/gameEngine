@@ -101,10 +101,14 @@ int main() {
             glClearColor(scene.skyColor.x, scene.skyColor.y, scene.skyColor.z, scene.skyColor.w);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            // === OBB updating ===
+            // === OBB & Lighting updating ===
             for (auto& obj : scene.getObjects()) {
                 if (obj->transform.needsUpdate()) {
                     obj->updateOBB();
+                }
+
+                if (obj->pointLight) {
+                    scene.lightPos = obj->transform.position;
                 }
             }
 
@@ -163,6 +167,10 @@ int main() {
                                 resolveCollision(*obj, *other);
                             }
                         }
+                    }
+                    
+                    if (obj->pointLight) {
+                        scene.lightPos = obj->transform.position;
                     }
                 }
 

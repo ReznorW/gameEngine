@@ -7,7 +7,8 @@ class Texture {
 public:
     // Constructor
     Texture(const std::string& path);
-    Texture(unsigned int& depthMapFBO, const unsigned int shadowSize, const std::vector<float>& shadowCascadeLevels);
+    Texture(const unsigned int shadowSize, const std::vector<float>& shadowCascadeLevels);
+    Texture(const unsigned int shadowSize);
 
     // Deconstructor
     ~Texture();
@@ -19,6 +20,7 @@ public:
     // Usage
     void bind(unsigned int slot = 0) const;
     void bindArray(unsigned int slot) const;
+    void bindCube(unsigned int slot) const;
 private:
     // Texture data
     unsigned int id = 0;

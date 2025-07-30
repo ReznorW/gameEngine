@@ -10,8 +10,22 @@
 // === Constructors ===
 Scene::Scene() {}
 
-Scene::Scene(const Scene& other)
-    : skyColor(other.skyColor), gravity(other.gravity), drag(other.drag), playerSpeed(other.playerSpeed), playerJump(other.playerJump), name(other.name), shader(other.shader), depthShader(other.depthShader), depthMap(other.depthMap), depthMapFBO(other.depthMapFBO), matricesUBO(other.matricesUBO) {
+Scene::Scene(const Scene& other) : 
+    skyColor(other.skyColor), 
+    gravity(other.gravity), 
+    drag(other.drag), 
+    playerSpeed(other.playerSpeed), 
+    playerJump(other.playerJump), 
+    name(other.name), 
+    CSMFBO(other.CSMFBO), 
+    omniFBO(other.omniFBO),
+    CSMUBO(other.CSMUBO),
+    CSMDepthMap(other.CSMDepthMap), 
+    omniDepthCubeMap(other.omniDepthCubeMap),
+    shader(other.shader), 
+    CSMShader(other.CSMShader),
+    omniShader(other.omniShader), 
+    debugShader(other.debugShader) {
 
     std::unordered_map<const Object*, std::shared_ptr<Object>> pointerMap;
 
@@ -92,7 +106,7 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
     glm::vec3 position, rotation, scale(1);
     glm::vec2 textureScale(1);
     float ambient, specular, shininess;
-    bool isPlayer, hasCollisions, isMoveable, hasGravity = false;
+    bool isPlayer, hasCollisions, isMoveable, hasGravity, pointLight = false;
 
     setName(scnName);
 
@@ -124,6 +138,7 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             scale = glm::vec3(1);
             textureScale = glm::vec2(1);
             isPlayer = false;
+            pointLight = false;
             parentName = "None";
         } else if (token == "mesh") {
             iss >> meshName;
@@ -153,6 +168,8 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             iss >> isMoveable;
         } else if (token == "hasGravity") {
             iss >> hasGravity;
+        } else if (token == "pointLight") {
+            iss >> pointLight;
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject") {
@@ -169,6 +186,7 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             obj->hasCollisions = hasCollisions;
             obj->isMoveable = isMoveable;
             obj->hasGravity = hasGravity;
+            obj->pointLight = pointLight;
 
             tempObjects[objName] = obj;
             parentMap[objName] = parentName;
@@ -184,30 +202,41 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
         addObject(name, obj);
     }
 
-    // Initialize lighting
-    glGenFramebuffers(1, &depthMapFBO);
+    // Initialize shaders
+    shader = std::make_shared<Shader>("default", false);
+    CSMShader = std::make_shared<Shader>("CSM", true);
+    omniShader = std::make_shared<Shader>("omni", true);
+    debugShader = std::make_shared<Shader>("debug", false);
 
-    depthMap = std::make_shared<Texture>(depthMapFBO, shadowSize, camera.shadowCascadeLevels);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap->getID(), 0);
+    // Initialize CSM
+    CSMDepthMap = std::make_shared<Texture>(CSMShadowSize, camera.shadowCascadeLevels);
+    glGenFramebuffers(1, &CSMFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, CSMFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, CSMDepthMap->getID(), 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    shader = std::make_shared<Shader>("shaders/default/vertex.glsl", "shaders/default/fragment.glsl", "default");
-    depthShader = std::make_shared<Shader>("shaders/depth/vertex.glsl", "shaders/depth/fragment.glsl", "shaders/depth/geometry.glsl", "depth");
-    debugShader = std::make_shared<Shader>("shaders/debug/vertex.glsl", "shaders/debug/fragment.glsl", "debug");
+    // Initialize Omni
+    omniDepthCubeMap = std::make_shared<Texture>(OmniShadowSize);
+    glGenFramebuffers(1, &omniFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, omniFBO);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, omniDepthCubeMap->getID(), 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glGenBuffers(1, &matricesUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    // Initialize UBO
+    glGenBuffers(1, &CSMUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, CSMUBO);
     glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, matricesUBO);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, CSMUBO);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     shader->use();
     shader->setInt("texture1", 0);
-    shader->setInt("shadowMap", 1);
+    shader->setInt("CSMDepthMap", 1);
+    shader->setInt("omniDepthCubeMap", 2);
 
     return true;
 }
@@ -242,6 +271,7 @@ bool Scene::saveScene(const std::string& scnName, const std::string& projectName
         file << "hasCollisions " << obj->hasCollisions << "\n";
         file << "isMoveable " << obj->isMoveable << "\n";
         file << "hasGravity " << obj->hasGravity << "\n";
+        file << "pointLight " << obj->pointLight << "\n";
         file << "parent " << (obj->parent ? obj->parent->name : "None") << "\n";
         file << "endobject\n\n";
     }
@@ -331,44 +361,71 @@ void Scene::clearSelection() {
 
 // === Draw ===
 void Scene::draw(const Context& context, Camera& camera, bool inPlaytest, bool drawOBBs) {
-    float ambient = 0.15;
+    float ambient = 0.10;
 
     // UBO setup
-    const auto lightMatrices = camera.getLightSpaceMatrices(lightDir);
-    glBindBuffer(GL_UNIFORM_BUFFER, matricesUBO);
+    const auto lightMatrices = camera.getLightSpaceMatrices(glm::normalize(lightDir));
+    glBindBuffer(GL_UNIFORM_BUFFER, CSMUBO);
     for (size_t i = 0; i < lightMatrices.size(); ++i) {
         glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
     }
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    // First pass
-    depthShader->use();
+    // Depth cubemap transform matrices setup
+    float pointLightNear = 1.0f;
+    float pointLightFar = 25.0f;
+    glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, pointLightNear, pointLightFar);
+    std::vector<glm::mat4> shadowTransforms;
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glViewport(0, 0, shadowSize, shadowSize);
+    // CSM pass
+    CSMShader->use();
+    glBindFramebuffer(GL_FRAMEBUFFER, CSMFBO);
+    glViewport(0, 0, CSMShadowSize, CSMShadowSize);
     glClear(GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_FRONT);
     for (const auto& [_, obj] : objects) {
-        obj->texture->bind(0);
-        depthShader->setMat4("model", obj->getWorldMatrix());
+        CSMShader->setMat4("model", obj->getWorldMatrix());
         obj->mesh->draw();
     }
     glCullFace(GL_BACK);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // Reset viewport
+    // Omni pass
+    omniShader->use();
+    glBindFramebuffer(GL_FRAMEBUFFER, omniFBO);
+    glViewport(0, 0, OmniShadowSize, OmniShadowSize);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    for (unsigned int i = 0; i < 6; i++) {
+        omniShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+    }
+    omniShader->setFloat("far", pointLightFar);
+    omniShader->setVec3("lightPos", lightPos);
+    for (const auto& [_, obj] : objects) {
+        omniShader->setMat4("model", obj->getWorldMatrix());
+        obj->mesh->draw();
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
     glViewport(0, 0, context.window->getWidth(), context.window->getHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Second Pass
+    // Final pass
     shader->use();
     // Camera uniforms
     shader->setMat4("projection", camera.getProjectionMatrix());
     shader->setMat4("view", camera.getViewMatrix());
     // Lighting uniforms
     shader->setVec3("viewPos", camera.getPosition());
-    shader->setVec3("lightDir", lightDir);
-    shader->setFloat("far", camera.far);
+    shader->setVec3("lightPos", lightPos);
+    shader->setVec3("lightDir", glm::normalize(lightDir));
+    shader->setFloat("cameraFar", camera.far);
+    shader->setFloat("pointFar", pointLightFar);
     shader->setInt("cascadeCount", camera.shadowCascadeLevels.size());
     for (size_t i = 0; i < camera.shadowCascadeLevels.size(); ++i) {
         shader->setFloat("cascadePlaneDistances[" + std::to_string(i) + "]", camera.shadowCascadeLevels[i]);

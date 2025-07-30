@@ -35,8 +35,8 @@ Texture::Texture(const std::string& path) {
     stbi_image_free(data);
 }
 
-Texture::Texture(unsigned int& depthMapFBO, const unsigned int shadowSize, const std::vector<float>& shadowCascadeLevels) {
-    name = "depthMap";
+Texture::Texture(const unsigned int shadowSize, const std::vector<float>& shadowCascadeLevels) {
+    name = "CSMDepthMap";
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D_ARRAY, id);
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F, shadowSize, shadowSize, int(shadowCascadeLevels.size()) + 1, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
@@ -48,6 +48,21 @@ Texture::Texture(unsigned int& depthMapFBO, const unsigned int shadowSize, const
 
     float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
     glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, borderColor);
+}
+
+Texture::Texture(const unsigned int shadowSize) {
+    name = "omniDepthCubeMap";
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+    for (unsigned int i = 0; i < 6; i++) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, shadowSize, shadowSize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    }
+    // Texture parameters
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);	
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 // === Deconstructor ===
@@ -74,4 +89,13 @@ void Texture::bindArray(unsigned int slot) const {
     }
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D_ARRAY, id);
+}
+
+void Texture::bindCube(unsigned int slot) const {
+    if (id == 0) {
+        std::cerr << "Warning: Trying to bind texture with id=0\n";
+        return;
+    }
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 }
