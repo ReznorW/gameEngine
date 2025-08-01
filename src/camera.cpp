@@ -2,7 +2,7 @@
 
 // === Constructor ===
 Camera::Camera(float aspect)
-    : position(glm::vec3(0.0f, 0.0f, 3.0f)), worldUp(glm::vec3(0.0f, 1.0f, 0.0f)), fov(45.0f), aspect(aspect), near(0.1f), far(100.0f), yaw(-90.0f), pitch(0.0f), roll(0.0f) {
+    : position(glm::vec3(0.0f, 0.0f, 3.0f)), worldUp(glm::vec3(0.0f, 1.0f, 0.0f)), fov(80.0f), aspect(aspect), near(0.1f), far(100.0f), yaw(-90.0f), pitch(0.0f), roll(0.0f) {
     updateCameraVectors();
 }
 
@@ -139,7 +139,7 @@ glm::mat4 Camera::getLightSpaceMatrix(const float nearPlane, const float farPlan
     return lightProjection * lightView;
 }
 
-std::vector<glm::mat4> Camera::getLightSpaceMatrices(const glm::vec3 lightDir) {
+std::vector<glm::mat4> Camera::getLightSpaceMatrices(const glm::vec3 lightDir, std::vector<float> shadowCascadeLevels) {
     std::vector<glm::mat4> result;
     for (size_t i = 0; i < shadowCascadeLevels.size() + 1; i++) {
         if (i == 0) {

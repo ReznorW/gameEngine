@@ -11,16 +11,7 @@
 #include "resources.hpp"
 #include "project.hpp"
 #include "window.hpp"
-
-struct PointLight {
-    glm::vec3 position;
-    glm::vec3 color;
-    float intensity;
-    float near;
-    float far;
-    GLuint depthCubeMap;
-    GLuint FBO;
-};
+#include "renderer.hpp"
 
 class Scene {
 public:
@@ -30,8 +21,9 @@ public:
     float drag = 0.8f;
     float playerSpeed = 1.0f;
     float playerJump = 10.0f;
-    glm::vec3 lightDir = glm::vec3(20.0f, 50, 20.0f);
-    glm::vec3 lightPos = glm::vec3(0.0f, 5.0f, 0.0f);
+    float ambient = 0.1;
+
+    Renderer* renderer = nullptr;
 
     // Constructors
     Scene();
@@ -67,10 +59,7 @@ public:
     void clearSelection();
 
     // Drawing
-    void draw(const Context& context, Camera& camera, bool inPlaytest, bool drawOBBs);
-    Shader* getShader() {return shader.get();}
-    Texture* getCSMDepthMap() {return CSMDepthMap.get();}
-    Texture* getOmniDepthCubeMap() {return omniDepthCubeMap.get();}
+    void draw(Context& context, Camera& camera, bool inPlaytest);
 
 private:
     std::string name;
@@ -78,29 +67,4 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Object>> objects;
     Object* selectedObject = nullptr;
     std::unordered_set<std::string> pendingDeletes;
-
-    // === Lighting ===
-    // Constants
-    const unsigned int CSMShadowSize = 2048;
-    const unsigned int OmniShadowSize = 1024;
-
-    // Lights
-    //std::vector<PointLight> pointLights;
-
-    // FBOs
-    unsigned int CSMFBO;
-    unsigned int omniFBO;
-
-    // UBOs
-    unsigned int CSMUBO;
-
-    // Depth maps
-    std::shared_ptr<Texture> CSMDepthMap;
-    std::shared_ptr<Texture> omniDepthCubeMap;
-
-    // Shaders
-    std::shared_ptr<Shader> shader;
-    std::shared_ptr<Shader> CSMShader;
-    std::shared_ptr<Shader> omniShader;
-    std::shared_ptr<Shader> debugShader;
 };

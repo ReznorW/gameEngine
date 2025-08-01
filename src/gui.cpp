@@ -173,7 +173,9 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
 
         // Settings Menu
         if (ImGui::BeginMenu("Settings")) {
-            ImGui::MenuItem("Show OBBs", nullptr, &drawOBB);
+            ImGui::MenuItem("Bounding Boxes", nullptr, &scene.renderer->drawOBBs);
+            ImGui::MenuItem("Directional Shadows", nullptr, &scene.renderer->drawDirectionalShadows);
+            ImGui::MenuItem("Point Shadows", nullptr, &scene.renderer->drawPointShadows);
             ImGui::EndMenu();
         }
 
@@ -804,7 +806,7 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
     }
 
     // --- Rendering ---
-    ImGui::SeparatorText("Rendering");
+    ImGui::SeparatorText("Mesh");
 
     // Mesh
     std::string currentMesh = selected->mesh ? selected->mesh->getName() : "None";
@@ -826,6 +828,34 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
     ImGui::SliderFloat("Ambient",   &selected->material.ambient,   0.0f, 1.0f);
     ImGui::SliderFloat("Specular",  &selected->material.specular,  0.0f, 2.0f);
     ImGui::SliderFloat("Shininess", &selected->material.shininess, 1.0f, 128.0f);
+
+    ImGui::SeparatorText("Lighting");
+    if (selected->pointLightID >= 0) {
+        PointLight& light = scene.renderer->getPointLight(selected->pointLightID);
+
+        ImGui::Text("Light Settings");
+
+        ImGui::ColorEdit3("Color", glm::value_ptr(light.color));
+        ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 1.0f);
+        ImGui::DragFloat("Near", &light.near, 0.1f, 0.1f, 100.0f);
+        ImGui::DragFloat("Far", &light.far, 0.1f, 0.1f, 100.0f);
+
+        if (ImGui::Button("Remove Light")) {
+            scene.renderer->removePointLight(selected->pointLightID);
+            selected->pointLightID = -1;
+        }
+    } else {
+        if (ImGui::Button("Add Light")) {
+            PointLight light;
+            light.position = selected->transform.position;
+            light.color = glm::vec3(1.0f);
+            light.intensity = 1.0f;
+            light.near = 0.1f;
+            light.far = 25.0f;
+            int id = scene.renderer->addPointLight(light);
+            selected->pointLightID = id;
+        }
+    }
 
     // --- Texture ---
     ImGui::SeparatorText("Texture");
@@ -874,7 +904,6 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
     ImGui::Checkbox("Collisions", &selected->hasCollisions);
     ImGui::Checkbox("Moveable", &selected->isMoveable);
     ImGui::Checkbox("Gravity", &selected->hasGravity);
-    ImGui::Checkbox("Light", &selected->pointLight);
 
     // --- Script ---
     ImGui::SeparatorText("Script");
@@ -1070,8 +1099,9 @@ void Gui::drawScenePropertiesPopup(Scene& scene) {
         // Sky Color
         ImGui::Text("Environment");
         ImGui::ColorEdit4("Sky Color", glm::value_ptr(scene.skyColor));
-        ImGui::DragFloat3("Sun Direction", glm::value_ptr(scene.lightDir), 0.1f);
-        ImGui::DragFloat3("Light Position", glm::value_ptr(scene.lightPos), 0.1f);
+        ImGui::DragFloat3("Sun Direction", glm::value_ptr(scene.renderer->getDirectionalLight().direction), 0.1f);
+        ImGui::ColorEdit3("Sun Color", glm::value_ptr(scene.renderer->getDirectionalLight().color));
+        ImGui::SliderFloat("Sun Intensity", &scene.renderer->getDirectionalLight().intensity, 0.0f, 1.0f);
 
         // Gravity
         ImGui::Text("Physics");

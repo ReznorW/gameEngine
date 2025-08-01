@@ -16,16 +16,9 @@ Scene::Scene(const Scene& other) :
     drag(other.drag), 
     playerSpeed(other.playerSpeed), 
     playerJump(other.playerJump), 
-    name(other.name), 
-    CSMFBO(other.CSMFBO), 
-    omniFBO(other.omniFBO),
-    CSMUBO(other.CSMUBO),
-    CSMDepthMap(other.CSMDepthMap), 
-    omniDepthCubeMap(other.omniDepthCubeMap),
-    shader(other.shader), 
-    CSMShader(other.CSMShader),
-    omniShader(other.omniShader), 
-    debugShader(other.debugShader) {
+    ambient(other.ambient),
+    renderer(other.renderer),
+    name(other.name) {
 
     std::unordered_map<const Object*, std::shared_ptr<Object>> pointerMap;
 
@@ -99,6 +92,8 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
         return false;
     }
 
+    renderer = new Renderer(camera);
+
     std::unordered_map<std::string, std::shared_ptr<Object>> tempObjects;
     std::unordered_map<std::string, std::string> parentMap;
 
@@ -106,7 +101,12 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
     glm::vec3 position, rotation, scale(1);
     glm::vec2 textureScale(1);
     float ambient, specular, shininess;
-    bool isPlayer, hasCollisions, isMoveable, hasGravity, pointLight = false;
+    int pointLightID;
+    bool isPlayer, hasCollisions, isMoveable, hasGravity = false;
+    glm::vec3 lightColor(1.0f);
+    float lightIntensity = 1.0f;
+    float lightNear = 0.1f;
+    float lightFar = 25.0f;
 
     setName(scnName);
 
@@ -117,12 +117,21 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
 
         if (token == "scene") {
             skyColor = glm::vec4(0.5f, 0.7f, 1.0f, 1.0f);
+            renderer->getDirectionalLight().color = glm::vec3(1.0f, 1.0f, 1.0f);
+            renderer->getDirectionalLight().direction = glm::vec3(20.0f, -50.0f, 20.0f);
+            renderer->getDirectionalLight().intensity = 0.5f;
             gravity = glm::vec3(0.0f, -15.0f, 0.0f);
             drag = 0.8f;
             playerSpeed = 1.0f;
             playerJump = 10.0f;
         } else if (token == "skycolor") {
             iss >> skyColor.x >> skyColor.y >> skyColor.z >> skyColor.w;
+        } else if (token == "sunlightColor") {
+            iss >> renderer->getDirectionalLight().color.x >> renderer->getDirectionalLight().color.y >> renderer->getDirectionalLight().color.z;
+        } else if (token == "sunlightDir") {
+            iss >> renderer->getDirectionalLight().direction.x >> renderer->getDirectionalLight().direction.y >> renderer->getDirectionalLight().direction.z;
+        } else if (token == "sunlightIntensity") {
+            iss >> renderer->getDirectionalLight().intensity;
         } else if (token == "gravity") {
             iss >> gravity.x >> gravity.y >> gravity.z;
         } else if (token == "drag") {
@@ -138,7 +147,11 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             scale = glm::vec3(1);
             textureScale = glm::vec2(1);
             isPlayer = false;
-            pointLight = false;
+            pointLightID = -1;
+            lightColor = glm::vec3(1.0f);
+            lightIntensity = 1.0f;
+            lightNear = 0.1f;
+            lightFar = 25.0f;
             parentName = "None";
         } else if (token == "mesh") {
             iss >> meshName;
@@ -168,8 +181,16 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             iss >> isMoveable;
         } else if (token == "hasGravity") {
             iss >> hasGravity;
-        } else if (token == "pointLight") {
-            iss >> pointLight;
+        } else if (token == "pointLightID") {
+            iss >> pointLightID;
+        } else if (token == "lightColor") {
+            iss >> lightColor.r >> lightColor.g >> lightColor.b;
+        } else if (token == "lightIntensity") {
+            iss >> lightIntensity;
+        } else if (token == "lightNear") {
+            iss >> lightNear;
+        } else if (token == "lightFar") {
+            iss >> lightFar;
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject") {
@@ -186,7 +207,18 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             obj->hasCollisions = hasCollisions;
             obj->isMoveable = isMoveable;
             obj->hasGravity = hasGravity;
-            obj->pointLight = pointLight;
+            obj->pointLightID = pointLightID;
+            if (obj->pointLightID > -1) {
+                PointLight light;
+                light.position = obj->transform.position;
+                light.color = lightColor;
+                light.intensity = lightIntensity;
+                light.near = lightNear;
+                light.far = lightFar;
+
+                int newID = renderer->addPointLight(light);
+                obj->pointLightID = newID;
+            }
 
             tempObjects[objName] = obj;
             parentMap[objName] = parentName;
@@ -202,42 +234,6 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
         addObject(name, obj);
     }
 
-    // Initialize shaders
-    shader = std::make_shared<Shader>("default", false);
-    CSMShader = std::make_shared<Shader>("CSM", true);
-    omniShader = std::make_shared<Shader>("omni", true);
-    debugShader = std::make_shared<Shader>("debug", false);
-
-    // Initialize CSM
-    CSMDepthMap = std::make_shared<Texture>(CSMShadowSize, camera.shadowCascadeLevels);
-    glGenFramebuffers(1, &CSMFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, CSMFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, CSMDepthMap->getID(), 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // Initialize Omni
-    omniDepthCubeMap = std::make_shared<Texture>(OmniShadowSize);
-    glGenFramebuffers(1, &omniFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, omniFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, omniDepthCubeMap->getID(), 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // Initialize UBO
-    glGenBuffers(1, &CSMUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, CSMUBO);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, CSMUBO);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    shader->use();
-    shader->setInt("texture1", 0);
-    shader->setInt("CSMDepthMap", 1);
-    shader->setInt("omniDepthCubeMap", 2);
-
     return true;
 }
 
@@ -249,6 +245,9 @@ bool Scene::saveScene(const std::string& scnName, const std::string& projectName
 
     file << "scene\n";
     file << "skycolor " << skyColor.x << " " << skyColor.y << " " << skyColor.z << " " << skyColor.w << "\n";
+    file << "sunlightColor " << renderer->getDirectionalLight().color.x << " " << renderer->getDirectionalLight().color.y << " " << renderer->getDirectionalLight().color.z << "\n";
+    file << "sunlightDir " << renderer->getDirectionalLight().direction.x << " " << renderer->getDirectionalLight().direction.y << " " << renderer->getDirectionalLight().direction.z << "\n";
+    file << "sunlightIntensity " << renderer->getDirectionalLight().intensity << "\n";
     file << "gravity " << gravity.x << " " << gravity.y << " " << gravity.z << "\n";
     file << "drag " << drag << "\n";
     file << "playerspeed " << playerSpeed << "\n";
@@ -271,7 +270,14 @@ bool Scene::saveScene(const std::string& scnName, const std::string& projectName
         file << "hasCollisions " << obj->hasCollisions << "\n";
         file << "isMoveable " << obj->isMoveable << "\n";
         file << "hasGravity " << obj->hasGravity << "\n";
-        file << "pointLight " << obj->pointLight << "\n";
+        file << "pointLightID " << obj->pointLightID << "\n";
+        if (obj->pointLightID > -1) {
+            PointLight light = renderer->getPointLight(obj->pointLightID);
+            file << "lightColor " << light.color.x << " " << light.color.y << " " << light.color.z << "\n";
+            file << "lightIntensity " << light.intensity << "\n";
+            file << "lightNear " << light.near << "\n";
+            file << "lightFar " << light.far << "\n";
+        }
         file << "parent " << (obj->parent ? obj->parent->name : "None") << "\n";
         file << "endobject\n\n";
     }
@@ -298,12 +304,17 @@ std::string Scene::duplicateObject(const std::string& originalName) {
 
     cloned->name = newName;
     if (cloned->isPlayer) {cloned->isPlayer = false;}
+    if (cloned->pointLightID > -1) {
+        PointLight light = renderer->getPointLight(it->second->pointLightID);
+        cloned->pointLightID = renderer->addPointLight(light);
+    }
     cloned->name = newName;
     objects[newName] = cloned;
     return newName;
 }
 
 void Scene::deleteObject(const std::string& name) {
+    renderer->removePointLight(objects.find(name)->second->pointLightID);
     objects.erase(name);
 }
 
@@ -360,89 +371,17 @@ void Scene::clearSelection() {
 }
 
 // === Draw ===
-void Scene::draw(const Context& context, Camera& camera, bool inPlaytest, bool drawOBBs) {
-    float ambient = 0.10;
-
-    // UBO setup
-    const auto lightMatrices = camera.getLightSpaceMatrices(glm::normalize(lightDir));
-    glBindBuffer(GL_UNIFORM_BUFFER, CSMUBO);
-    for (size_t i = 0; i < lightMatrices.size(); ++i) {
-        glBufferSubData(GL_UNIFORM_BUFFER, i * sizeof(glm::mat4x4), sizeof(glm::mat4x4), &lightMatrices[i]);
+void Scene::draw(Context& context, Camera& camera, bool inPlaytest) {
+    if (renderer->drawDirectionalShadows) {
+        renderer->renderDirectionalLight(camera, getObjects());
     }
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    // Depth cubemap transform matrices setup
-    float pointLightNear = 1.0f;
-    float pointLightFar = 25.0f;
-    glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, pointLightNear, pointLightFar);
-    std::vector<glm::mat4> shadowTransforms;
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
-
-    // CSM pass
-    CSMShader->use();
-    glBindFramebuffer(GL_FRAMEBUFFER, CSMFBO);
-    glViewport(0, 0, CSMShadowSize, CSMShadowSize);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glCullFace(GL_FRONT);
-    for (const auto& [_, obj] : objects) {
-        CSMShader->setMat4("model", obj->getWorldMatrix());
-        obj->mesh->draw();
-    }
-    glCullFace(GL_BACK);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // Omni pass
-    omniShader->use();
-    glBindFramebuffer(GL_FRAMEBUFFER, omniFBO);
-    glViewport(0, 0, OmniShadowSize, OmniShadowSize);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    for (unsigned int i = 0; i < 6; i++) {
-        omniShader->setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
-    }
-    omniShader->setFloat("far", pointLightFar);
-    omniShader->setVec3("lightPos", lightPos);
-    for (const auto& [_, obj] : objects) {
-        omniShader->setMat4("model", obj->getWorldMatrix());
-        obj->mesh->draw();
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    
-    glViewport(0, 0, context.window->getWidth(), context.window->getHeight());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Final pass
-    shader->use();
-    // Camera uniforms
-    shader->setMat4("projection", camera.getProjectionMatrix());
-    shader->setMat4("view", camera.getViewMatrix());
-    // Lighting uniforms
-    shader->setVec3("viewPos", camera.getPosition());
-    shader->setVec3("lightPos", lightPos);
-    shader->setVec3("lightDir", glm::normalize(lightDir));
-    shader->setFloat("cameraFar", camera.far);
-    shader->setFloat("pointFar", pointLightFar);
-    shader->setInt("cascadeCount", camera.shadowCascadeLevels.size());
-    for (size_t i = 0; i < camera.shadowCascadeLevels.size(); ++i) {
-        shader->setFloat("cascadePlaneDistances[" + std::to_string(i) + "]", camera.shadowCascadeLevels[i]);
-    }
-    shader->setFloat("ambient", ambient);
-    // Fog uniforms
-    shader->setVec3("fogColor", glm::vec3(0.5f, 0.6f, 0.7f));
-    shader->setFloat("fogStart", 50.0f);
-    shader->setFloat("fogEnd", 100.0f);
-    // Object uniforms
-    for (const auto& [_, obj] : objects) {
-        obj->draw(*this, inPlaytest);
-    }
-
-    if (drawOBBs) {
-        for (const auto& [_, obj] : objects) {
-            drawOBB(obj->obb, camera, debugShader.get(), glm::vec3(1.0f, 0.0f, 0.0f));
+    if (renderer->drawPointShadows) {
+        for (int i = 0; i < static_cast<int>(renderer->getPointLights().size()); i++) {
+            renderer->renderPointLight(i, getObjects());
         }
+    }
+    renderer->renderScene(context, *this, camera, inPlaytest);
+    if (renderer->drawOBBs) {
+        renderer->renderOBBs(camera, getObjects());
     }
 }

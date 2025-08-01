@@ -51,7 +51,8 @@ struct Object {
     bool isMoveable = false;
     bool hasGravity = false;
     bool isGrounded = false;
-    bool pointLight = false;
+
+    int pointLightID = -1;
 
     std::shared_ptr<Mesh> mesh = nullptr;
     std::shared_ptr<Texture> texture = nullptr;
@@ -82,9 +83,6 @@ struct Object {
     glm::mat4 getWorldMatrix() const;
     void setParent(Object* newParent);
     bool isDescendant(const Object* target) const;
-    
-    // Rendering
-    void draw(Scene& scene, const bool inPlaytest) const;
 };
 
 void getDescendants(Object* obj, std::vector<Object*>& out);

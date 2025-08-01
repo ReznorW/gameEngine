@@ -1,0 +1,384 @@
+scene
+skycolor 0.501961 0 0.745098 1
+sunlightColor 1 0.8 0.698039
+sunlightDir 30.9 -50 17.1
+sunlightIntensity 0
+gravity 0 -15 0
+drag 0.8
+playerspeed 2.502
+playerjump 5.975
+endscene
+
+object blueLight
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture blue.png
+texturescale 1 1
+position -0.884161 0.493526 2.40183
+rotation 0 -0 0
+scale 0.75 1 0.75
+isPlayer 0
+hasCollisions 1
+isMoveable 1
+hasGravity 1
+pointLightID 6
+lightColor 0 0 1
+lightIntensity 0.507
+lightNear 0.6
+lightFar 25
+parent None
+endobject
+
+object player
+mesh sphere
+ambient 0.2
+specular 0.5
+shininess 32
+texture yellow.png
+texturescale 1 1
+position -3.21945 0.493504 2.4168
+rotation 0 -0 0
+scale 0.75 1 0.75
+isPlayer 1
+hasCollisions 1
+isMoveable 1
+hasGravity 1
+pointLightID -1
+parent None
+endobject
+
+object greenLight
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture green.png
+texturescale 1 1
+position -3.6282 1.07902 -2.82341
+rotation 0 -0 0
+scale 0.75 1 0.75
+isPlayer 0
+hasCollisions 1
+isMoveable 1
+hasGravity 1
+pointLightID 3
+lightColor 0 1 0.0784314
+lightIntensity 0.507
+lightNear 0.6
+lightFar 25
+parent None
+endobject
+
+object wall2
+mesh cube
+ambient 0.1
+specular 0.5
+shininess 32
+texture Ground_03.png
+texturescale 10 5
+position 10 3.5 0
+rotation 0 90 0
+scale 20 10 0.5
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform9
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position -6.75 5.5 8.75
+rotation 0 0 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform2
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position 2 0 -8.75
+rotation 0 0 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall1
+mesh cube
+ambient 0.1
+specular 0.5
+shininess 32
+texture Ground_03.png
+texturescale 10 5
+position 0 3.5 -10
+rotation 0 0 0
+scale 20 10 0.5
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object redLight
+mesh cube
+ambient 0.46
+specular 1.203
+shininess 50.355
+texture red.png
+texturescale 1 1
+position 4.57942 0.493526 2.40183
+rotation 0 -0 0
+scale 0.75 1 0.75
+isPlayer 0
+hasCollisions 1
+isMoveable 1
+hasGravity 1
+pointLightID 2
+lightColor 1 0 0 
+lightIntensity 0.507
+lightNear 0.6
+lightFar 25
+parent None
+endobject
+
+object Platform8
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position -9.35 4.5 8
+rotation 0 90 0
+scale 2 0.25 0.75
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall3
+mesh cube
+ambient 0.1
+specular 0.5
+shininess 32
+texture Ground_03.png
+texturescale 10 5
+position 0 3.5 10
+rotation 0 180 0
+scale 20 10 0.5
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform7
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position -8.75 4 1
+rotation 0 90 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object ground
+mesh cube
+ambient 0.1
+specular 0
+shininess 1
+texture Ground_02.png
+texturescale 150 150
+position 0 -2 0
+rotation 0 0 0
+scale 500 1 500
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform6
+mesh cube
+ambient 0.2
+specular 1.192
+shininess 45.242
+script platform
+texture gray.png
+texturescale 1 1
+position 0.1 3.5 1
+rotation 0 89.9802 0
+scale 0.999999 0.25 4
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform4
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position 4.81001 2 -3.28627
+rotation 0 89.9802 0
+scale 0.999922 0.25 1.99984
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall4
+mesh cube
+ambient 0.1
+specular 0.5
+shininess 32
+texture Ground_03.png
+texturescale 10 5
+position -10 3.5 0
+rotation 0 270 0
+scale 20 10 0.5
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform5
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position 8.75 3 1
+rotation 0 90 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform3
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position 7 1 -8.75
+rotation 0 0 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform10
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position -1.55 6.5 8.75
+rotation 0 0 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform11
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position 4 7.5 8.75
+rotation 0 0 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object Platform1
+mesh cube
+ambient 0.2
+specular 0.5
+shininess 32
+texture gray.png
+texturescale 1 1
+position -3.5 -1 -8.75
+rotation 0 0 0
+scale 1 0.25 2
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+

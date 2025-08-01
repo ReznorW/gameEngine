@@ -107,12 +107,13 @@ int main() {
                     obj->updateOBB();
                 }
 
-                if (obj->pointLight) {
-                    scene.lightPos = obj->transform.position;
+                if (obj->pointLightID > -1) {
+                    PointLight& light = scene.renderer->getPointLight(obj->pointLightID);
+                    light.position = obj->transform.position;
                 }
             }
 
-            scene.draw(context, camera, false, drawOBBs);
+            scene.draw(context, camera, false);
 
             // === Draw editor GUI ===
             gui.drawMainMenu(window, scene, context.playScene, camera, *context.playCamera, context.currentMode, drawOBBs, *context.project);
@@ -169,8 +170,9 @@ int main() {
                         }
                     }
                     
-                    if (obj->pointLight) {
-                        scene.lightPos = obj->transform.position;
+                    if (obj->pointLightID > -1) {
+                        PointLight& light = scene.renderer->getPointLight(obj->pointLightID);
+                        light.position = obj->transform.position;
                     }
                 }
 
@@ -182,7 +184,7 @@ int main() {
                 }
             }
 
-            scene.draw(context, camera, true, drawOBBs);
+            scene.draw(context, camera, true);
             scene.processPendingDeletes();
             gui.drawPlaytestUI(scene);
         }

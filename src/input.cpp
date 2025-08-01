@@ -163,6 +163,10 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
         }
     }
 
+    if (isKeyPressedOnce(GLFW_KEY_F8)) {
+        scene.renderer->reloadShaders();
+    }
+
     // Save scene (Ctrl + S)
     if (isKeyPressedOnce(GLFW_KEY_S) && (keys[GLFW_KEY_LEFT_CONTROL] || keys[GLFW_KEY_RIGHT_CONTROL])) {
         const std::string& sceneName = scene.getName();

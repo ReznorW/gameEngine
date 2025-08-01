@@ -63,7 +63,7 @@ Object::Object(const std::string& name, const std::string& meshName, const std::
 }
 
 Object::Object(const Object& other)
-    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), pointLight(other.pointLight), mesh(other.mesh), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), pointLightID(other.pointLightID), mesh(other.mesh), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
 
 // === Deconstructor ===
 Object::~Object() {}
@@ -145,33 +145,6 @@ void getDescendants(Object* obj, std::vector<Object*>& out) {
     out.push_back(obj);
     for (Object* child : obj->children) {
         getDescendants(child, out);
-    }
-}
-
-// === Rendering ===
-void Object::draw(Scene& scene, const bool inPlaytest) const {
-    Object* selected = scene.getSelectedObject();
-    bool isHighlighted = (this == selected) || (selected && selected->isDescendant(this));
-
-    Shader& shader = *scene.getShader();
-    Texture& CSMDepthMap = *scene.getCSMDepthMap();
-    Texture& omniDepthCubeMap = *scene.getOmniDepthCubeMap();
-
-    if (!(inPlaytest && isPlayer)) {
-        texture->bind(0);
-        CSMDepthMap.bindArray(1);
-        omniDepthCubeMap.bindCube(2);
-        shader.setMat4("model", getWorldMatrix());
-        shader.setBool("isSelected", isHighlighted);
-        shader.setFloat("specular", material.specular);
-        shader.setFloat("shininess", material.shininess);
-        shader.setVec2("textureScale", textureScale);
-    }
-
-    mesh->draw();
-
-    for (const Object* child : children) {
-        child->draw(scene, inPlaytest);
     }
 }
 
