@@ -210,6 +210,9 @@ void Renderer::renderScene(Context& context, Scene& scene, Camera& camera, bool 
         shader->setFloat("pointLights[" + std::to_string(i) + "].intensity", pointLights[i].intensity);
         shader->setFloat("pointLights[" + std::to_string(i) + "].near", pointLights[i].near);
         shader->setFloat("pointLights[" + std::to_string(i) + "].far", pointLights[i].far);
+        shader->setFloat("pointLights[" + std::to_string(i) + "].constant", 1.0f);
+        shader->setFloat("pointLights[" + std::to_string(i) + "].linear", 4.5f / pointLights[i].far);
+        shader->setFloat("pointLights[" + std::to_string(i) + "].quadratic", 74.0f / (pointLights[i].far * pointLights[i].far));
     }
     shader->setVec3("directionalLight.direction", glm::normalize(directionalLight.direction));
     shader->setVec3("directionalLight.color", directionalLight.color);
@@ -233,7 +236,7 @@ void Renderer::renderScene(Context& context, Scene& scene, Camera& camera, bool 
         bool isHighlighted = (obj == selected);
 
         if (!(inPlaytest && obj->isPlayer)) {
-            obj->texture->bind(0);
+            obj->material->bind(0);
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D_ARRAY, directionalLight.depthMap);
             for (int i = 0; i < static_cast<int>(pointLights.size()); i++) {
@@ -242,8 +245,8 @@ void Renderer::renderScene(Context& context, Scene& scene, Camera& camera, bool 
             }
             shader->setMat4("model", obj->getWorldMatrix());
             shader->setBool("isSelected", isHighlighted);
-            shader->setFloat("specular", obj->material.specular);
-            shader->setFloat("shininess", obj->material.shininess);
+            shader->setFloat("specular", obj->material->specular);
+            shader->setFloat("shininess", obj->material->shininess);
             shader->setVec2("textureScale", obj->textureScale);
         }
 
@@ -317,7 +320,7 @@ void Renderer::initializeShaders() {
 
     // Initialize primary shader
     shader->use();
-    shader->setInt("texture1", 0);
+    shader->setInt("diffuseTexture", 0);
     shader->setInt("depthMap", 1);
     // Preallocate 16 cube maps for maximum 16 point lights
     for (int i = 0; i < 16; i++) {

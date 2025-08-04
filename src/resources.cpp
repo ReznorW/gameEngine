@@ -5,7 +5,7 @@
 
 Resources::Resources(std::string projectName) {
     loadAllMeshes(projectName);
-    loadAllTextures(projectName);
+    loadAllMaterials(projectName);
     loadAllScripts(projectName);
 }
 
@@ -14,9 +14,14 @@ std::shared_ptr<Mesh> Resources::getMesh(const std::string& name) const {
     return it != meshes.end() ? it->second : nullptr;
 }
 
-std::shared_ptr<Texture> Resources::getTexture(const std::string& name) const {
-    auto it = textures.find(name);
-    return it != textures.end() ? it->second : nullptr;
+std::shared_ptr<Material> Resources::getMaterial(const std::string& name) const {
+    auto it = materials.find(name);
+    if (it != materials.end()) {
+        return it->second;
+    } else {
+        std::cout << "Could not find material: " << name << std::endl;
+        return nullptr;
+    }
 }
 
 std::shared_ptr<Script> Resources::getScript(const std::string& name) const {
@@ -30,9 +35,9 @@ std::vector<std::shared_ptr<Mesh>> Resources::getMeshes() const {
     return result;
 }
 
-std::vector<std::shared_ptr<Texture>> Resources::getTextures() const {
-    std::vector<std::shared_ptr<Texture>> result;
-    for (const auto& [_, tex] : textures) result.push_back(tex);
+std::vector<std::shared_ptr<Material>> Resources::getMaterials() const {
+    std::vector<std::shared_ptr<Material>> result;
+    for (const auto& [_, mat] : materials) result.push_back(mat);
     return result;
 }
 
@@ -56,8 +61,8 @@ void Resources::addMesh(const std::shared_ptr<Mesh>& mesh) {
     if (mesh) meshes[mesh->getName()] = mesh;
 }
 
-void Resources::addTexture(const std::shared_ptr<Texture>& texture) {
-    if (texture) textures[texture->getName()] = texture;
+void Resources::addMaterial(const std::shared_ptr<Material>& material) {
+    if (material) materials[material->getName()] = material;
 }
 
 void Resources::addScript(const std::shared_ptr<Script>& script) {
@@ -68,8 +73,8 @@ void Resources::deleteMesh(const std::string& name) {
     meshes.erase(name);
 }
 
-void Resources::deleteTexture(const std::string& name) {
-    textures.erase(name);
+void Resources::deleteMaterial(const std::string& name) {
+    materials.erase(name);
 }
 
 void Resources::deleteScript(const std::string& name) {
@@ -88,13 +93,13 @@ void Resources::loadAllMeshes(std::string projectName) {
     }
 }
 
-void Resources::loadAllTextures(std::string projectName) {
-    std::cout << "===Loading in all textures===" << std::endl;
-    const std::string root = "projects/" + projectName + "/assets/textures/";
+void Resources::loadAllMaterials(std::string projectName) {
+    std::cout << "=== Loading in all materials ===\n";
+    const std::string root = "projects/" + projectName + "/assets/materials/";
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
-        if (entry.is_regular_file()) {
+        if (entry.is_directory()) {
             std::string name = entry.path().filename().string();
-            textures[name] = std::make_shared<Texture>(entry.path().string());
+            materials[name] = std::make_shared<Material>(entry.path().string());
             std::cout << "  - " << name << " loaded\n";
         }
     }

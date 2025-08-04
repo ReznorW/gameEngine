@@ -97,16 +97,16 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
     std::unordered_map<std::string, std::shared_ptr<Object>> tempObjects;
     std::unordered_map<std::string, std::string> parentMap;
 
-    std::string line, objName, meshName, textureName, shaderName, scriptName, parentName = "None";
+    std::string line, objName, meshName, materialName, shaderName, scriptName, parentName = "None";
     glm::vec3 position, rotation, scale(1);
     glm::vec2 textureScale(1);
-    float ambient, specular, shininess;
     int pointLightID;
     bool isPlayer, hasCollisions, isMoveable, hasGravity = false;
     glm::vec3 lightColor(1.0f);
     float lightIntensity = 1.0f;
     float lightNear = 0.1f;
     float lightFar = 25.0f;
+     float ambient = 0.15f;
 
     setName(scnName);
 
@@ -124,6 +124,7 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             drag = 0.8f;
             playerSpeed = 1.0f;
             playerJump = 10.0f;
+            ambient = 0.15f;
         } else if (token == "skycolor") {
             iss >> skyColor.x >> skyColor.y >> skyColor.z >> skyColor.w;
         } else if (token == "sunlightColor") {
@@ -142,7 +143,7 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             iss >> playerJump;
         } else if (token == "object") {
             iss >> objName;
-            meshName = textureName = scriptName = "";
+            meshName = materialName = scriptName = "";
             position = rotation = glm::vec3(0);
             scale = glm::vec3(1);
             textureScale = glm::vec2(1);
@@ -157,14 +158,10 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
             iss >> meshName;
         } else if (token == "ambient") {
             iss >> ambient;
-        } else if (token == "specular") {
-            iss >> specular;
-        } else if (token == "shininess") {
-            iss >> shininess;
         } else if (token == "script") {
             iss >> scriptName;
-        } else if (token == "texture") {
-            iss >> textureName;
+        } else if (token == "material") {
+            iss >> materialName;
         } else if (token == "texturescale") {
             iss >> textureScale.x >> textureScale.y;
         } else if (token == "position") {
@@ -194,14 +191,11 @@ bool Scene::loadScene(const std::string& scnName, const Project& project, const 
         } else if (token == "parent") {
             iss >> parentName;
         } else if (token == "endobject") {
-            auto obj = std::make_shared<Object>(objName, meshName, textureName, scriptName, project.resources);
+            auto obj = std::make_shared<Object>(objName, meshName, materialName, scriptName, project.resources);
             obj->transform.position = position;
             obj->transform.setRotation(rotation);
             obj->transform.scale = scale;
             obj->transform.velocity = glm::vec3(0.0f);
-            obj->material.ambient = ambient;
-            obj->material.specular = specular;
-            obj->material.shininess = shininess;
             obj->textureScale = textureScale;
             obj->isPlayer = isPlayer;
             obj->hasCollisions = hasCollisions;
@@ -248,6 +242,7 @@ bool Scene::saveScene(const std::string& scnName, const std::string& projectName
     file << "sunlightColor " << renderer->getDirectionalLight().color.x << " " << renderer->getDirectionalLight().color.y << " " << renderer->getDirectionalLight().color.z << "\n";
     file << "sunlightDir " << renderer->getDirectionalLight().direction.x << " " << renderer->getDirectionalLight().direction.y << " " << renderer->getDirectionalLight().direction.z << "\n";
     file << "sunlightIntensity " << renderer->getDirectionalLight().intensity << "\n";
+    file << "ambient " << ambient << "\n";
     file << "gravity " << gravity.x << " " << gravity.y << " " << gravity.z << "\n";
     file << "drag " << drag << "\n";
     file << "playerspeed " << playerSpeed << "\n";
@@ -257,11 +252,8 @@ bool Scene::saveScene(const std::string& scnName, const std::string& projectName
     for (const auto& [name, obj] : objects) {
         file << "object " << obj->name << "\n";
         file << "mesh " << obj->mesh->getName() << "\n";
-        file << "ambient " << obj->material.ambient << "\n";
-        file << "specular " << obj->material.specular << "\n";
-        file << "shininess " << obj->material.shininess << "\n";
         if (obj->script) file << "script " << obj->script->getName() << "\n";
-        file << "texture " << obj->texture->getName() << "\n";
+        file << "material " << obj->material->getName() << "\n";
         file << "texturescale " << obj->textureScale.x << " " << obj->textureScale.y << "\n";
         file << "position " << obj->transform.position.x << " " << obj->transform.position.y << " " << obj->transform.position.z << "\n";
         file << "rotation " << obj->transform.rotation.x << " " << obj->transform.rotation.y << " " << obj->transform.rotation.z << "\n";

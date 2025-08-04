@@ -326,13 +326,14 @@ void Gui::drawFileBrowser(const std::filesystem::path& rootPath, Project& projec
                 } catch (const std::exception& e) {
                     std::cerr << "Failed to copy file: " << e.what() << "\n";
                 }
-            } else if (destDirectory == "textures" && (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")) {
-                try {
-                    std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
-                    project.resources->addTexture(std::make_shared<Texture>(srcPath.string()));
-                } catch (const std::exception& e) {
-                    std::cerr << "Failed to copy file: " << e.what() << "\n";
-                }
+            } else if (destDirectory == "materials" && (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp")) {
+                // TODO: Fix drag and dropping materials
+                // try {
+                //     std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
+                //     project.resources->addTexture(std::make_shared<Texture>(srcPath.string()));
+                // } catch (const std::exception& e) {
+                //     std::cerr << "Failed to copy file: " << e.what() << "\n";
+                // }
             } else if (destDirectory == "scenes" && ext == ".scn") {
                 try {
                     std::filesystem::copy_file(srcPath, destPath, std::filesystem::copy_options::overwrite_existing);
@@ -823,12 +824,6 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
         ImGui::EndCombo();
     }
 
-    // --- Material ---
-    ImGui::SeparatorText("Material");
-    ImGui::SliderFloat("Ambient",   &selected->material.ambient,   0.0f, 1.0f);
-    ImGui::SliderFloat("Specular",  &selected->material.specular,  0.0f, 2.0f);
-    ImGui::SliderFloat("Shininess", &selected->material.shininess, 1.0f, 128.0f);
-
     ImGui::SeparatorText("Lighting");
     if (selected->pointLightID >= 0) {
         PointLight& light = scene.renderer->getPointLight(selected->pointLightID);
@@ -857,20 +852,20 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
         }
     }
 
-    // --- Texture ---
-    ImGui::SeparatorText("Texture");
-    std::string currentTexture = selected->texture ? selected->texture->getName() : "None";
-    if (ImGui::BeginCombo("Texture", currentTexture.c_str())) {
-        for (const auto& tex : project.resources->getTextures()) {
-            const std::string& texName = tex->getName();
-            bool isSelected = (selected->texture == tex);
+    // --- Material ---
+    ImGui::SeparatorText("Material");
+    std::string currentMaterial = selected->material ? selected->material->getName() : "None";
+    if (ImGui::BeginCombo("Material", currentMaterial.c_str())) {
+        for (const auto& mat : project.resources->getMaterials()) {
+            const std::string& matName = mat->getName();
+            bool isSelected = (selected->material == mat);
 
-            ImGui::PushID(texName.c_str());
-            ImGui::Image(tex->getID(), ImVec2(16, 16));
+            ImGui::PushID(matName.c_str());
+            ImGui::Image(mat->getDiffuseTexture(), ImVec2(16, 16));
             ImGui::SameLine();
 
-            if (ImGui::Selectable(texName.c_str(), isSelected)) {
-                selected->texture = tex;
+            if (ImGui::Selectable(matName.c_str(), isSelected)) {
+                selected->material = mat;
             }
 
             if (isSelected) ImGui::SetItemDefaultFocus();
@@ -879,12 +874,18 @@ void Gui::drawObjectPropertiesPopup(Scene& scene, Object* selected, Project& pro
         ImGui::EndCombo();
     }
 
-    float scale[2] = {selected->textureScale.x, selected->textureScale.y};
-    if (ImGui::InputFloat("Scale X", &scale[0], 0.01f, 1.0f, "%.3f")) {
-        selected->textureScale.x = scale[0];
-    }
-    if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) {
-        selected->textureScale.y = scale[1];
+    // Extra material options
+    if (selected->material) {
+        float scale[2] = {selected->textureScale.x, selected->textureScale.y};
+        if (ImGui::InputFloat("Scale X", &scale[0], 0.01f, 1.0f, "%.3f")) {
+            selected->textureScale.x = scale[0];
+        }
+        if (ImGui::InputFloat("Scale Y", &scale[1], 0.01f, 1.0f, "%.3f")) {
+            selected->textureScale.y = scale[1];
+        }
+
+        ImGui::SliderFloat("Specular",  &selected->material->specular,  0.0f, 2.0f);
+        ImGui::SliderFloat("Shininess", &selected->material->shininess, 1.0f, 128.0f);
     }
 
     // --- Physics ---
@@ -1102,6 +1103,7 @@ void Gui::drawScenePropertiesPopup(Scene& scene) {
         ImGui::DragFloat3("Sun Direction", glm::value_ptr(scene.renderer->getDirectionalLight().direction), 0.1f);
         ImGui::ColorEdit3("Sun Color", glm::value_ptr(scene.renderer->getDirectionalLight().color));
         ImGui::SliderFloat("Sun Intensity", &scene.renderer->getDirectionalLight().intensity, 0.0f, 1.0f);
+        ImGui::SliderFloat("Ambient Light", &scene.ambient, 0.0f, 1.0f);
 
         // Gravity
         ImGui::Text("Physics");
@@ -1283,7 +1285,7 @@ void Gui::drawNewProjectNamePopup(Context& context) {
             std::filesystem::create_directories(projectPath / "scripts", ec);
             std::filesystem::create_directories(projectPath / "assets", ec);
             std::filesystem::create_directories(projectPath / "assets/models", ec);
-            std::filesystem::create_directories(projectPath / "assets/textures", ec);
+            std::filesystem::create_directories(projectPath / "assets/materials", ec);
 
             Resources* newResources = new Resources(projectName);
             context.project = std::make_unique<Project>(projectName, newResources);

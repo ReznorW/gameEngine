@@ -7,7 +7,7 @@
 #include "mesh.hpp"
 #include "camera.hpp"
 #include "mesh.hpp"
-#include "texture.hpp"
+#include "material.hpp"
 #include "obb.hpp"
 
 // Forward declarations
@@ -35,13 +35,6 @@ struct Transform {
     void setRotation(const glm::vec3& degrees);
 };
 
-// Material definition
-struct Material {
-    float ambient = 0.2f;
-    float specular = 0.5f;
-    float shininess = 32.0f;
-};
-
 // Object definition
 struct Object {
     // Object data
@@ -55,13 +48,12 @@ struct Object {
     int pointLightID = -1;
 
     std::shared_ptr<Mesh> mesh = nullptr;
-    std::shared_ptr<Texture> texture = nullptr;
+    std::shared_ptr<Material> material = nullptr;
     std::shared_ptr<Script> script = nullptr;
 
     glm::vec2 textureScale = glm::vec2(1.0f, 1.0f);
 
     Transform transform;
-    Material material;
     OBB obb;
 
     Object* parent = nullptr;
@@ -69,7 +61,7 @@ struct Object {
 
     // Constructors
     Object() = default;
-    Object(const std::string& name, const std::string& modelName, const std::string& textureName, const std::string& scriptName, Resources* resources);
+    Object(const std::string& name, const std::string& modelName, const std::string& materialName, const std::string& scriptName, Resources* resources);
     Object(const Object& other);
 
     // Deconstructor

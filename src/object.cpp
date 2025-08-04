@@ -49,10 +49,10 @@ void Transform::setRotation(const glm::vec3& degrees) {
 
 // ### Object functions ###
 // === Constructor ===
-Object::Object(const std::string& name, const std::string& meshName, const std::string& textureName, const std::string& scriptName, Resources* resources)
+Object::Object(const std::string& name, const std::string& meshName, const std::string& materialName, const std::string& scriptName, Resources* resources)
     : name(name) {
     mesh = resources->getMesh(meshName);
-    texture = resources->getTexture(textureName);
+    material = resources->getMaterial(materialName);
     if (!scriptName.empty()) {
         auto baseScript = resources->getScript(scriptName);
         if (baseScript) {
@@ -62,8 +62,20 @@ Object::Object(const std::string& name, const std::string& meshName, const std::
     }
 }
 
-Object::Object(const Object& other)
-    : name(other.name), isPlayer(other.isPlayer), hasCollisions(other.hasCollisions), isMoveable(other.isMoveable), hasGravity(other.hasGravity), pointLightID(other.pointLightID), mesh(other.mesh), texture(other.texture), script(other.script ? std::make_shared<Script>(*other.script) : nullptr), textureScale(other.textureScale), transform(other.transform), obb(other.obb), parent(nullptr) {}
+Object::Object(const Object& other) :
+    name(other.name), 
+    isPlayer(other.isPlayer), 
+    hasCollisions(other.hasCollisions), 
+    isMoveable(other.isMoveable), 
+    hasGravity(other.hasGravity), 
+    pointLightID(other.pointLightID), 
+    mesh(other.mesh), 
+    material(other.material), 
+    script(other.script ? std::make_shared<Script>(*other.script) : nullptr), 
+    textureScale(other.textureScale), 
+    transform(other.transform), 
+    obb(other.obb), 
+    parent(nullptr) {}
 
 // === Deconstructor ===
 Object::~Object() {}

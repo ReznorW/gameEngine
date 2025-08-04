@@ -163,8 +163,13 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
         }
     }
 
+    // Reload shaders (F8)
     if (isKeyPressedOnce(GLFW_KEY_F8)) {
         scene.renderer->reloadShaders();
+    }
+
+    if (isKeyPressedOnce(GLFW_KEY_F7)) {
+        scene.renderer->drawNormals = !scene.renderer->drawNormals;
     }
 
     // Save scene (Ctrl + S)

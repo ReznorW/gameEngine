@@ -81,7 +81,7 @@ void Mesh::setupMesh(const std::vector<Vertex>& vertices, const std::vector<unsi
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 
-    // Texture attribute
+    // Texture coords attribute
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoords));
 
@@ -150,7 +150,6 @@ Mesh* loadObjFile(const std::string& filepath) {
                     v.position = positions[posIdx];
                     v.texCoords = (texIdx >= 0 && texIdx < (int)texCoords.size()) ? texCoords[texIdx] : glm::vec2(0.0f);
                     v.normal = (normIdx >= 0 && normIdx < (int)normals.size()) ? normals[normIdx] : glm::vec3(0.0f);
-                    v.color = glm::vec3(1.0f); // Default color
 
                     vertices.push_back(v);
                     unsigned int index = static_cast<unsigned int>(vertices.size() - 1);
@@ -210,35 +209,4 @@ Mesh* loadObjFile(const std::string& filepath) {
     Mesh* mesh = new Mesh(name, vertices, indices);
     mesh->calculateBounds(vertices);
     return mesh;
-}
-
-
-unsigned int loadTexture(const std::string& path) {
-    unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // OpenGL expects 0,0 at bottom left
-    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-    if (data) {
-        GLenum format = nrChannels == 3 ? GL_RGB : GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Texture wrapping and filtering options
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    } else {
-        std::cerr << "Failed to load texture: " << path << "\n" << "Loading in default texture..." << "\n";
-        
-        // Load in default texture otherwise
-        textureID = loadTexture("assets/textures/default.png");
-    }
-    stbi_image_free(data);
-
-    return textureID;
 }

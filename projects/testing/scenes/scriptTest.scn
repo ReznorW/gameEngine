@@ -13,7 +13,7 @@ ambient 0.27
 specular 0.986
 shininess 40.725
 script simpleFollow
-texture red.png
+material red
 texturescale 1 1
 position 0 0 0
 rotation 0 0 0
@@ -32,7 +32,7 @@ ambient 0.427
 specular 0.929
 shininess 40.725
 script player
-texture orange.png
+material orange
 texturescale 1 1
 position -4.3 0 0
 rotation 0 0 0
@@ -50,7 +50,7 @@ shader default
 ambient 0.256
 specular 0.834
 shininess 50.957
-texture grass.png
+material grass
 texturescale 150 150
 position 0 -2 0
 rotation 0 0 0

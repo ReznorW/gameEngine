@@ -7,7 +7,7 @@
 
 #include "mesh.hpp"
 #include "shader.hpp"
-#include "texture.hpp"
+#include "material.hpp"
 #include "script.hpp"
 
 class Resources {
@@ -21,11 +21,11 @@ public:
     void addMesh(const std::shared_ptr<Mesh>& mesh);
     void deleteMesh(const std::string& name);
 
-    // Textures
-    std::shared_ptr<Texture> getTexture(const std::string& name) const;
-    std::vector<std::shared_ptr<Texture>> getTextures() const;
-    void addTexture(const std::shared_ptr<Texture>& texture);
-    void deleteTexture(const std::string& name);
+    // Materials
+    std::shared_ptr<Material> getMaterial(const std::string& name) const;
+    std::vector<std::shared_ptr<Material>> getMaterials() const;
+    void addMaterial(const std::shared_ptr<Material>& material);
+    void deleteMaterial(const std::string& name);
 
     // Scripts
     std::shared_ptr<Script> getScript(const std::string& name) const;
@@ -40,11 +40,11 @@ public:
 private:
     // Resource containers
     std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes;
-    std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
+    std::unordered_map<std::string, std::shared_ptr<Material>> materials;
     std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
 
     // Loaders
     void loadAllMeshes(std::string projectName);
-    void loadAllTextures(std::string projectName);
+    void loadAllMaterials(std::string projectName);
     void loadAllScripts(std::string projectName);
 };

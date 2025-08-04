@@ -1,7 +1,7 @@
 object arm2
 mesh cube
 shader default
-texture blue.png
+material blue
 texturescale 1 1
 position -0.733333 0.166667 0
 rotation 0 -0 0
@@ -16,7 +16,7 @@ endobject
 object arm1
 mesh cube
 shader default
-texture blue.png
+material blue
 texturescale 1 1
 position 0.733333 0.166667 0
 rotation 0 -0 0
@@ -31,7 +31,7 @@ endobject
 object body
 mesh cube
 shader default
-texture red.png
+material red
 texturescale 1 1
 position 0 -1.25 0
 rotation 0 90 0
@@ -46,7 +46,7 @@ endobject
 object player
 mesh cube
 shader default
-texture yellow.png
+material yellow
 texturescale 1 1
 position 0 1 0
 rotation 0 0 0
@@ -61,7 +61,7 @@ endobject
 object ground
 mesh plane
 shader default
-texture grass.png
+material grass
 texturescale 150 150
 position 0 -2 0
 rotation 0 0 0

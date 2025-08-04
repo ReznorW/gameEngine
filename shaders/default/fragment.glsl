@@ -15,6 +15,9 @@ struct PointLight {
     float intensity;
     float near;
     float far;
+    float constant;
+    float linear;
+    float quadratic;
 };
 
 struct DirectionalLight {
@@ -24,7 +27,7 @@ struct DirectionalLight {
 };
 
 // Texture uniforms
-uniform sampler2D texture1;
+uniform sampler2D diffuse1;
 uniform sampler2DArray depthMap;
 uniform samplerCube depthCubemap[MAX_POINT_LIGHTS];
 uniform vec2 textureScale;
@@ -142,12 +145,15 @@ float pointCalculation(vec3 fragPos, PointLight light, int index) {
     return shadow;
 }
 
-void main() {           
-    vec3 color = texture(texture1, fs_in.TexCoords * textureScale).rgb;
+void main() {         
+    // Sample diffuse  
+    vec3 color = texture(diffuse1, fs_in.TexCoords * textureScale).rgb;
+
+    // Get normal
     vec3 normal = normalize(fs_in.Normal);
-    vec3 viewDir = normalize(viewPos - fs_in.FragPos);
 
     // Directional light (CSM)
+    vec3 viewDir  = normalize(viewPos - fs_in.FragPos);
     vec3 lightDir = normalize(-directionalLight.direction);
     vec3 lightColor = directionalLight.color * directionalLight.intensity;
     float diffDir = max(dot(lightDir, normal), 0.0);
@@ -167,7 +173,10 @@ void main() {
     for (int i = 0; i < numPointLights; i++) {
         PointLight light = pointLights[i];
         vec3 fragToLight = fs_in.FragPos - light.position;
+        float distance = length(fragToLight);
         vec3 lightDirOmni = normalize(fragToLight);
+
+        float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
         float diff = max(dot(-lightDirOmni, normal), 0.0);
         vec3 diffuse = diff * light.color * light.intensity;
@@ -182,7 +191,7 @@ void main() {
         }
 
         vec3 lightContribution = (ambient + (1.0 - shadow) * (diffuse + specularComponent)) * color;
-        pointLighting += lightContribution;
+        pointLighting += attenuation * lightContribution;
     }
 
     vec3 combinedLighting = directionalLighting + pointLighting;
@@ -194,11 +203,14 @@ void main() {
 
     // Selection highlight
     if (isSelected) {
-        lighting = mix(lighting, vec3(1.0, 1.0, 0.0), 0.25);
+        lighting = mix(lighting, vec3(1.0, 1.0, 0.0), 0.15);
     }
+
+    // Tonemapping
+    vec3 tonemapped = lighting / (lighting + vec3(1.0));
 
     // Gamma correction
     float gamma = 2.2;
-    vec3 gammaCorrected = pow(lighting, vec3(1.0 / gamma));
+    vec3 gammaCorrected = pow(tonemapped, vec3(1.0 / gamma));
     FragColor = vec4(gammaCorrected, 1.0);
 }

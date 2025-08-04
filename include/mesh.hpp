@@ -11,7 +11,6 @@ class Scene;
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
-    glm::vec3 color;
     glm::vec2 texCoords;
 };
 
@@ -58,4 +57,3 @@ private:
 
 // Loaders
 Mesh* loadObjFile(const std::string& filepath);
-unsigned int loadTexture(const std::string& path);
