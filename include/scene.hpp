@@ -26,8 +26,11 @@ public:
     Renderer* renderer = nullptr;
 
     // Constructors
-    Scene();
+    Scene(const Camera& camera);
     Scene(const Scene& other);
+
+    // Deconstructors
+    ~Scene();
 
     // Getters
     std::string getName() const {return name;}

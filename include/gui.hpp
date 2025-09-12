@@ -50,9 +50,12 @@ public:
     void drawDeleteConfirmationPopup(Scene& scene);
     void drawRenameScriptPopup(Context& context);
     void drawDocumentationPopup();
-    void drawScenePropertiesPopup(Scene& scene);
     void drawLoadProjectPopup(Context& context);
     void drawNewProjectNamePopup(Context& context);
+    void drawSettingsPopup(Scene& scene);
+
+    // Input Popup Bool Setting
+    void setOpenDeleteConfirmationPopup() {openDeleteConfirmationPopup = true;}
 
     // Gizmo Handling
     bool isGizmoVisible() {return gizmoVisible;}
@@ -72,9 +75,9 @@ private:
     bool openDeleteConfirmationPopup = false;
     bool openRenameScriptPopup = false;
     bool openHelpPopup = false;
-    bool openScenePropertiesPopup = false;
     bool openLoadProjectPopup = false;
     bool openNewProjectNamePopup = false;
+    bool openSettingsPopup = false;
 
     // Popup vars
     std::shared_ptr<Script> scriptToRename = nullptr;

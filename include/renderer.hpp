@@ -34,6 +34,7 @@ public:
     bool drawDirectionalShadows = true;
     bool drawPointShadows = true;
     bool drawOBBs = false;
+    bool drawNormals = false;
 
     // Constructors
     Renderer(const Camera& camera);

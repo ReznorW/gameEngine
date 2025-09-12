@@ -8,7 +8,9 @@
 #include "obb.hpp"
 
 // === Constructors ===
-Scene::Scene() {}
+Scene::Scene(const Camera& camera) {
+    renderer = new Renderer(camera);
+}
 
 Scene::Scene(const Scene& other) : 
     skyColor(other.skyColor), 

@@ -110,7 +110,7 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
     // Create new object (C)
     if (isKeyPressedOnce(GLFW_KEY_C)) {
         std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-        scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default.jpg", "", project.resources));
+        scene.addObject(objName, std::make_unique<Object>(objName, "cube", "default", "", project.resources));
         scene.selectObject(objName);
     }
 
@@ -137,7 +137,7 @@ void Input::handleSceneEditorInput(Window& window, Camera& camera, Scene& scene,
 
     // Delete selected object (Delete)
     if (isKeyPressedOnce(GLFW_KEY_DELETE) && scene.getSelectedObject()) {
-        ImGui::OpenPopup("Confirm Delete");
+        gui.setOpenDeleteConfirmationPopup();
     }
 
     // Duplicate selected object (X)

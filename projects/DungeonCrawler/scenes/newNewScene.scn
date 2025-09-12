@@ -1,0 +1,162 @@
+scene
+skycolor 0 0 0 1
+sunlightColor 1 1 1
+sunlightDir 20 -50 20
+sunlightIntensity 0
+ambient 0.1
+gravity 0 -15 0
+drag 0.8
+playerspeed 1
+playerjump 10
+endscene
+
+object wall6
+mesh cube
+material Ground_03
+texturescale 10 6
+position -15 3 -5
+rotation -180 90 -180
+scale 9.99969 6 0.249958
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object player
+mesh sphere
+material yellow
+texturescale 1 1
+position 2.93367e-08 1.43717 0
+rotation 0 -0 0
+scale 1 1.5 1
+isPlayer 1
+hasCollisions 1
+isMoveable 1
+hasGravity 1
+pointLightID -1
+parent None
+endobject
+
+object wall5
+mesh cube
+material Ground_03
+texturescale 10 6
+position -10 3 0
+rotation -180 -2.83909e-18 -180
+scale 9.9997 6 0.249965
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wallCorner
+mesh cube
+material Ground_03
+texturescale 0.125 6
+position -4.938 3 -0.0623
+rotation -180 -2.15965e-17 -180
+scale 0.125 6 0.125
+isPlayer 0
+hasCollisions 0
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall3
+mesh cube
+material Ground_03
+texturescale 10 6
+position -1.19209e-07 3 10
+rotation 180 -0 -180
+scale 10 6 0.249976
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall2
+mesh cube
+material Ground_03
+texturescale 20 6
+position 5 3 0
+rotation 4.55346e-06 -89.9802 4.55346e-06
+scale 19.9987 6 0.249988
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall4
+mesh cube
+material Ground_03
+texturescale 10 6
+position -5 3 5
+rotation 0 89.9802 0
+scale 9.99956 6 0.249965
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object wall1
+mesh cube
+material Ground_03
+texturescale 20 6
+position -5 3 -10
+rotation 0 -0 0
+scale 20 6 0.25
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object floor2
+mesh cube
+material Ground_02
+texturescale 10 10
+position -10 -0.125 -5
+rotation 0 -0 0
+scale 10 0.25 10
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+
+object floor1
+mesh cube
+material Ground_02
+texturescale 10 20
+position 0 -0.125 0
+rotation 0 -0 0
+scale 10 0.25 20
+isPlayer 0
+hasCollisions 1
+isMoveable 0
+hasGravity 0
+pointLightID -1
+parent None
+endobject
+

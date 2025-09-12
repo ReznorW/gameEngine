@@ -94,7 +94,7 @@ void Resources::loadAllMeshes(std::string projectName) {
 }
 
 void Resources::loadAllMaterials(std::string projectName) {
-    std::cout << "=== Loading in all materials ===\n";
+    std::cout << "===Loading in all materials===\n";
     const std::string root = "projects/" + projectName + "/assets/materials/";
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_directory()) {

@@ -111,11 +111,8 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
         if (ImGui::BeginMenu("Edit")) {
             if (ImGui::MenuItem("New Object", "C")) {
                 std::string objName = "NewObj" + std::to_string(scene.getObjectCount());
-                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default.jpg", "", project.resources));
+                scene.addObject(objName, std::make_shared<Object>(objName, "cube", "default", "", project.resources));
                 scene.selectObject(objName);
-            }
-            if (ImGui::MenuItem("Scene Properties")) {
-                openScenePropertiesPopup = true;
             }
             if (ImGui::MenuItem("Undo")) {
                 // TODO: Implement undo stack
@@ -173,9 +170,7 @@ void Gui::drawMainMenu(Window& window, Scene& scene, std::unique_ptr<Scene>& pla
 
         // Settings Menu
         if (ImGui::BeginMenu("Settings")) {
-            ImGui::MenuItem("Bounding Boxes", nullptr, &scene.renderer->drawOBBs);
-            ImGui::MenuItem("Directional Shadows", nullptr, &scene.renderer->drawDirectionalShadows);
-            ImGui::MenuItem("Point Shadows", nullptr, &scene.renderer->drawPointShadows);
+            openSettingsPopup = true;
             ImGui::EndMenu();
         }
 
@@ -730,8 +725,8 @@ void Gui::drawPopups(Context& context) {
         drawDocumentationPopup();
     }
 
-    if (openScenePropertiesPopup && (context.currentMode == Mode::SceneEditor)) {
-        drawScenePropertiesPopup(scene);
+    if (openSettingsPopup && (context.currentMode == Mode::SceneEditor)) {
+        drawSettingsPopup(scene);
     }
 
     if (openLoadProjectPopup && (context.currentMode == Mode::WelcomeScreen)) {
@@ -1093,34 +1088,6 @@ void Gui::drawDocumentationPopup() {
     ImGui::End();
 }
 
-void Gui::drawScenePropertiesPopup(Scene& scene) {
-    ImGui::SetNextWindowSize(ImVec2(600, 800), ImGuiCond_FirstUseEver);
-
-    if (ImGui::Begin("Scene Properties", &openScenePropertiesPopup)) {
-        // Sky Color
-        ImGui::Text("Environment");
-        ImGui::ColorEdit4("Sky Color", glm::value_ptr(scene.skyColor));
-        ImGui::DragFloat3("Sun Direction", glm::value_ptr(scene.renderer->getDirectionalLight().direction), 0.1f);
-        ImGui::ColorEdit3("Sun Color", glm::value_ptr(scene.renderer->getDirectionalLight().color));
-        ImGui::SliderFloat("Sun Intensity", &scene.renderer->getDirectionalLight().intensity, 0.0f, 1.0f);
-        ImGui::SliderFloat("Ambient Light", &scene.ambient, 0.0f, 1.0f);
-
-        // Gravity
-        ImGui::Text("Physics");
-        ImGui::DragFloat3("Gravity", glm::value_ptr(scene.gravity), 0.1f);
-
-        // Drag
-        ImGui::SliderFloat("Global Drag", &scene.drag, 0.0f, 1.0f);
-
-        // Player properties
-        ImGui::Text("Player");
-        ImGui::SliderFloat("Player Speed", &scene.playerSpeed, 0.1f, 10.0f);
-        ImGui::SliderFloat("Jump Force", &scene.playerJump, 0.1f, 20.0f);
-
-        ImGui::End();
-    }
-}
-
 void Gui::drawLoadProjectPopup(Context& context) {
     enum class PopupStep {SelectProject, SelectScene};
     static PopupStep step = PopupStep::SelectProject;
@@ -1221,7 +1188,7 @@ void Gui::drawLoadProjectPopup(Context& context) {
                     context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
 
                     // Load scene
-                    context.editorScene = std::make_unique<Scene>();
+                    context.editorScene = std::make_unique<Scene>(*context.sceneCamera);
                     context.editorScene->loadScene(selectedScene, *context.project, *context.sceneCamera);
                     context.playScene = std::make_unique<Scene>(*context.editorScene);
 
@@ -1281,17 +1248,29 @@ void Gui::drawNewProjectNamePopup(Context& context) {
                 }
             }
 
+            // Create project directories
             std::filesystem::create_directories(projectPath / "scenes", ec);
             std::filesystem::create_directories(projectPath / "scripts", ec);
             std::filesystem::create_directories(projectPath / "assets", ec);
             std::filesystem::create_directories(projectPath / "assets/models", ec);
             std::filesystem::create_directories(projectPath / "assets/materials", ec);
 
+            // Resource and project setup
             Resources* newResources = new Resources(projectName);
             context.project = std::make_unique<Project>(projectName, newResources);
-            context.editorScene = std::make_unique<Scene>();
+
+            // Camera setup
+            int w = context.window->getWidth();
+            int h = context.window->getHeight();
+            float aspect = static_cast<float>(w) / h;
+            context.sceneCamera = std::make_unique<Camera>(aspect);
+            context.playCamera = std::make_unique<Camera>(*context.sceneCamera);
+
+            // Initialize scene
+            context.editorScene = std::make_unique<Scene>(*context.sceneCamera);
             context.playScene = std::make_unique<Scene>(*context.editorScene);
 
+            // Set mode
             context.currentMode = Mode::SceneEditor;
 
             ImGui::CloseCurrentPopup();
@@ -1304,6 +1283,57 @@ void Gui::drawNewProjectNamePopup(Context& context) {
         }
 
         ImGui::EndPopup();
+    }
+}
+
+void Gui::drawSettingsPopup(Scene& scene) {
+    ImGui::SetNextWindowSize(ImVec2(600, 800), ImGuiCond_FirstUseEver);
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse;
+
+    if (ImGui::Begin("Settings", &openSettingsPopup, flags)) {
+        if (ImGui::BeginTabBar("SettingsTabs")) {
+            if (ImGui::BeginTabItem("Environment")) {
+                ImGui::ColorEdit4("Sky Color", glm::value_ptr(scene.skyColor));
+                ImGui::DragFloat3("Sun Direction", glm::value_ptr(scene.renderer->getDirectionalLight().direction), 0.1f);
+                ImGui::ColorEdit3("Sun Color", glm::value_ptr(scene.renderer->getDirectionalLight().color));
+                ImGui::SliderFloat("Sun Intensity", &scene.renderer->getDirectionalLight().intensity, 0.0f, 1.0f);
+
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Physics")) {
+                ImGui::DragFloat3("Gravity", glm::value_ptr(scene.gravity), 0.1f);
+                ImGui::SliderFloat("Global Drag", &scene.drag, 0.0f, 1.0f);
+
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Player")) {
+                ImGui::SliderFloat("Player Speed", &scene.playerSpeed, 0.1f, 10.0f);
+                ImGui::SliderFloat("Jump Force", &scene.playerJump, 0.1f, 20.0f);
+
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Lighting")) {
+                ImGui::SliderFloat("Ambient Light", &scene.ambient, 0.0f, 1.0f);
+                ImGui::Checkbox("Directional Shadows", &scene.renderer->drawDirectionalShadows);
+                ImGui::Checkbox("Point Shadows", &scene.renderer->drawPointShadows);
+
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Debug")) {
+                ImGui::Checkbox("Bounding Boxes", &scene.renderer->drawOBBs);
+
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+
+        ImGui::End();
     }
 }
 
