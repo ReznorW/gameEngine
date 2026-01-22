@@ -46,6 +46,9 @@ Scene::Scene(const Scene& other) :
     }
 }
 
+// === Deconstructors ===
+Scene::~Scene() {}
+
 // === Getters ===
 Object* Scene::getObject(const std::string& name) {
     auto it = objects.find(name);
